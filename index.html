@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#FAF6F0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Le Français au Quotidien</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- SPLASH SCREEN -->
+    <section id="screen-splash" class="screen screen--active">
+      <div class="splash-content">
+        <h1 class="splash-title">Le Français<br><span class="splash-accent">au Quotidien</span></h1>
+        <p class="splash-flourish">― ✦ ―</p>
+        <p class="splash-subtitle">Les tournures idiomatiques du quotidien</p>
+        <p class="splash-tap">Appuyez pour commencer</p>
+      </div>
+    </section>
+
+    <!-- PHRASE SCREEN (main) -->
+    <section id="screen-phrase" class="screen">
+      <div class="phrase-header">
+        <span id="session-counter" class="session-counter"></span>
+        <button id="btn-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+      </div>
+
+      <div class="phrase-content">
+        <p id="phrase-context" class="phrase-context"></p>
+
+        <div class="phrase-card">
+          <p id="phrase-french" class="phrase-french"></p>
+        </div>
+
+        <div class="phrase-divider">✦</div>
+
+        <div id="rating-buttons" class="rating-buttons">
+          <button class="rating-btn rating-mastered" data-level="4">
+            <span class="rating-icon">✦</span>
+            <span class="rating-label">C'est aussi facile que l'anglais</span>
+          </button>
+          <button class="rating-btn rating-familiar" data-level="3">
+            <span class="rating-icon">◆</span>
+            <span class="rating-label">Je connais, encore de temps en temps</span>
+          </button>
+          <button class="rating-btn rating-learning" data-level="2">
+            <span class="rating-icon">◇</span>
+            <span class="rating-label">Je connais mais ce n'est pas facile</span>
+          </button>
+          <button class="rating-btn rating-new" data-level="1">
+            <span class="rating-icon">○</span>
+            <span class="rating-label">Jamais vu</span>
+          </button>
+        </div>
+
+        <div id="translation-reveal" class="translation-reveal hidden">
+          <div class="translation-card">
+            <p id="phrase-english" class="phrase-english"></p>
+          </div>
+          <div style="display:flex;justify-content:center">
+            <button id="btn-next" class="btn-primary btn-next">Suivant</button>
+          </div>
+        </div>
+
+        <!-- Inline summary card (every 10 phrases) -->
+        <div id="summary-card" class="summary-card hidden">
+          <p class="summary-title">Votre séance</p>
+          <div class="summary-stats">
+            <div class="summary-stat">
+              <span class="summary-stat-label">Vues cette séance</span>
+              <span id="summary-seen" class="summary-stat-value"></span>
+            </div>
+            <div class="summary-stat">
+              <span class="summary-stat-label">Nouvelles découvertes</span>
+              <span id="summary-new" class="summary-stat-value"></span>
+            </div>
+            <div class="summary-stat">
+              <span class="summary-stat-label">Maîtrisées</span>
+              <span id="summary-mastered" class="summary-stat-value"></span>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div id="summary-progress" class="progress-bar__fill"></div>
+          </div>
+          <div class="summary-dismiss">
+            <button id="btn-dismiss-summary" class="btn-text">Continuer</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPLETION SCREEN -->
+    <section id="screen-complete" class="screen">
+      <div class="complete-content">
+        <p class="complete-icon">✦</p>
+        <h2 class="complete-title">Félicitations !</h2>
+        <p class="complete-text">Vous avez maîtrisé toutes les expressions. Revenez de temps en temps pour rafraîchir votre mémoire.</p>
+        <div class="complete-stats">
+          <div class="complete-stat">
+            <p id="complete-total" class="complete-stat-value"></p>
+            <p class="complete-stat-label">Expressions</p>
+          </div>
+          <div class="complete-stat">
+            <p id="complete-sessions" class="complete-stat-value"></p>
+            <p class="complete-stat-label">Séances</p>
+          </div>
+        </div>
+        <button id="btn-reset-all" class="btn-primary">Recommencer</button>
+      </div>
+    </section>
+
+    <!-- PROGRESS OVERLAY -->
+    <div id="overlay-progress" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="overlay-header">
+          <h2 class="overlay-title">Votre progrès</h2>
+          <button id="btn-close-progress" class="btn-close" aria-label="Fermer">&times;</button>
+        </div>
+        <div class="progress-overview">
+          <p id="progress-overview-text" class="progress-overview-text"></p>
+          <div class="progress-bar">
+            <div id="progress-bar-fill" class="progress-bar__fill"></div>
+          </div>
+        </div>
+        <div id="progress-list" class="progress-list"></div>
+        <div class="overlay-footer">
+          <button id="btn-reset-progress" class="btn-text btn-danger">Réinitialiser tout</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
