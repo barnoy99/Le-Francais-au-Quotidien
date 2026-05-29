@@ -15,13 +15,22 @@
 <body>
   <div id="app">
 
-    <!-- SPLASH SCREEN -->
-    <section id="screen-splash" class="screen screen--active">
+    <!-- HOME SCREEN -->
+    <section id="screen-home" class="screen screen--active">
       <div class="splash-content">
         <h1 class="splash-title">Le Français<br><span class="splash-accent">au Quotidien</span></h1>
         <p class="splash-flourish">― ✦ ―</p>
         <p class="splash-subtitle">Les tournures idiomatiques du quotidien</p>
-        <p class="splash-tap">Appuyez pour commencer</p>
+        <div class="home-buttons">
+          <button id="btn-apprentissage" class="btn-home btn-home--primary">
+            <span class="btn-home-label">Apprentissage</span>
+            <span class="btn-home-sub">Répétition espacée</span>
+          </button>
+          <button id="btn-acquis" class="btn-home btn-home--secondary" disabled>
+            <span class="btn-home-label">Mes Acquis <span id="acquis-count" class="btn-home-count">(0)</span></span>
+            <span class="btn-home-sub">Pratique de rappel</span>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -113,6 +122,49 @@
           </div>
         </div>
         <button id="btn-reset-all" class="btn-primary">Recommencer</button>
+      </div>
+    </section>
+
+    <!-- ACQUIS SCREEN -->
+    <section id="screen-acquis" class="screen">
+      <div class="phrase-header">
+        <button id="btn-acquis-home" class="btn-text">Accueil</button>
+        <span id="acquis-counter" class="session-counter"></span>
+      </div>
+      <div class="phrase-content">
+        <p id="acquis-context" class="phrase-context"></p>
+        <div class="acquis-prompt-card">
+          <p id="acquis-english" class="acquis-english"></p>
+        </div>
+        <div class="phrase-divider">✦</div>
+        <div id="acquis-reveal-area" class="acquis-reveal-area">
+          <button id="btn-reveler" class="btn-primary">Révéler</button>
+        </div>
+        <div id="acquis-revealed" class="acquis-revealed hidden">
+          <div class="acquis-french-card">
+            <p id="acquis-french" class="phrase-french"></p>
+            <button id="btn-tts" class="btn-tts" aria-label="Écouter">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+          </div>
+          <div class="acquis-alt-usage">
+            <p class="acquis-alt-label">Autre exemple</p>
+            <p id="acquis-alt" class="acquis-alt-text"></p>
+          </div>
+          <div style="display:flex;justify-content:center">
+            <button id="btn-suivant" class="btn-primary btn-next">Suivant</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACQUIS DONE SCREEN -->
+    <section id="screen-acquis-done" class="screen">
+      <div class="complete-content">
+        <p class="complete-icon">✦</p>
+        <h2 class="complete-title">Terminé !</h2>
+        <p class="complete-text">Vous avez revu toutes vos expressions maîtrisées.</p>
+        <button id="btn-acquis-done-home" class="btn-primary">Retour</button>
       </div>
     </section>
 

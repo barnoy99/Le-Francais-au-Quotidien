@@ -685,6 +685,164 @@ ul {
 }
 
 /* ============================================================
+   HOME SCREEN BUTTONS
+   ============================================================ */
+
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 2rem;
+}
+
+.btn-home {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-left: 4px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.4rem;
+  width: 100%;
+  text-align: left;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+
+.btn-home:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-home--primary {
+  border-left-color: var(--color-gold);
+}
+
+.btn-home--secondary {
+  border-left-color: var(--color-sage);
+}
+
+.btn-home:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-home-label {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.btn-home-count {
+  font-size: 0.95rem;
+  color: var(--color-sage);
+  font-weight: 500;
+}
+
+.btn-home-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+/* ============================================================
+   ACQUIS SCREEN
+   ============================================================ */
+
+.acquis-prompt-card {
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-left: 3px solid var(--color-sage);
+  border-radius: var(--radius-md);
+  padding: 2rem 1.5rem;
+  width: 100%;
+  box-shadow: var(--shadow-card);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.acquis-english {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.acquis-reveal-area {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.acquis-revealed {
+  width: 100%;
+  animation: slide-up 0.3s ease;
+}
+
+.acquis-french-card {
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.acquis-french-card .phrase-french {
+  flex: 1;
+  text-align: left;
+  font-size: 1.4rem;
+}
+
+.btn-tts {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-gold-light);
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-tts:active {
+  background: var(--color-gold);
+  color: white;
+}
+
+.acquis-alt-usage {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.acquis-alt-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.acquis-alt-text {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--color-accent);
+}
+
+/* ============================================================
    REDUCED MOTION
    ============================================================ */
 

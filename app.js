@@ -15,6 +15,8 @@
   var lastShownId = null;
   var currentPhrase = null;
   var expandedProgressId = null;
+  var acquisPhrases = [];
+  var acquisIndex = 0;
 
   // ── DOM helpers ────────────────────────────────────────
 
@@ -290,6 +292,74 @@
     }
   }
 
+  // ── Acquis mode ────────────────────────────────────────
+
+  function getMasteredPhrases() {
+    var result = [];
+    for (var i = 0; i < PHRASES.length; i++) {
+      if (getPhraseData(PHRASES[i].id).level === 4) result.push(PHRASES[i]);
+    }
+    return result;
+  }
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function updateHomeScreen() {
+    var mastered = getMasteredPhrases();
+    $('acquis-count').textContent = '(' + mastered.length + ')';
+    $('btn-acquis').disabled = mastered.length === 0;
+  }
+
+  function startAcquis() {
+    acquisPhrases = shuffle(getMasteredPhrases());
+    acquisIndex = 0;
+    if (acquisPhrases.length === 0) return;
+    showAcquisPhrase();
+  }
+
+  function showAcquisPhrase() {
+    if (acquisIndex >= acquisPhrases.length) {
+      showScreen('screen-acquis-done');
+      return;
+    }
+    var p = acquisPhrases[acquisIndex];
+    showScreen('screen-acquis');
+    $('acquis-context').textContent = p.context;
+    $('acquis-english').textContent = p.en;
+    $('acquis-french').textContent = p.fr;
+    $('acquis-alt').textContent = p.alt_usage || '';
+    $('acquis-counter').textContent = (acquisIndex + 1) + ' / ' + acquisPhrases.length;
+    show($('acquis-reveal-area'));
+    hide($('acquis-revealed'));
+  }
+
+  function revealAcquis() {
+    hide($('acquis-reveal-area'));
+    show($('acquis-revealed'));
+  }
+
+  function speakFrench(text) {
+    if (!('speechSynthesis' in window)) return;
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    u.rate = 0.9;
+    var voices = speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('fr') === 0) {
+        u.voice = voices[i];
+        break;
+      }
+    }
+    speechSynthesis.speak(u);
+  }
+
   // ── Event binding ─────────────────────────────────────
 
   function setup() {
@@ -297,9 +367,44 @@
     state.sessionCount++;
     save();
 
-    // Splash → start
-    $('screen-splash').addEventListener('click', function () {
+    // Preload voices
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices();
+    }
+
+    // Home screen
+    updateHomeScreen();
+
+    $('btn-apprentissage').addEventListener('click', function () {
       advance();
+    });
+
+    $('btn-acquis').addEventListener('click', function () {
+      startAcquis();
+    });
+
+    // Acquis mode buttons
+    $('btn-reveler').addEventListener('click', revealAcquis);
+
+    $('btn-tts').addEventListener('click', function () {
+      if (acquisPhrases[acquisIndex]) {
+        speakFrench(acquisPhrases[acquisIndex].fr);
+      }
+    });
+
+    $('btn-suivant').addEventListener('click', function () {
+      acquisIndex++;
+      showAcquisPhrase();
+    });
+
+    $('btn-acquis-home').addEventListener('click', function () {
+      updateHomeScreen();
+      showScreen('screen-home');
+    });
+
+    $('btn-acquis-done-home').addEventListener('click', function () {
+      updateHomeScreen();
+      showScreen('screen-home');
     });
 
     // Rating buttons
@@ -354,6 +459,7 @@
       sessionNew = 0;
       lastShownId = null;
       hide($('overlay-progress'));
+      updateHomeScreen();
       advance();
     });
 
@@ -365,7 +471,8 @@
       sessionSeen = 0;
       sessionNew = 0;
       lastShownId = null;
-      advance();
+      updateHomeScreen();
+      showScreen('screen-home');
     });
   }
 
