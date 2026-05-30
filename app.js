@@ -586,7 +586,7 @@
               speakFrenchCb(frenchText, function () {
                 if (!handsfreeActive) return;
 
-                // Phase 4: 4.5s pause → FR beep → speak French (2nd)
+                // Phase 4: 6.5s pause → FR beep → speak French (2nd)
                 handsfreeTimerId = setTimeout(function () {
                   if (!handsfreeActive) return;
                   playDing('fr', function () {
@@ -594,19 +594,30 @@
                     speakFrenchCb(frenchText, function () {
                       if (!handsfreeActive) return;
 
-                      // Phase 5: 5s pause → advance
+                      // Phase 5: 6.5s pause → FR beep → speak French (3rd)
                       handsfreeTimerId = setTimeout(function () {
-                        if (handsfreeExercise === 'main' && p.alt_usage) {
-                          handsfreeExercise = 'alt';
-                        } else {
-                          handsfreeExercise = 'main';
-                          handsfreeIndex++;
-                        }
-                        handsfreeStep();
-                      }, 5000);
+                        if (!handsfreeActive) return;
+                        playDing('fr', function () {
+                          if (!handsfreeActive) return;
+                          speakFrenchCb(frenchText, function () {
+                            if (!handsfreeActive) return;
+
+                            // Phase 6: 7s pause → advance
+                            handsfreeTimerId = setTimeout(function () {
+                              if (handsfreeExercise === 'main' && p.alt_usage) {
+                                handsfreeExercise = 'alt';
+                              } else {
+                                handsfreeExercise = 'main';
+                                handsfreeIndex++;
+                              }
+                              handsfreeStep();
+                            }, 7000);
+                          });
+                        });
+                      }, 6500);
                     });
                   });
-                }, 4500);
+                }, 6500);
               });
             });
           }
