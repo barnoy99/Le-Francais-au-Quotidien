@@ -17,6 +17,12 @@
   var expandedProgressId = null;
   var acquisPhrases = [];
   var acquisIndex = 0;
+  var handsfreeActive = false;
+  var handsfreePhrases = [];
+  var handsfreeIndex = 0;
+  var handsfreeTimerId = null;
+  var handsfreeCountdownId = null;
+  var wakeLock = null;
 
   // ── DOM helpers ────────────────────────────────────────
 
@@ -313,8 +319,11 @@
 
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
-    $('acquis-count').textContent = '(' + mastered.length + ')';
-    $('btn-acquis').disabled = mastered.length === 0;
+    var count = mastered.length;
+    $('acquis-count').textContent = '(' + count + ')';
+    $('btn-acquis').disabled = count === 0;
+    $('handsfree-count').textContent = '(' + count + ')';
+    $('btn-handsfree').disabled = count === 0;
   }
 
   function startAcquis() {
@@ -360,6 +369,163 @@
     speechSynthesis.speak(u);
   }
 
+  // ── Hands-free mode ────────────────────────────────────
+
+  function speakEnglish(text, onEnd) {
+    if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.95;
+    var voices = speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('en') === 0) {
+        u.voice = voices[i];
+        break;
+      }
+    }
+    if (onEnd) u.onend = onEnd;
+    speechSynthesis.speak(u);
+  }
+
+  function speakFrenchCb(text, onEnd) {
+    if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    u.rate = 0.9;
+    var voices = speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('fr') === 0) {
+        u.voice = voices[i];
+        break;
+      }
+    }
+    if (onEnd) u.onend = onEnd;
+    speechSynthesis.speak(u);
+  }
+
+  function playDing(cb) {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      gain.gain.value = 0.3;
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.stop(ctx.currentTime + 0.15);
+      setTimeout(function () { ctx.close(); if (cb) cb(); }, 200);
+    } catch (e) {
+      if (cb) cb();
+    }
+  }
+
+  function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').then(function (wl) {
+        wakeLock = wl;
+      }).catch(function () {});
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(function () {});
+      wakeLock = null;
+    }
+  }
+
+  function stopHandsfree() {
+    handsfreeActive = false;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
+    if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
+    releaseWakeLock();
+    updateHomeScreen();
+    showScreen('screen-home');
+  }
+
+  function startHandsfree() {
+    handsfreePhrases = shuffle(getMasteredPhrases());
+    handsfreeIndex = 0;
+    if (handsfreePhrases.length === 0) return;
+    handsfreeActive = true;
+    requestWakeLock();
+    showScreen('screen-handsfree');
+    handsfreeStep();
+  }
+
+  function handsfreeStep() {
+    if (!handsfreeActive) return;
+    if (handsfreeIndex >= handsfreePhrases.length) {
+      handsfreeActive = false;
+      releaseWakeLock();
+      showScreen('screen-acquis-done');
+      return;
+    }
+    var p = handsfreePhrases[handsfreeIndex];
+    $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
+
+    // Phase 1: Show and speak English
+    $('handsfree-phase').textContent = 'Écoutez en anglais…';
+    $('handsfree-english').textContent = p.en;
+    show($('handsfree-english-card'));
+    hide($('handsfree-countdown'));
+    hide($('handsfree-french-area'));
+
+    speakEnglish(p.en, function () {
+      if (!handsfreeActive) return;
+
+      // Phase 2: Countdown
+      $('handsfree-phase').textContent = 'Rappelez-vous…';
+      show($('handsfree-countdown'));
+      var remaining = 10;
+      $('handsfree-countdown-num').textContent = remaining;
+
+      handsfreeCountdownId = setInterval(function () {
+        if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
+        remaining--;
+        $('handsfree-countdown-num').textContent = remaining;
+        if (remaining <= 0) {
+          clearInterval(handsfreeCountdownId);
+          handsfreeCountdownId = null;
+          hide($('handsfree-countdown'));
+
+          // Phase 3: Ding then French
+          playDing(function () {
+            if (!handsfreeActive) return;
+            $('handsfree-phase').textContent = 'Réponse';
+            $('handsfree-french').textContent = p.fr;
+            $('handsfree-alt').textContent = p.alt_usage || '';
+            show($('handsfree-french-area'));
+
+            speakFrenchCb(p.fr, function () {
+              if (!handsfreeActive) return;
+
+              // Phase 4: Speak alt_usage
+              if (p.alt_usage) {
+                speakFrenchCb(p.alt_usage, function () {
+                  if (!handsfreeActive) return;
+                  // Phase 5: 3-second pause then next
+                  handsfreeTimerId = setTimeout(function () {
+                    handsfreeIndex++;
+                    handsfreeStep();
+                  }, 3000);
+                });
+              } else {
+                handsfreeTimerId = setTimeout(function () {
+                  handsfreeIndex++;
+                  handsfreeStep();
+                }, 3000);
+              }
+            });
+          });
+        }
+      }, 1000);
+    });
+  }
+
   // ── Event binding ─────────────────────────────────────
 
   function setup() {
@@ -383,6 +549,21 @@
       startAcquis();
     });
 
+    $('btn-handsfree').addEventListener('click', function () {
+      startHandsfree();
+    });
+
+    // Apprentissage back to home
+    $('btn-phrase-home').addEventListener('click', function () {
+      updateHomeScreen();
+      showScreen('screen-home');
+    });
+
+    // Handsfree stop
+    $('btn-handsfree-home').addEventListener('click', function () {
+      stopHandsfree();
+    });
+
     // Acquis mode buttons
     $('btn-reveler').addEventListener('click', revealAcquis);
 
@@ -403,6 +584,7 @@
     });
 
     $('btn-acquis-done-home').addEventListener('click', function () {
+      releaseWakeLock();
       updateHomeScreen();
       showScreen('screen-home');
     });

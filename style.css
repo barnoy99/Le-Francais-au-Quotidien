@@ -724,6 +724,10 @@ ul {
   border-left-color: var(--color-sage);
 }
 
+.btn-home--tertiary {
+  border-left-color: var(--color-amber);
+}
+
 .btn-home:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -840,6 +844,51 @@ ul {
   font-size: 1.1rem;
   line-height: 1.5;
   color: var(--color-accent);
+}
+
+/* ============================================================
+   HANDS-FREE SCREEN
+   ============================================================ */
+
+.handsfree-content {
+  justify-content: center;
+}
+
+.handsfree-phase {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-amber);
+  text-align: center;
+  margin-bottom: 1.25rem;
+  letter-spacing: 0.05em;
+}
+
+.handsfree-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.handsfree-countdown-num {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 600;
+  color: var(--color-amber);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid var(--color-amber-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-soft 1s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 /* ============================================================

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div id="app">
@@ -30,6 +30,10 @@
             <span class="btn-home-label">Mes Acquis <span id="acquis-count" class="btn-home-count">(0)</span></span>
             <span class="btn-home-sub">Pratique de rappel</span>
           </button>
+          <button id="btn-handsfree" class="btn-home btn-home--tertiary" disabled>
+            <span class="btn-home-label">Mains Libres <span id="handsfree-count" class="btn-home-count">(0)</span></span>
+            <span class="btn-home-sub">Écoute sans les mains</span>
+          </button>
         </div>
       </div>
     </section>
@@ -37,6 +41,7 @@
     <!-- PHRASE SCREEN (main) -->
     <section id="screen-phrase" class="screen">
       <div class="phrase-header">
+        <button id="btn-phrase-home" class="btn-text">Accueil</button>
         <span id="session-counter" class="session-counter"></span>
         <button id="btn-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
       </div>
@@ -168,6 +173,32 @@
       </div>
     </section>
 
+    <!-- HANDS-FREE SCREEN -->
+    <section id="screen-handsfree" class="screen">
+      <div class="phrase-header">
+        <button id="btn-handsfree-home" class="btn-text">Arrêter</button>
+        <span id="handsfree-counter" class="session-counter"></span>
+      </div>
+      <div class="phrase-content handsfree-content">
+        <p id="handsfree-phase" class="handsfree-phase"></p>
+        <div id="handsfree-english-card" class="acquis-prompt-card">
+          <p id="handsfree-english" class="acquis-english"></p>
+        </div>
+        <div id="handsfree-countdown" class="handsfree-countdown hidden">
+          <span id="handsfree-countdown-num" class="handsfree-countdown-num"></span>
+        </div>
+        <div id="handsfree-french-area" class="hidden">
+          <div class="acquis-french-card">
+            <p id="handsfree-french" class="phrase-french"></p>
+          </div>
+          <div class="acquis-alt-usage" style="margin-top:1rem">
+            <p class="acquis-alt-label">Autre exemple</p>
+            <p id="handsfree-alt" class="acquis-alt-text"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PROGRESS OVERLAY -->
     <div id="overlay-progress" class="overlay hidden">
       <div class="overlay-content">
@@ -190,7 +221,7 @@
 
   </div>
 
-  <script src="data.js?v=2"></script>
-  <script src="app.js?v=2"></script>
+  <script src="data.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
