@@ -20,9 +20,11 @@
   var handsfreeActive = false;
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
+  var handsfreeExercise = 'main'; // 'main' or 'alt'
   var handsfreeTimerId = null;
   var handsfreeCountdownId = null;
   var wakeLock = null;
+  var audioCtx = null;
   var db = null;
   var DB_PATH = 'progress/user1';
 
@@ -460,19 +462,29 @@
     speechSynthesis.speak(u);
   }
 
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
   function playDing(cb) {
+    if (!audioCtx) { if (cb) cb(); return; }
     try {
-      var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(audioCtx.destination);
       osc.frequency.value = 800;
       gain.gain.value = 0.3;
       osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-      osc.stop(ctx.currentTime + 0.15);
-      setTimeout(function () { ctx.close(); if (cb) cb(); }, 200);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      osc.stop(audioCtx.currentTime + 0.15);
+      setTimeout(function () { if (cb) cb(); }, 200);
     } catch (e) {
       if (cb) cb();
     }
@@ -506,7 +518,9 @@
   function startHandsfree() {
     handsfreePhrases = shuffle(getMasteredPhrases());
     handsfreeIndex = 0;
+    handsfreeExercise = 'main';
     if (handsfreePhrases.length === 0) return;
+    initAudio(); // create AudioContext on user gesture (tap)
     handsfreeActive = true;
     requestWakeLock();
     showScreen('screen-handsfree');
@@ -524,20 +538,30 @@
     var p = handsfreePhrases[handsfreeIndex];
     $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
 
+    // Determine which exercise: main phrase or alt_usage
+    var englishText, frenchText;
+    if (handsfreeExercise === 'main') {
+      englishText = p.en;
+      frenchText = p.fr;
+    } else {
+      englishText = p.alt_usage_en || p.alt_usage || '';
+      frenchText = p.alt_usage || '';
+    }
+
     // Phase 1: Show and speak English
     $('handsfree-phase').textContent = 'Écoutez en anglais…';
-    $('handsfree-english').textContent = p.en;
+    $('handsfree-english').textContent = englishText;
     show($('handsfree-english-card'));
     hide($('handsfree-countdown'));
     hide($('handsfree-french-area'));
 
-    speakEnglish(p.en, function () {
+    speakEnglish(englishText, function () {
       if (!handsfreeActive) return;
 
-      // Phase 2: Countdown
+      // Phase 2: 7-second countdown
       $('handsfree-phase').textContent = 'Rappelez-vous…';
       show($('handsfree-countdown'));
-      var remaining = 10;
+      var remaining = 7;
       $('handsfree-countdown-num').textContent = remaining;
 
       handsfreeCountdownId = setInterval(function () {
@@ -549,33 +573,28 @@
           handsfreeCountdownId = null;
           hide($('handsfree-countdown'));
 
-          // Phase 3: Ding then French
+          // Phase 3: Beep then reveal French
           playDing(function () {
             if (!handsfreeActive) return;
             $('handsfree-phase').textContent = 'Réponse';
-            $('handsfree-french').textContent = p.fr;
-            $('handsfree-alt').textContent = p.alt_usage || '';
+            $('handsfree-french').textContent = frenchText;
             show($('handsfree-french-area'));
 
-            speakFrenchCb(p.fr, function () {
+            speakFrenchCb(frenchText, function () {
               if (!handsfreeActive) return;
 
-              // Phase 4: Speak alt_usage
-              if (p.alt_usage) {
-                speakFrenchCb(p.alt_usage, function () {
-                  if (!handsfreeActive) return;
-                  // Phase 5: 3-second pause then next
-                  handsfreeTimerId = setTimeout(function () {
-                    handsfreeIndex++;
-                    handsfreeStep();
-                  }, 3000);
-                });
-              } else {
-                handsfreeTimerId = setTimeout(function () {
+              // 1-second pause, then advance
+              handsfreeTimerId = setTimeout(function () {
+                if (handsfreeExercise === 'main' && p.alt_usage) {
+                  // Move to alt exercise for same phrase
+                  handsfreeExercise = 'alt';
+                } else {
+                  // Move to next phrase, main exercise
+                  handsfreeExercise = 'main';
                   handsfreeIndex++;
-                  handsfreeStep();
-                }, 3000);
-              }
+                }
+                handsfreeStep();
+              }, 1000);
             });
           });
         }
