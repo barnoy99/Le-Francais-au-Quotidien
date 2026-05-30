@@ -471,15 +471,16 @@
     }
   }
 
-  function playDing(cb) {
+  function playDing(type, cb) {
     if (!audioCtx) { if (cb) cb(); return; }
     try {
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      var freq = (type === 'fr') ? 880 : 440;
       var osc = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      osc.frequency.value = 800;
+      osc.frequency.value = freq;
       gain.gain.value = 0.3;
       osc.start();
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
@@ -548,57 +549,69 @@
       frenchText = p.alt_usage || '';
     }
 
-    // Phase 1: Show and speak English
+    // Phase 1: EN beep → show English → speak English
     $('handsfree-phase').textContent = 'Écoutez en anglais…';
     $('handsfree-english').textContent = englishText;
     show($('handsfree-english-card'));
     hide($('handsfree-countdown'));
     hide($('handsfree-french-area'));
 
-    speakEnglish(englishText, function () {
+    playDing('en', function () {
       if (!handsfreeActive) return;
+      speakEnglish(englishText, function () {
+        if (!handsfreeActive) return;
 
-      // Phase 2: 7-second countdown
-      $('handsfree-phase').textContent = 'Rappelez-vous…';
-      show($('handsfree-countdown'));
-      var remaining = 7;
-      $('handsfree-countdown-num').textContent = remaining;
-
-      handsfreeCountdownId = setInterval(function () {
-        if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
-        remaining--;
+        // Phase 2: 9-second countdown
+        $('handsfree-phase').textContent = 'Rappelez-vous…';
+        show($('handsfree-countdown'));
+        var remaining = 9;
         $('handsfree-countdown-num').textContent = remaining;
-        if (remaining <= 0) {
-          clearInterval(handsfreeCountdownId);
-          handsfreeCountdownId = null;
-          hide($('handsfree-countdown'));
 
-          // Phase 3: Beep then reveal French
-          playDing(function () {
-            if (!handsfreeActive) return;
-            $('handsfree-phase').textContent = 'Réponse';
-            $('handsfree-french').textContent = frenchText;
-            show($('handsfree-french-area'));
+        handsfreeCountdownId = setInterval(function () {
+          if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
+          remaining--;
+          $('handsfree-countdown-num').textContent = remaining;
+          if (remaining <= 0) {
+            clearInterval(handsfreeCountdownId);
+            handsfreeCountdownId = null;
+            hide($('handsfree-countdown'));
 
-            speakFrenchCb(frenchText, function () {
+            // Phase 3: FR beep → reveal French → speak French (1st)
+            playDing('fr', function () {
               if (!handsfreeActive) return;
+              $('handsfree-phase').textContent = 'Réponse';
+              $('handsfree-french').textContent = frenchText;
+              show($('handsfree-french-area'));
 
-              // 3-second pause, then advance
-              handsfreeTimerId = setTimeout(function () {
-                if (handsfreeExercise === 'main' && p.alt_usage) {
-                  // Move to alt exercise for same phrase
-                  handsfreeExercise = 'alt';
-                } else {
-                  // Move to next phrase, main exercise
-                  handsfreeExercise = 'main';
-                  handsfreeIndex++;
-                }
-                handsfreeStep();
-              }, 3000);
+              speakFrenchCb(frenchText, function () {
+                if (!handsfreeActive) return;
+
+                // Phase 4: 4.5s pause → FR beep → speak French (2nd)
+                handsfreeTimerId = setTimeout(function () {
+                  if (!handsfreeActive) return;
+                  playDing('fr', function () {
+                    if (!handsfreeActive) return;
+                    speakFrenchCb(frenchText, function () {
+                      if (!handsfreeActive) return;
+
+                      // Phase 5: 5s pause → advance
+                      handsfreeTimerId = setTimeout(function () {
+                        if (handsfreeExercise === 'main' && p.alt_usage) {
+                          handsfreeExercise = 'alt';
+                        } else {
+                          handsfreeExercise = 'main';
+                          handsfreeIndex++;
+                        }
+                        handsfreeStep();
+                      }, 5000);
+                    });
+                  });
+                }, 4500);
+              });
             });
-          });
-        }
-      }, 1000);
+          }
+        }, 1000);
+      });
     });
   }
 
