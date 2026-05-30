@@ -23,6 +23,21 @@
   var handsfreeTimerId = null;
   var handsfreeCountdownId = null;
   var wakeLock = null;
+  var db = null;
+  var DB_PATH = 'progress/user1';
+
+  // ── Firebase init ─────────────────────────────────────
+
+  function initFirebase() {
+    try {
+      if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        return true;
+      }
+    } catch (e) { /* Firebase not available — local only */ }
+    return false;
+  }
 
   // ── DOM helpers ────────────────────────────────────────
 
@@ -45,24 +60,66 @@
     return { version: VERSION, phrases: {}, sessionCount: 0 };
   }
 
-  function load() {
+  function loadLocal() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        state = JSON.parse(raw);
-        if (!state.version) state = defaults();
-      } else {
-        state = defaults();
+        var parsed = JSON.parse(raw);
+        if (parsed.version) return parsed;
       }
-    } catch (e) {
-      state = defaults();
+    } catch (e) {}
+    return null;
+  }
+
+  function load(callback) {
+    var localState = loadLocal();
+
+    if (db) {
+      db.ref(DB_PATH).once('value').then(function (snapshot) {
+        var cloudState = snapshot.val();
+        if (cloudState && cloudState.version) {
+          // Pick whichever has more progress (higher sessionCount = more usage)
+          if (!localState || cloudState.sessionCount >= localState.sessionCount) {
+            state = cloudState;
+          } else {
+            state = localState;
+          }
+        } else if (localState) {
+          state = localState;
+        } else {
+          state = defaults();
+        }
+        // Save merged result to both
+        saveLocal();
+        saveCloud();
+        if (callback) callback();
+      }).catch(function () {
+        state = localState || defaults();
+        if (callback) callback();
+      });
+    } else {
+      state = localState || defaults();
+      if (callback) callback();
+    }
+  }
+
+  function saveLocal() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  function saveCloud() {
+    if (db) {
+      try {
+        db.ref(DB_PATH).set(state);
+      } catch (e) {}
     }
   }
 
   function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) { /* quota exceeded — silent */ }
+    saveLocal();
+    saveCloud();
   }
 
   // ── Phrase data helpers ────────────────────────────────
@@ -529,17 +586,18 @@
   // ── Event binding ─────────────────────────────────────
 
   function setup() {
-    load();
-    state.sessionCount++;
-    save();
+    initFirebase();
 
     // Preload voices
     if ('speechSynthesis' in window) {
       speechSynthesis.getVoices();
     }
 
-    // Home screen
-    updateHomeScreen();
+    load(function () {
+      state.sessionCount++;
+      save();
+      updateHomeScreen();
+    });
 
     $('btn-apprentissage').addEventListener('click', function () {
       advance();
