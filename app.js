@@ -583,7 +583,7 @@
             speakFrenchCb(frenchText, function () {
               if (!handsfreeActive) return;
 
-              // 1-second pause, then advance
+              // 3-second pause, then advance
               handsfreeTimerId = setTimeout(function () {
                 if (handsfreeExercise === 'main' && p.alt_usage) {
                   // Move to alt exercise for same phrase
@@ -594,7 +594,7 @@
                   handsfreeIndex++;
                 }
                 handsfreeStep();
-              }, 1000);
+              }, 3000);
             });
           });
         }
