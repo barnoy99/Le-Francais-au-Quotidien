@@ -908,6 +908,30 @@ ul {
   50% { transform: scale(1.05); }
 }
 
+.handsfree-pause-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.btn-handsfree-pause {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-amber);
+  border: 2px solid var(--color-amber-light);
+  border-radius: var(--radius-pill);
+  padding: 0.6rem 2rem;
+  background: var(--bg-card);
+  letter-spacing: 0.03em;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-handsfree-pause:active {
+  background: var(--color-amber-light);
+  border-color: var(--color-amber);
+}
+
 /* ============================================================
    REDUCED MOTION
    ============================================================ */

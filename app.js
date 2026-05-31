@@ -18,6 +18,7 @@
   var acquisPhrases = [];
   var acquisIndex = 0;
   var handsfreeActive = false;
+  var handsfreePaused = false;
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
   var handsfreeExercise = 'main'; // 'main' or 'alt'
@@ -555,6 +556,7 @@
 
   function stopHandsfree() {
     handsfreeActive = false;
+    handsfreePaused = false;
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
@@ -563,13 +565,30 @@
     showScreen('screen-home');
   }
 
+  function pauseHandsfree() {
+    handsfreePaused = true;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
+    if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
+    $('handsfree-phase').textContent = 'En pause…';
+    $('btn-handsfree-pause').textContent = '▶ Reprendre';
+  }
+
+  function resumeHandsfree() {
+    handsfreePaused = false;
+    $('btn-handsfree-pause').textContent = '⏸ Pause';
+    handsfreeStep(); // replays current exercise from the start
+  }
+
   function startHandsfree() {
     handsfreePhrases = shuffle(getMasteredPhrases());
     handsfreeIndex = 0;
     handsfreeExercise = 'main';
+    handsfreePaused = false;
     if (handsfreePhrases.length === 0) return;
     initAudio(); // create AudioContext on user gesture (tap)
     handsfreeActive = true;
+    $('btn-handsfree-pause').textContent = '⏸ Pause';
     requestWakeLock();
     showScreen('screen-handsfree');
     handsfreeStep();
@@ -822,6 +841,15 @@
     // Handsfree stop
     $('btn-handsfree-home').addEventListener('click', function () {
       stopHandsfree();
+    });
+
+    // Handsfree pause/resume
+    $('btn-handsfree-pause').addEventListener('click', function () {
+      if (handsfreePaused) {
+        resumeHandsfree();
+      } else {
+        pauseHandsfree();
+      }
     });
 
     // Acquis mode buttons
