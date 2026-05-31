@@ -59,7 +59,13 @@
   // ── Persistence ────────────────────────────────────────
 
   function defaults() {
-    return { version: VERSION, phrases: {}, sessionCount: 0 };
+    return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [] };
+  }
+
+  function activePhrases() {
+    var deleted = state.deletedIds || [];
+    if (deleted.length === 0) return PHRASES;
+    return PHRASES.filter(function (p) { return deleted.indexOf(p.id) === -1; });
   }
 
   function loadLocal() {
@@ -144,6 +150,13 @@
     return wasNew;
   }
 
+  function deletePhrase(id) {
+    if (!state.deletedIds) state.deletedIds = [];
+    if (state.deletedIds.indexOf(id) === -1) state.deletedIds.push(id);
+    delete state.phrases[id];
+    save();
+  }
+
   function incrementHfSeen(id) {
     var d = getPhraseData(id);
     state.phrases[id] = {
@@ -159,8 +172,9 @@
 
   function countMastered() {
     var n = 0;
-    for (var i = 0; i < PHRASES.length; i++) {
-      if (getPhraseData(PHRASES[i].id).level === 4) n++;
+    var active = activePhrases();
+    for (var i = 0; i < active.length; i++) {
+      if (getPhraseData(active[i].id).level === 4) n++;
     }
     return n;
   }
@@ -169,9 +183,10 @@
     var now = Date.now();
     var eligible = [];
     var weights = [];
+    var active = activePhrases();
 
-    for (var i = 0; i < PHRASES.length; i++) {
-      var p = PHRASES[i];
+    for (var i = 0; i < active.length; i++) {
+      var p = active[i];
       var d = getPhraseData(p.id);
       if (d.level === 4) continue;
       if (p.id === lastShownId) continue;
@@ -187,11 +202,11 @@
       // all non-mastered are cooling — pick the one closest to eligible
       var best = null;
       var bestDelta = Infinity;
-      for (var i = 0; i < PHRASES.length; i++) {
-        var p = PHRASES[i];
+      for (var i = 0; i < active.length; i++) {
+        var p = active[i];
         var d = getPhraseData(p.id);
         if (d.level === 4) continue;
-        if (p.id === lastShownId && countMastered() < PHRASES.length - 1) continue;
+        if (p.id === lastShownId && countMastered() < active.length - 1) continue;
         var delta = (d.lastSeen + INTERVALS[d.level]) - now;
         if (delta < bestDelta) { bestDelta = delta; best = p; }
       }
@@ -278,8 +293,9 @@
     var hard = [];
     var unseen = [];
 
-    for (var i = 0; i < PHRASES.length; i++) {
-      var p = PHRASES[i];
+    var active = activePhrases();
+    for (var i = 0; i < active.length; i++) {
+      var p = active[i];
       var d = getPhraseData(p.id);
       var entry = { phrase: p, data: d };
       switch (d.level) {
@@ -292,21 +308,21 @@
     }
 
     var masteredCount = mastered.length;
-    var pct = Math.round((masteredCount / PHRASES.length) * 100);
-    $('progress-overview-text').textContent = masteredCount + ' / ' + PHRASES.length + ' maîtrisées (' + pct + ' %)';
+    var pct = Math.round((masteredCount / active.length) * 100);
+    $('progress-overview-text').textContent = masteredCount + ' / ' + active.length + ' maîtrisées (' + pct + ' %)';
     $('progress-bar-fill').style.width = pct + '%';
 
     var totalReviews = 0;
     var totalHf = 0;
     var phrasesSeen = 0;
-    for (var i = 0; i < PHRASES.length; i++) {
-      var d = getPhraseData(PHRASES[i].id);
+    for (var i = 0; i < active.length; i++) {
+      var d = getPhraseData(active[i].id);
       totalReviews += d.timesSeen;
       totalHf += (d.hfSeen || 0);
       if (d.timesSeen > 0) phrasesSeen++;
     }
     $('progress-stats-text').textContent =
-      totalReviews + ' révisions · ' + phrasesSeen + ' / ' + PHRASES.length + ' expressions vues' +
+      totalReviews + ' révisions · ' + phrasesSeen + ' / ' + active.length + ' expressions vues' +
       (totalHf > 0 ? ' · ◆' + totalHf + ' Mains Libres' : '');
 
     var list = $('progress-list');
@@ -391,8 +407,9 @@
 
   function getMasteredPhrases() {
     var result = [];
-    for (var i = 0; i < PHRASES.length; i++) {
-      if (getPhraseData(PHRASES[i].id).level === 4) result.push(PHRASES[i]);
+    var active = activePhrases();
+    for (var i = 0; i < active.length; i++) {
+      if (getPhraseData(active[i].id).level === 4) result.push(active[i]);
     }
     return result;
   }
@@ -663,6 +680,98 @@
     });
   }
 
+  // ── Chercher mode ─────────────────────────────────────
+
+  function startChercher() {
+    showScreen('screen-chercher');
+    $('chercher-input').value = '';
+    renderChercherResults('');
+    $('chercher-input').focus();
+  }
+
+  function renderChercherResults(query) {
+    var q = query.trim().toLowerCase();
+    var all = activePhrases();
+    var results = q ? all.filter(function (p) { return p.fr.toLowerCase().indexOf(q) !== -1; }) : all;
+
+    $('chercher-count').textContent = results.length + ' expression' + (results.length !== 1 ? 's' : '');
+
+    var container = $('chercher-results');
+    container.innerHTML = '';
+
+    for (var i = 0; i < results.length; i++) {
+      (function (p) {
+        var d = getPhraseData(p.id);
+        var card = document.createElement('div');
+        card.className = 'chercher-card';
+
+        // Main phrase
+        var fr = document.createElement('p');
+        fr.className = 'chercher-fr';
+        fr.textContent = p.fr;
+
+        var en = document.createElement('p');
+        en.className = 'chercher-en';
+        en.textContent = p.en;
+
+        card.appendChild(fr);
+        card.appendChild(en);
+
+        // Alt usage
+        if (p.alt_usage) {
+          var divider = document.createElement('hr');
+          divider.className = 'chercher-divider';
+
+          var altFr = document.createElement('p');
+          altFr.className = 'chercher-alt-fr';
+          altFr.textContent = p.alt_usage;
+
+          var altEn = document.createElement('p');
+          altEn.className = 'chercher-alt-en';
+          altEn.textContent = p.alt_usage_en || '';
+
+          card.appendChild(divider);
+          card.appendChild(altFr);
+          card.appendChild(altEn);
+        }
+
+        // Footer: stats + delete
+        var footer = document.createElement('div');
+        footer.className = 'chercher-card-footer';
+
+        var stats = document.createElement('span');
+        stats.className = 'chercher-stats';
+        var parts = [];
+        if (d.timesSeen > 0) parts.push('×' + d.timesSeen + ' apprentissage');
+        if (d.hfSeen > 0) parts.push('◆' + d.hfSeen + ' mains libres');
+        stats.textContent = parts.length > 0 ? parts.join('  ') : 'Jamais pratiquée';
+
+        var delBtn = document.createElement('button');
+        delBtn.className = 'chercher-delete';
+        delBtn.textContent = 'Supprimer';
+        delBtn.addEventListener('click', function () {
+          if (confirm('Supprimer "' + p.fr + '" définitivement ?')) {
+            deletePhrase(p.id);
+            renderChercherResults($('chercher-input').value);
+            updateHomeScreen();
+          }
+        });
+
+        footer.appendChild(stats);
+        footer.appendChild(delBtn);
+        card.appendChild(footer);
+        container.appendChild(card);
+      })(results[i]);
+    }
+
+    if (results.length === 0) {
+      var empty = document.createElement('p');
+      empty.className = 'chercher-empty';
+      empty.textContent = 'Aucun résultat.';
+      container.appendChild(empty);
+    }
+  }
+
   // ── Event binding ─────────────────────────────────────
 
   function setup() {
@@ -689,6 +798,19 @@
 
     $('btn-handsfree').addEventListener('click', function () {
       startHandsfree();
+    });
+
+    $('btn-chercher').addEventListener('click', function () {
+      startChercher();
+    });
+
+    $('btn-chercher-home').addEventListener('click', function () {
+      updateHomeScreen();
+      showScreen('screen-home');
+    });
+
+    $('chercher-input').addEventListener('input', function () {
+      renderChercherResults(this.value);
     });
 
     // Apprentissage back to home

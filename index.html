@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
   <div id="app">
@@ -33,6 +33,10 @@
           <button id="btn-handsfree" class="btn-home btn-home--tertiary" disabled>
             <span class="btn-home-label">Mains Libres <span id="handsfree-count" class="btn-home-count">(0)</span></span>
             <span class="btn-home-sub">Écoute sans les mains</span>
+          </button>
+          <button id="btn-chercher" class="btn-home btn-home--quaternary">
+            <span class="btn-home-label">Chercher</span>
+            <span class="btn-home-sub">Parcourir &amp; supprimer</span>
           </button>
         </div>
       </div>
@@ -197,6 +201,20 @@
       </div>
     </section>
 
+    <!-- CHERCHER SCREEN -->
+    <section id="screen-chercher" class="screen">
+      <div class="phrase-header">
+        <button id="btn-chercher-home" class="btn-text">Accueil</button>
+        <span class="session-counter">Chercher</span>
+      </div>
+      <div class="chercher-content">
+        <input id="chercher-input" type="search" class="chercher-input"
+               placeholder="Rechercher en français…" autocomplete="off">
+        <p id="chercher-count" class="chercher-count"></p>
+        <div id="chercher-results" class="chercher-results"></div>
+      </div>
+    </section>
+
     <!-- PROGRESS OVERLAY -->
     <div id="overlay-progress" class="overlay hidden">
       <div class="overlay-content">
@@ -224,6 +242,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=3"></script>
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
