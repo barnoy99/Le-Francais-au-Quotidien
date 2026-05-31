@@ -284,6 +284,15 @@
     $('progress-overview-text').textContent = masteredCount + ' / ' + PHRASES.length + ' maîtrisées (' + pct + ' %)';
     $('progress-bar-fill').style.width = pct + '%';
 
+    var totalReviews = 0;
+    var phrasesSeen = 0;
+    for (var i = 0; i < PHRASES.length; i++) {
+      var d = getPhraseData(PHRASES[i].id);
+      totalReviews += d.timesSeen;
+      if (d.timesSeen > 0) phrasesSeen++;
+    }
+    $('progress-stats-text').textContent = totalReviews + ' révisions au total · ' + phrasesSeen + ' / ' + PHRASES.length + ' expressions vues';
+
     var list = $('progress-list');
     list.innerHTML = '';
 
