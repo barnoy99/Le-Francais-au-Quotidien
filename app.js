@@ -137,10 +137,22 @@
     state.phrases[id] = {
       level: level,
       lastSeen: Date.now(),
-      timesSeen: d.timesSeen + 1
+      timesSeen: d.timesSeen + 1,
+      hfSeen: d.hfSeen || 0
     };
     save();
     return wasNew;
+  }
+
+  function incrementHfSeen(id) {
+    var d = getPhraseData(id);
+    state.phrases[id] = {
+      level: d.level,
+      lastSeen: d.lastSeen,
+      timesSeen: d.timesSeen,
+      hfSeen: (d.hfSeen || 0) + 1
+    };
+    save();
   }
 
   // ── Spaced repetition selection ────────────────────────
@@ -285,13 +297,17 @@
     $('progress-bar-fill').style.width = pct + '%';
 
     var totalReviews = 0;
+    var totalHf = 0;
     var phrasesSeen = 0;
     for (var i = 0; i < PHRASES.length; i++) {
       var d = getPhraseData(PHRASES[i].id);
       totalReviews += d.timesSeen;
+      totalHf += (d.hfSeen || 0);
       if (d.timesSeen > 0) phrasesSeen++;
     }
-    $('progress-stats-text').textContent = totalReviews + ' révisions au total · ' + phrasesSeen + ' / ' + PHRASES.length + ' expressions vues';
+    $('progress-stats-text').textContent =
+      totalReviews + ' révisions · ' + phrasesSeen + ' / ' + PHRASES.length + ' expressions vues' +
+      (totalHf > 0 ? ' · ◆' + totalHf + ' Mains Libres' : '');
 
     var list = $('progress-list');
     list.innerHTML = '';
@@ -330,9 +346,14 @@
         seen.className = 'progress-seen';
         seen.textContent = entry.data.timesSeen > 0 ? ('×' + entry.data.timesSeen) : '';
 
+        var hfSeen = document.createElement('span');
+        hfSeen.className = 'progress-hf-seen';
+        hfSeen.textContent = entry.data.hfSeen > 0 ? ('◆' + entry.data.hfSeen) : '';
+
         item.appendChild(dot);
         item.appendChild(text);
         item.appendChild(seen);
+        item.appendChild(hfSeen);
         list.appendChild(item);
 
         // expanded detail (if this is the expanded one)
@@ -591,6 +612,7 @@
               $('handsfree-phase').textContent = 'Réponse';
               $('handsfree-french').textContent = frenchText;
               show($('handsfree-french-area'));
+              incrementHfSeen(p.id);
 
               speakFrenchCb(frenchText, function () {
                 if (!handsfreeActive) return;

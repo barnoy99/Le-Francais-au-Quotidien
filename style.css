@@ -663,6 +663,12 @@ ul {
   flex-shrink: 0;
 }
 
+.progress-hf-seen {
+  font-size: 0.75rem;
+  color: var(--color-amber);
+  flex-shrink: 0;
+}
+
 .progress-expanded {
   padding: 0.75rem;
   background: var(--bg-secondary);
