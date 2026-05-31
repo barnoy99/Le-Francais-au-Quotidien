@@ -748,6 +748,18 @@
       show($('overlay-progress'));
     });
 
+    $('btn-acquis-progress').addEventListener('click', function () {
+      expandedProgressId = null;
+      renderProgress();
+      show($('overlay-progress'));
+    });
+
+    $('btn-handsfree-progress').addEventListener('click', function () {
+      expandedProgressId = null;
+      renderProgress();
+      show($('overlay-progress'));
+    });
+
     $('btn-close-progress').addEventListener('click', function () {
       hide($('overlay-progress'));
     });
