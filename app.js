@@ -591,6 +591,10 @@
       speakEnglish(englishText, function () {
         if (!handsfreeActive) return;
 
+        // 2s pause after English before countdown
+        handsfreeTimerId = setTimeout(function () {
+          if (!handsfreeActive) return;
+
         // Phase 2: 9-second countdown
         $('handsfree-phase').textContent = 'Rappelez-vous…';
         show($('handsfree-countdown'));
@@ -642,17 +646,19 @@
                                 handsfreeIndex++;
                               }
                               handsfreeStep();
-                            }, 7000);
+                            }, 8000);
                           });
                         });
-                      }, 6500);
+                      }, 7500);
                     });
                   });
-                }, 6500);
+                }, 7500);
               });
             });
           }
         }, 1000);
+
+        }, 2000); // end 2s post-English pause
       });
     });
   }
