@@ -543,6 +543,10 @@
     if ('wakeLock' in navigator) {
       navigator.wakeLock.request('screen').then(function (wl) {
         wakeLock = wl;
+        // Re-request when the lock is released by the browser (screen dimmed, tab hidden, etc.)
+        wl.addEventListener('release', function () {
+          wakeLock = null;
+        });
       }).catch(function () {});
     }
   }
@@ -986,6 +990,13 @@
   }
 
   // ── Init ──────────────────────────────────────────────
+
+  // Re-acquire wake lock whenever the screen comes back on (Samsung / iOS release it automatically)
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && handsfreeActive && !handsfreePaused) {
+      requestWakeLock();
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', setup);
 })();
