@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <div id="app">
@@ -22,12 +22,12 @@
         <p class="splash-flourish">― ✦ ―</p>
         <p class="splash-subtitle">Les tournures idiomatiques du quotidien</p>
         <div class="home-buttons">
-          <button id="btn-apprentissage" class="btn-home btn-home--primary">
+          <button id="btn-handsfree" class="btn-home btn-home--primary" disabled>
             <div class="btn-home-text">
-              <span class="btn-home-label">Apprentissage</span>
-              <span class="btn-home-sub">Répétition espacée</span>
+              <span class="btn-home-label">Mains Libres <span id="handsfree-count" class="btn-home-count">(0)</span></span>
+              <span class="btn-home-sub">Écoute sans les mains</span>
             </div>
-            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
           </button>
           <button id="btn-acquis" class="btn-home btn-home--secondary" disabled>
             <div class="btn-home-text">
@@ -36,12 +36,12 @@
             </div>
             <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </button>
-          <button id="btn-handsfree" class="btn-home btn-home--tertiary" disabled>
+          <button id="btn-apprentissage" class="btn-home btn-home--tertiary">
             <div class="btn-home-text">
-              <span class="btn-home-label">Mains Libres <span id="handsfree-count" class="btn-home-count">(0)</span></span>
-              <span class="btn-home-sub">Écoute sans les mains</span>
+              <span class="btn-home-label">Apprentissage</span>
+              <span class="btn-home-sub">Répétition espacée</span>
             </div>
-            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </button>
           <button id="btn-chercher" class="btn-home btn-home--quaternary">
             <div class="btn-home-text">
@@ -203,8 +203,8 @@
             <p id="handsfree-french" class="phrase-french"></p>
           </div>
         </div>
-        <div id="handsfree-countdown" class="handsfree-countdown hidden">
-          <span id="handsfree-countdown-num" class="handsfree-countdown-num"></span>
+        <div id="handsfree-countdown" class="handsfree-countdown">
+          <span id="handsfree-countdown-num" class="handsfree-countdown-num">–</span>
         </div>
         <div class="handsfree-pause-wrap">
           <button id="btn-handsfree-pause" class="btn-handsfree-pause">⏸ Pause</button>
@@ -254,6 +254,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=4"></script>
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

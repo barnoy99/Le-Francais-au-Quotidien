@@ -22,8 +22,7 @@
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
   var handsfreeExercise = 'main'; // 'main' or 'alt'
-  var handsfreePrevIndex = 0;
-  var handsfreePrevExercise = 'main';
+  var handsfreeHistory = []; // stack of {index, exercise} for multi-step skip-back
   var handsfreeReadTarget = 3;          // 3 or 6, reset per exercise
   var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
   var handsfreeCurrentFrench = '';      // frenchText of current exercise
@@ -612,8 +611,15 @@
   function skipPrevHandsfree() {
     if (!handsfreeActive) return;
     cancelCurrentStep();
-    handsfreeIndex = handsfreePrevIndex;
-    handsfreeExercise = handsfreePrevExercise;
+    // Pop the current entry (pushed at start of this step)
+    if (handsfreeHistory.length > 0) handsfreeHistory.pop();
+    // Pop the previous entry and restore it (will be re-pushed by handsfreeStep)
+    if (handsfreeHistory.length > 0) {
+      var prev = handsfreeHistory.pop();
+      handsfreeIndex = prev.index;
+      handsfreeExercise = prev.exercise;
+    }
+    // If history is empty we just replay the current/first exercise (index unchanged)
     handsfreeStep();
   }
 
@@ -622,6 +628,7 @@
     handsfreeIndex = 0;
     handsfreeExercise = 'main';
     handsfreePaused = false;
+    handsfreeHistory = [];
     if (handsfreePhrases.length === 0) return;
     initAudio(); // create AudioContext on user gesture (tap)
     handsfreeActive = true;
@@ -631,11 +638,10 @@
     handsfreeStep();
   }
 
-  // Reusable countdown: shows the ring, calls onDone when it hits 0
+  // Reusable countdown: ring stays visible at all times, calls onDone when it hits 0
   function startCountdown(seconds, label, onDone) {
     if (!handsfreeActive) return;
     $('handsfree-phase').textContent = label;
-    show($('handsfree-countdown'));
     var remaining = seconds;
     $('handsfree-countdown-num').textContent = remaining;
     handsfreeCountdownId = setInterval(function () {
@@ -645,18 +651,23 @@
       if (remaining <= 0) {
         clearInterval(handsfreeCountdownId);
         handsfreeCountdownId = null;
-        hide($('handsfree-countdown'));
         onDone();
       }
     }, 1000);
   }
 
-  // Recursive French readings — checks handsfreeReadTarget live so ×5 works mid-exercise
+  // Show ♪ in countdown ring to indicate speech is playing
+  function showSpeakingIndicator(label) {
+    if (label) $('handsfree-phase').textContent = label;
+    $('handsfree-countdown-num').textContent = '♪';
+  }
+
+  // Recursive French readings — checks handsfreeReadTarget live so ×6 works mid-exercise
   function doFrenchReads(frenchText, readNum, onDone) {
     if (!handsfreeActive) return;
-    $('handsfree-phase').textContent = 'Répétez !';
     playDing('fr', function () {
       if (!handsfreeActive) return;
+      showSpeakingIndicator('Répétez !');
       speakFrenchCb(frenchText, function () {
         if (!handsfreeActive) return;
         handsfreeLastReadNum = readNum; // record completed read
@@ -687,9 +698,9 @@
       return;
     }
 
-    // Save as "previous" so skip-back can return here
-    handsfreePrevIndex = handsfreeIndex;
-    handsfreePrevExercise = handsfreeExercise;
+    // Push current state to history for multi-step skip-back
+    handsfreeHistory.push({ index: handsfreeIndex, exercise: handsfreeExercise });
+    if (handsfreeHistory.length > 30) handsfreeHistory.shift(); // cap history
 
     // Reset per-exercise state
     handsfreeReadTarget = 3;
@@ -710,43 +721,40 @@
     }
 
     // Phase 1: show both English and French immediately, EN beep, speak English
-    $('handsfree-phase').textContent = 'Écoutez en anglais…';
     $('handsfree-english').textContent = englishText;
     $('handsfree-french').textContent = frenchText;
     show($('handsfree-english-card'));
     show($('handsfree-french-area'));
-    hide($('handsfree-countdown'));
     incrementHfSeen(p.id);
+    showSpeakingIndicator('Écoutez en anglais…');
 
     playDing('en', function () {
       if (!handsfreeActive) return;
       speakEnglish(englishText, function () {
         if (!handsfreeActive) return;
 
-        // 2s pause, then 9s thinking countdown
-        handsfreeTimerId = setTimeout(function () {
+        // 2s countdown after English, then 9s thinking countdown
+        handsfreeCurrentFrench = frenchText;
+        var advanceFn = function () {
           if (!handsfreeActive) return;
-          handsfreeCurrentFrench = frenchText;
-          var advanceFn = function () {
-            if (!handsfreeActive) return;
-            handsfreeFinalPause = true;
-            $('handsfree-phase').textContent = 'Suivant…';
-            handsfreeTimerId = setTimeout(function () {
-              handsfreeFinalPause = false;
-              if (handsfreeExercise === 'main' && p.alt_usage) {
-                handsfreeExercise = 'alt';
-              } else {
-                handsfreeExercise = 'main';
-                handsfreeIndex++;
-              }
-              handsfreeStep();
-            }, 8000);
-          };
-          handsfreeCurrentReadsDoneCallback = advanceFn;
+          handsfreeFinalPause = true;
+          startCountdown(8, 'Suivant…', function () {
+            handsfreeFinalPause = false;
+            if (handsfreeExercise === 'main' && p.alt_usage) {
+              handsfreeExercise = 'alt';
+            } else {
+              handsfreeExercise = 'main';
+              handsfreeIndex++;
+            }
+            handsfreeStep();
+          });
+        };
+        handsfreeCurrentReadsDoneCallback = advanceFn;
+        startCountdown(2, 'Écoutez en anglais…', function () {
           startCountdown(9, 'Rappelez-vous…', function () {
             doFrenchReads(frenchText, 1, advanceFn);
           });
-        }, 2000);
+        });
       });
     });
   }
@@ -922,8 +930,8 @@
         // If we're in the 8s final pause, cancel it and do more reads
         if (handsfreeFinalPause && handsfreeCurrentFrench && handsfreeCurrentReadsDoneCallback) {
           handsfreeFinalPause = false;
-          clearTimeout(handsfreeTimerId);
-          handsfreeTimerId = null;
+          if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
+          if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
           doFrenchReads(handsfreeCurrentFrench, handsfreeLastReadNum + 1, handsfreeCurrentReadsDoneCallback);
         }
       }
