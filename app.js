@@ -22,6 +22,8 @@
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
   var handsfreeExercise = 'main'; // 'main' or 'alt'
+  var handsfreePrevIndex = 0;
+  var handsfreePrevExercise = 'main';
   var handsfreeReadTarget = 3;          // 3 or 6, reset per exercise
   var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
   var handsfreeCurrentFrench = '';      // frenchText of current exercise
@@ -563,14 +565,19 @@
     }
   }
 
-  function stopHandsfree() {
-    handsfreeActive = false;
-    handsfreePaused = false;
-    handsfreeFinalPause = false;
-    handsfreeLastReadNum = 0;
+  // Shared cancellation — stops speech, timers, and final-pause flag
+  function cancelCurrentStep() {
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
+    handsfreeFinalPause = false;
+    handsfreeLastReadNum = 0;
+  }
+
+  function stopHandsfree() {
+    handsfreeActive = false;
+    handsfreePaused = false;
+    cancelCurrentStep();
     releaseWakeLock();
     updateHomeScreen();
     showScreen('screen-home');
@@ -578,9 +585,7 @@
 
   function pauseHandsfree() {
     handsfreePaused = true;
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-    if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
-    if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
+    cancelCurrentStep();
     $('handsfree-phase').textContent = 'En pause…';
     $('btn-handsfree-pause').textContent = '▶ Reprendre';
   }
@@ -589,6 +594,27 @@
     handsfreePaused = false;
     $('btn-handsfree-pause').textContent = '⏸ Pause';
     handsfreeStep(); // replays current exercise from the start
+  }
+
+  function skipNextHandsfree() {
+    if (!handsfreeActive) return;
+    cancelCurrentStep();
+    var p = handsfreePhrases[handsfreeIndex];
+    if (handsfreeExercise === 'main' && p && p.alt_usage) {
+      handsfreeExercise = 'alt';
+    } else {
+      handsfreeExercise = 'main';
+      handsfreeIndex++;
+    }
+    handsfreeStep();
+  }
+
+  function skipPrevHandsfree() {
+    if (!handsfreeActive) return;
+    cancelCurrentStep();
+    handsfreeIndex = handsfreePrevIndex;
+    handsfreeExercise = handsfreePrevExercise;
+    handsfreeStep();
   }
 
   function startHandsfree() {
@@ -660,6 +686,10 @@
       showScreen('screen-acquis-done');
       return;
     }
+
+    // Save as "previous" so skip-back can return here
+    handsfreePrevIndex = handsfreeIndex;
+    handsfreePrevExercise = handsfreeExercise;
 
     // Reset per-exercise state
     handsfreeReadTarget = 3;
@@ -873,6 +903,9 @@
         pauseHandsfree();
       }
     });
+
+    $('btn-handsfree-prev').addEventListener('click', skipPrevHandsfree);
+    $('btn-handsfree-next').addEventListener('click', skipNextHandsfree);
 
     $('btn-handsfree-six').addEventListener('click', function () {
       var btn = $('btn-handsfree-six');

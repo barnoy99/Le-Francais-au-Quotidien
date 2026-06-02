@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
   <div id="app">
@@ -23,20 +23,32 @@
         <p class="splash-subtitle">Les tournures idiomatiques du quotidien</p>
         <div class="home-buttons">
           <button id="btn-apprentissage" class="btn-home btn-home--primary">
-            <span class="btn-home-label">Apprentissage</span>
-            <span class="btn-home-sub">Répétition espacée</span>
+            <div class="btn-home-text">
+              <span class="btn-home-label">Apprentissage</span>
+              <span class="btn-home-sub">Répétition espacée</span>
+            </div>
+            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </button>
           <button id="btn-acquis" class="btn-home btn-home--secondary" disabled>
-            <span class="btn-home-label">Mes Acquis <span id="acquis-count" class="btn-home-count">(0)</span></span>
-            <span class="btn-home-sub">Pratique de rappel</span>
+            <div class="btn-home-text">
+              <span class="btn-home-label">Mes Acquis <span id="acquis-count" class="btn-home-count">(0)</span></span>
+              <span class="btn-home-sub">Pratique de rappel</span>
+            </div>
+            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </button>
           <button id="btn-handsfree" class="btn-home btn-home--tertiary" disabled>
-            <span class="btn-home-label">Mains Libres <span id="handsfree-count" class="btn-home-count">(0)</span></span>
-            <span class="btn-home-sub">Écoute sans les mains</span>
+            <div class="btn-home-text">
+              <span class="btn-home-label">Mains Libres <span id="handsfree-count" class="btn-home-count">(0)</span></span>
+              <span class="btn-home-sub">Écoute sans les mains</span>
+            </div>
+            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
           </button>
           <button id="btn-chercher" class="btn-home btn-home--quaternary">
-            <span class="btn-home-label">Chercher</span>
-            <span class="btn-home-sub">Parcourir &amp; supprimer</span>
+            <div class="btn-home-text">
+              <span class="btn-home-label">Chercher</span>
+              <span class="btn-home-sub">Parcourir &amp; supprimer</span>
+            </div>
+            <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </button>
         </div>
       </div>
@@ -60,21 +72,13 @@
         <div class="phrase-divider">✦</div>
 
         <div id="rating-buttons" class="rating-buttons">
-          <button class="rating-btn rating-mastered" data-level="4">
+          <button class="rating-btn rating-known" data-level="4">
             <span class="rating-icon">✦</span>
-            <span class="rating-label">Trop facile</span>
+            <span class="rating-label">Déjà connu</span>
           </button>
-          <button class="rating-btn rating-familiar" data-level="3">
-            <span class="rating-icon">◆</span>
-            <span class="rating-label">Bien connu</span>
-          </button>
-          <button class="rating-btn rating-learning" data-level="2">
-            <span class="rating-icon">◇</span>
-            <span class="rating-label">Pas encore</span>
-          </button>
-          <button class="rating-btn rating-new" data-level="1">
+          <button class="rating-btn rating-unknown" data-level="1">
             <span class="rating-icon">○</span>
-            <span class="rating-label">Jamais vu</span>
+            <span class="rating-label">Pas encore</span>
           </button>
         </div>
 
@@ -182,11 +186,12 @@
     <section id="screen-handsfree" class="screen">
       <div class="phrase-header">
         <button id="btn-handsfree-home" class="btn-text">Arrêter</button>
-        <span id="handsfree-counter" class="session-counter"></span>
-        <div class="handsfree-header-right">
-          <button id="btn-handsfree-six" class="btn-handsfree-six">×6</button>
-          <button id="btn-handsfree-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        <div class="handsfree-skip-row">
+          <button id="btn-handsfree-prev" class="btn-skip" aria-label="Précédent">⏮</button>
+          <span id="handsfree-counter" class="session-counter"></span>
+          <button id="btn-handsfree-next" class="btn-skip" aria-label="Suivant">⏭</button>
         </div>
+        <button id="btn-handsfree-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
       </div>
       <div class="phrase-content handsfree-content">
         <p id="handsfree-phase" class="handsfree-phase"></p>
@@ -203,6 +208,7 @@
         </div>
         <div class="handsfree-pause-wrap">
           <button id="btn-handsfree-pause" class="btn-handsfree-pause">⏸ Pause</button>
+          <button id="btn-handsfree-six" class="btn-handsfree-six">×6</button>
         </div>
       </div>
     </section>
@@ -248,6 +254,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=4"></script>
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>
