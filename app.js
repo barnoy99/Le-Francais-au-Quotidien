@@ -22,7 +22,11 @@
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
   var handsfreeExercise = 'main'; // 'main' or 'alt'
-  var handsfreeReadTarget = 3;    // 3 or 5, reset per exercise
+  var handsfreeReadTarget = 3;          // 3 or 6, reset per exercise
+  var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
+  var handsfreeCurrentFrench = '';      // frenchText of current exercise
+  var handsfreeLastReadNum = 0;         // last completed read number
+  var handsfreeCurrentReadsDoneCallback = null; // onDone ref for re-entry from ×6
   var handsfreeTimerId = null;
   var handsfreeCountdownId = null;
   var wakeLock = null;
@@ -562,6 +566,8 @@
   function stopHandsfree() {
     handsfreeActive = false;
     handsfreePaused = false;
+    handsfreeFinalPause = false;
+    handsfreeLastReadNum = 0;
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
@@ -627,6 +633,7 @@
       if (!handsfreeActive) return;
       speakFrenchCb(frenchText, function () {
         if (!handsfreeActive) return;
+        handsfreeLastReadNum = readNum; // record completed read
         if (readNum >= handsfreeReadTarget) {
           onDone();
         } else {
@@ -638,11 +645,11 @@
     });
   }
 
-  function updateFiveButton() {
-    var btn = $('btn-handsfree-five');
+  function updateSixButton() {
+    var btn = $('btn-handsfree-six');
     if (!btn) return;
-    btn.disabled = false;
-    btn.style.opacity = '';
+    btn.classList.remove('activated');
+    btn.textContent = '×6';
   }
 
   function handsfreeStep() {
@@ -656,7 +663,9 @@
 
     // Reset per-exercise state
     handsfreeReadTarget = 3;
-    updateFiveButton();
+    handsfreeFinalPause = false;
+    handsfreeLastReadNum = 0;
+    updateSixButton();
 
     var p = handsfreePhrases[handsfreeIndex];
     $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
@@ -687,22 +696,25 @@
         // 2s pause, then 9s thinking countdown
         handsfreeTimerId = setTimeout(function () {
           if (!handsfreeActive) return;
+          handsfreeCurrentFrench = frenchText;
+          var advanceFn = function () {
+            if (!handsfreeActive) return;
+            handsfreeFinalPause = true;
+            $('handsfree-phase').textContent = 'Suivant…';
+            handsfreeTimerId = setTimeout(function () {
+              handsfreeFinalPause = false;
+              if (handsfreeExercise === 'main' && p.alt_usage) {
+                handsfreeExercise = 'alt';
+              } else {
+                handsfreeExercise = 'main';
+                handsfreeIndex++;
+              }
+              handsfreeStep();
+            }, 8000);
+          };
+          handsfreeCurrentReadsDoneCallback = advanceFn;
           startCountdown(9, 'Rappelez-vous…', function () {
-            // French readings (3 or 5 depending on button)
-            doFrenchReads(frenchText, 1, function () {
-              if (!handsfreeActive) return;
-              // 8s final pause then advance
-              $('handsfree-phase').textContent = 'Suivant…';
-              handsfreeTimerId = setTimeout(function () {
-                if (handsfreeExercise === 'main' && p.alt_usage) {
-                  handsfreeExercise = 'alt';
-                } else {
-                  handsfreeExercise = 'main';
-                  handsfreeIndex++;
-                }
-                handsfreeStep();
-              }, 8000);
-            });
+            doFrenchReads(frenchText, 1, advanceFn);
           });
         }, 2000);
       });
@@ -862,10 +874,26 @@
       }
     });
 
-    $('btn-handsfree-five').addEventListener('click', function () {
-      handsfreeReadTarget = 5;
-      this.disabled = true;
-      this.style.opacity = '0.4';
+    $('btn-handsfree-six').addEventListener('click', function () {
+      var btn = $('btn-handsfree-six');
+      if (btn.classList.contains('activated')) {
+        // Cancel — stop after current read
+        handsfreeReadTarget = Math.max(3, handsfreeLastReadNum + 1);
+        btn.classList.remove('activated');
+        btn.textContent = '×6';
+      } else {
+        // Activate — extend to 6 (or 3 more from wherever we are)
+        handsfreeReadTarget = Math.max(6, handsfreeLastReadNum + 3);
+        btn.classList.add('activated');
+        btn.textContent = 'Annuler ×6';
+        // If we're in the 8s final pause, cancel it and do more reads
+        if (handsfreeFinalPause && handsfreeCurrentFrench && handsfreeCurrentReadsDoneCallback) {
+          handsfreeFinalPause = false;
+          clearTimeout(handsfreeTimerId);
+          handsfreeTimerId = null;
+          doFrenchReads(handsfreeCurrentFrench, handsfreeLastReadNum + 1, handsfreeCurrentReadsDoneCallback);
+        }
+      }
     });
 
     // Acquis mode buttons

@@ -211,7 +211,7 @@ ul {
 
 .phrase-french {
   font-family: var(--font-heading);
-  font-size: 1.95rem;
+  font-size: 2.3rem;
   font-style: italic;
   font-weight: 500;
   line-height: 1.5;
@@ -378,7 +378,7 @@ ul {
 }
 
 .btn-text {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--text-secondary);
   padding: 0.5rem 0.75rem;
   min-height: 44px;
@@ -868,7 +868,9 @@ ul {
    ============================================================ */
 
 .handsfree-content {
-  justify-content: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .handsfree-phase {
@@ -934,22 +936,34 @@ ul {
   border-color: var(--color-amber);
 }
 
-.btn-handsfree-five {
-  font-family: var(--font-heading);
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-amber);
-  border: 2px solid var(--color-amber-light);
-  border-radius: var(--radius-pill);
-  padding: 0.6rem 1.4rem;
-  background: var(--bg-card);
-  letter-spacing: 0.03em;
-  transition: background 0.15s ease, border-color 0.15s ease;
+.handsfree-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-.btn-handsfree-five:active:not(:disabled) {
-  background: var(--color-amber-light);
+.btn-handsfree-six {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-amber);
+  border: 1.5px solid var(--color-amber-light);
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.85rem;
+  background: var(--bg-card);
+  min-height: 36px;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-handsfree-six.activated {
+  background: var(--color-amber);
+  color: #fff;
   border-color: var(--color-amber);
+}
+
+.btn-handsfree-six:active {
+  opacity: 0.85;
 }
 
 /* ============================================================
