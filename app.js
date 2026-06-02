@@ -22,6 +22,7 @@
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
   var handsfreeExercise = 'main'; // 'main' or 'alt'
+  var handsfreeReadTarget = 3;    // 3 or 5, reset per exercise
   var handsfreeTimerId = null;
   var handsfreeCountdownId = null;
   var wakeLock = null;
@@ -598,6 +599,52 @@
     handsfreeStep();
   }
 
+  // Reusable countdown: shows the ring, calls onDone when it hits 0
+  function startCountdown(seconds, label, onDone) {
+    if (!handsfreeActive) return;
+    $('handsfree-phase').textContent = label;
+    show($('handsfree-countdown'));
+    var remaining = seconds;
+    $('handsfree-countdown-num').textContent = remaining;
+    handsfreeCountdownId = setInterval(function () {
+      if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
+      remaining--;
+      $('handsfree-countdown-num').textContent = remaining;
+      if (remaining <= 0) {
+        clearInterval(handsfreeCountdownId);
+        handsfreeCountdownId = null;
+        hide($('handsfree-countdown'));
+        onDone();
+      }
+    }, 1000);
+  }
+
+  // Recursive French readings — checks handsfreeReadTarget live so ×5 works mid-exercise
+  function doFrenchReads(frenchText, readNum, onDone) {
+    if (!handsfreeActive) return;
+    $('handsfree-phase').textContent = 'Répétez !';
+    playDing('fr', function () {
+      if (!handsfreeActive) return;
+      speakFrenchCb(frenchText, function () {
+        if (!handsfreeActive) return;
+        if (readNum >= handsfreeReadTarget) {
+          onDone();
+        } else {
+          startCountdown(7, 'Encore…', function () {
+            doFrenchReads(frenchText, readNum + 1, onDone);
+          });
+        }
+      });
+    });
+  }
+
+  function updateFiveButton() {
+    var btn = $('btn-handsfree-five');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.style.opacity = '';
+  }
+
   function handsfreeStep() {
     if (!handsfreeActive) return;
     if (handsfreeIndex >= handsfreePhrases.length) {
@@ -606,10 +653,14 @@
       showScreen('screen-acquis-done');
       return;
     }
+
+    // Reset per-exercise state
+    handsfreeReadTarget = 3;
+    updateFiveButton();
+
     var p = handsfreePhrases[handsfreeIndex];
     $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
 
-    // Determine which exercise: main phrase or alt_usage
     var englishText, frenchText;
     if (handsfreeExercise === 'main') {
       englishText = p.en;
@@ -619,86 +670,41 @@
       frenchText = p.alt_usage || '';
     }
 
-    // Phase 1: EN beep → show English → speak English
+    // Phase 1: show both English and French immediately, EN beep, speak English
     $('handsfree-phase').textContent = 'Écoutez en anglais…';
     $('handsfree-english').textContent = englishText;
+    $('handsfree-french').textContent = frenchText;
     show($('handsfree-english-card'));
+    show($('handsfree-french-area'));
     hide($('handsfree-countdown'));
-    hide($('handsfree-french-area'));
+    incrementHfSeen(p.id);
 
     playDing('en', function () {
       if (!handsfreeActive) return;
       speakEnglish(englishText, function () {
         if (!handsfreeActive) return;
 
-        // 2s pause after English before countdown
+        // 2s pause, then 9s thinking countdown
         handsfreeTimerId = setTimeout(function () {
           if (!handsfreeActive) return;
-
-        // Phase 2: 9-second countdown
-        $('handsfree-phase').textContent = 'Rappelez-vous…';
-        show($('handsfree-countdown'));
-        var remaining = 9;
-        $('handsfree-countdown-num').textContent = remaining;
-
-        handsfreeCountdownId = setInterval(function () {
-          if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
-          remaining--;
-          $('handsfree-countdown-num').textContent = remaining;
-          if (remaining <= 0) {
-            clearInterval(handsfreeCountdownId);
-            handsfreeCountdownId = null;
-            hide($('handsfree-countdown'));
-
-            // Phase 3: FR beep → reveal French → speak French (1st)
-            playDing('fr', function () {
+          startCountdown(9, 'Rappelez-vous…', function () {
+            // French readings (3 or 5 depending on button)
+            doFrenchReads(frenchText, 1, function () {
               if (!handsfreeActive) return;
-              $('handsfree-phase').textContent = 'Réponse';
-              $('handsfree-french').textContent = frenchText;
-              show($('handsfree-french-area'));
-              incrementHfSeen(p.id);
-
-              speakFrenchCb(frenchText, function () {
-                if (!handsfreeActive) return;
-
-                // Phase 4: 6.5s pause → FR beep → speak French (2nd)
-                handsfreeTimerId = setTimeout(function () {
-                  if (!handsfreeActive) return;
-                  playDing('fr', function () {
-                    if (!handsfreeActive) return;
-                    speakFrenchCb(frenchText, function () {
-                      if (!handsfreeActive) return;
-
-                      // Phase 5: 6.5s pause → FR beep → speak French (3rd)
-                      handsfreeTimerId = setTimeout(function () {
-                        if (!handsfreeActive) return;
-                        playDing('fr', function () {
-                          if (!handsfreeActive) return;
-                          speakFrenchCb(frenchText, function () {
-                            if (!handsfreeActive) return;
-
-                            // Phase 6: 7s pause → advance
-                            handsfreeTimerId = setTimeout(function () {
-                              if (handsfreeExercise === 'main' && p.alt_usage) {
-                                handsfreeExercise = 'alt';
-                              } else {
-                                handsfreeExercise = 'main';
-                                handsfreeIndex++;
-                              }
-                              handsfreeStep();
-                            }, 8000);
-                          });
-                        });
-                      }, 7500);
-                    });
-                  });
-                }, 7500);
-              });
+              // 8s final pause then advance
+              $('handsfree-phase').textContent = 'Suivant…';
+              handsfreeTimerId = setTimeout(function () {
+                if (handsfreeExercise === 'main' && p.alt_usage) {
+                  handsfreeExercise = 'alt';
+                } else {
+                  handsfreeExercise = 'main';
+                  handsfreeIndex++;
+                }
+                handsfreeStep();
+              }, 8000);
             });
-          }
-        }, 1000);
-
-        }, 2000); // end 2s post-English pause
+          });
+        }, 2000);
       });
     });
   }
@@ -854,6 +860,12 @@
       } else {
         pauseHandsfree();
       }
+    });
+
+    $('btn-handsfree-five').addEventListener('click', function () {
+      handsfreeReadTarget = 5;
+      this.disabled = true;
+      this.style.opacity = '0.4';
     });
 
     // Acquis mode buttons

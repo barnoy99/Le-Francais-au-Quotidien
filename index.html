@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
   <div id="app">
@@ -190,16 +190,17 @@
         <div id="handsfree-english-card" class="acquis-prompt-card">
           <p id="handsfree-english" class="acquis-english"></p>
         </div>
-        <div id="handsfree-countdown" class="handsfree-countdown hidden">
-          <span id="handsfree-countdown-num" class="handsfree-countdown-num"></span>
-        </div>
         <div id="handsfree-french-area" class="hidden">
           <div class="acquis-french-card">
             <p id="handsfree-french" class="phrase-french"></p>
           </div>
         </div>
+        <div id="handsfree-countdown" class="handsfree-countdown hidden">
+          <span id="handsfree-countdown-num" class="handsfree-countdown-num"></span>
+        </div>
         <div class="handsfree-pause-wrap">
           <button id="btn-handsfree-pause" class="btn-handsfree-pause">⏸ Pause</button>
+          <button id="btn-handsfree-five" class="btn-handsfree-five">×5</button>
         </div>
       </div>
     </section>
@@ -245,6 +246,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=4"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

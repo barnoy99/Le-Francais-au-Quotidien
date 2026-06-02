@@ -9,7 +9,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 17px;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -211,7 +211,7 @@ ul {
 
 .phrase-french {
   font-family: var(--font-heading);
-  font-size: 1.7rem;
+  font-size: 1.95rem;
   font-style: italic;
   font-weight: 500;
   line-height: 1.5;
@@ -752,7 +752,7 @@ ul {
 
 .btn-home-label {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--text-heading);
 }
@@ -764,7 +764,7 @@ ul {
 }
 
 .btn-home-sub {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
   margin-top: 0.2rem;
 }
@@ -786,7 +786,7 @@ ul {
 }
 
 .acquis-english {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   line-height: 1.6;
   color: var(--text-primary);
   font-weight: 500;
@@ -858,7 +858,7 @@ ul {
 .acquis-alt-text {
   font-family: var(--font-heading);
   font-style: italic;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   line-height: 1.5;
   color: var(--color-accent);
 }
@@ -873,7 +873,7 @@ ul {
 
 .handsfree-phase {
   font-family: var(--font-heading);
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 500;
   color: var(--color-amber);
   text-align: center;
@@ -911,6 +911,8 @@ ul {
 .handsfree-pause-wrap {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
   margin-top: 2rem;
 }
 
@@ -932,6 +934,24 @@ ul {
   border-color: var(--color-amber);
 }
 
+.btn-handsfree-five {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-amber);
+  border: 2px solid var(--color-amber-light);
+  border-radius: var(--radius-pill);
+  padding: 0.6rem 1.4rem;
+  background: var(--bg-card);
+  letter-spacing: 0.03em;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-handsfree-five:active:not(:disabled) {
+  background: var(--color-amber-light);
+  border-color: var(--color-amber);
+}
+
 /* ============================================================
    REDUCED MOTION
    ============================================================ */
@@ -949,7 +969,7 @@ ul {
    ============================================================ */
 
 @media (min-width: 600px) {
-  html { font-size: 17px; }
+  html { font-size: 18px; }
   .screen { padding: 1.5rem 2rem 2.5rem; }
   .splash-title { font-size: 3.2rem; }
 }
@@ -1004,12 +1024,12 @@ ul {
 .chercher-fr {
   font-family: var(--font-heading);
   font-style: italic;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   color: var(--text-primary);
 }
 
 .chercher-en {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--text-secondary);
   margin-top: 0.2rem;
 }
