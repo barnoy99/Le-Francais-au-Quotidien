@@ -26,7 +26,6 @@
   var handsfreeCountdownId = null;
   var wakeLock = null;
   var audioCtx = null;
-  var silentSource = null;
   var db = null;
   var DB_PATH = 'progress/user1';
 
@@ -520,55 +519,6 @@
     }
   }
 
-  // Keeps the Web Audio session alive while the screen is locked,
-  // which allows speech synthesis to continue through lock screen.
-  function keepAudioAlive() {
-    if (!audioCtx || silentSource) return;
-    var buffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
-    silentSource = audioCtx.createBufferSource();
-    silentSource.buffer = buffer;
-    silentSource.loop = true;
-    var gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.001; // near-silent, not zero (zero can be optimised away)
-    silentSource.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    silentSource.start();
-  }
-
-  function stopKeepingAudioAlive() {
-    if (silentSource) {
-      try { silentSource.stop(); silentSource.disconnect(); } catch (e) {}
-      silentSource = null;
-    }
-  }
-
-  // Registers with the OS as a media player so Android shows lock-screen
-  // controls and doesn't suspend the tab.
-  function setupMediaSession(playing) {
-    if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: 'Mains Libres',
-      artist: 'Le Français au Quotidien',
-      album: 'Pratique'
-    });
-    navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-    navigator.mediaSession.setActionHandler('play', function () {
-      if (handsfreePaused) resumeHandsfree();
-    });
-    navigator.mediaSession.setActionHandler('pause', function () {
-      if (!handsfreePaused) pauseHandsfree();
-    });
-    navigator.mediaSession.setActionHandler('stop', stopHandsfree);
-  }
-
-  function clearMediaSession() {
-    if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.playbackState = 'none';
-    navigator.mediaSession.setActionHandler('play', null);
-    navigator.mediaSession.setActionHandler('pause', null);
-    navigator.mediaSession.setActionHandler('stop', null);
-  }
-
   function playDing(type, cb) {
     if (!audioCtx) { if (cb) cb(); return; }
     try {
@@ -614,8 +564,6 @@
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
-    stopKeepingAudioAlive();
-    clearMediaSession();
     releaseWakeLock();
     updateHomeScreen();
     showScreen('screen-home');
@@ -628,13 +576,11 @@
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
     $('handsfree-phase').textContent = 'En pause…';
     $('btn-handsfree-pause').textContent = '▶ Reprendre';
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   }
 
   function resumeHandsfree() {
     handsfreePaused = false;
     $('btn-handsfree-pause').textContent = '⏸ Pause';
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     handsfreeStep(); // replays current exercise from the start
   }
 
@@ -645,10 +591,8 @@
     handsfreePaused = false;
     if (handsfreePhrases.length === 0) return;
     initAudio(); // create AudioContext on user gesture (tap)
-    keepAudioAlive();
     handsfreeActive = true;
     $('btn-handsfree-pause').textContent = '⏸ Pause';
-    setupMediaSession(true);
     requestWakeLock();
     showScreen('screen-handsfree');
     handsfreeStep();
