@@ -215,7 +215,7 @@ ul {
 
 .phrase-french {
   font-family: var(--font-heading);
-  font-size: 4.2rem;
+  font-size: 4.7rem;
   font-style: italic;
   font-weight: 500;
   line-height: 1.5;
@@ -795,7 +795,7 @@ ul {
 }
 
 .acquis-english {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   line-height: 1.35;
   color: var(--text-primary);
   font-weight: 500;
