@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=24">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
   <div id="app">
@@ -59,7 +59,10 @@
       <div class="phrase-header">
         <button id="btn-phrase-home" class="btn-text">Accueil</button>
         <span id="session-counter" class="session-counter"></span>
-        <button id="btn-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        <div style="display:flex;align-items:center;gap:0.25rem">
+          <button id="btn-phrase-delete" class="btn-delete" aria-label="Supprimer">🗑</button>
+          <button id="btn-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        </div>
       </div>
 
       <div class="phrase-content">
@@ -143,7 +146,10 @@
       <div class="phrase-header">
         <button id="btn-acquis-home" class="btn-text">Accueil</button>
         <span id="acquis-counter" class="session-counter"></span>
-        <button id="btn-acquis-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        <div style="display:flex;align-items:center;gap:0.25rem">
+          <button id="btn-acquis-delete" class="btn-delete" aria-label="Supprimer">🗑</button>
+          <button id="btn-acquis-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        </div>
       </div>
       <div class="phrase-content">
         <p id="acquis-context" class="phrase-context"></p>
@@ -191,7 +197,10 @@
           <span id="handsfree-counter" class="session-counter"></span>
           <button id="btn-handsfree-next" class="btn-skip" aria-label="Suivant">⏭</button>
         </div>
-        <button id="btn-handsfree-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        <div style="display:flex;align-items:center;gap:0.25rem">
+          <button id="btn-handsfree-delete" class="btn-delete" aria-label="Supprimer">🗑</button>
+          <button id="btn-handsfree-progress" class="btn-text" aria-label="Voir le progrès">Progrès</button>
+        </div>
       </div>
       <div class="phrase-content handsfree-content">
         <p id="handsfree-phase" class="handsfree-phase"></p>
@@ -254,6 +263,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=4"></script>
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>

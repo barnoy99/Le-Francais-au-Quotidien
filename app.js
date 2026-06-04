@@ -898,6 +898,41 @@
       showScreen('screen-home');
     });
 
+    // Delete buttons (appear in every screen header)
+    $('btn-phrase-delete').addEventListener('click', function () {
+      if (!currentPhrase) return;
+      if (!confirm('Sûr ?')) return;
+      deletePhrase(currentPhrase.id);
+      updateHomeScreen();
+      advance();
+    });
+
+    $('btn-acquis-delete').addEventListener('click', function () {
+      if (!acquisPhrases[acquisIndex]) return;
+      if (!confirm('Sûr ?')) return;
+      var id = acquisPhrases[acquisIndex].id;
+      deletePhrase(id);
+      acquisPhrases.splice(acquisIndex, 1);
+      if (acquisIndex >= acquisPhrases.length) acquisIndex = 0;
+      updateHomeScreen();
+      if (acquisPhrases.length === 0) { showScreen('screen-acquis-done'); return; }
+      showAcquisPhrase();
+    });
+
+    $('btn-handsfree-delete').addEventListener('click', function () {
+      var p = handsfreePhrases[handsfreeIndex];
+      if (!p) return;
+      if (!confirm('Sûr ?')) return;
+      deletePhrase(p.id);
+      handsfreePhrases.splice(handsfreeIndex, 1);
+      updateHomeScreen();
+      if (handsfreePhrases.length === 0) { stopHandsfree(); return; }
+      if (handsfreeIndex >= handsfreePhrases.length) handsfreeIndex = 0;
+      handsfreeExercise = 'main';
+      cancelCurrentStep();
+      handsfreeStep();
+    });
+
     // Handsfree stop
     $('btn-handsfree-home').addEventListener('click', function () {
       stopHandsfree();

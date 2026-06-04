@@ -215,7 +215,7 @@ ul {
 
 .phrase-french {
   font-family: var(--font-heading);
-  font-size: 2.38rem;
+  font-size: 2.1rem;
   font-style: italic;
   font-weight: 500;
   line-height: 1.5;
@@ -401,6 +401,18 @@ ul {
   opacity: 0.7;
 }
 .btn-danger:hover { opacity: 1; }
+
+.btn-delete {
+  font-size: 1.1rem;
+  padding: 0.25rem 0.4rem;
+  min-height: 40px;
+  min-width: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--color-accent);
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+.btn-delete:active { opacity: 1; }
 
 /* ============================================================
    SUMMARY CARD (inline, every 10 phrases)
@@ -827,7 +839,7 @@ ul {
 .acquis-french-card .phrase-french {
   flex: 1;
   text-align: left;
-  font-size: 2.38rem;
+  font-size: 2.1rem;
 }
 
 .btn-tts {
