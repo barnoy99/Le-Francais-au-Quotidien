@@ -101,6 +101,7 @@ ul {
   padding: 1.25rem 1.25rem 2rem;
   transition: opacity 0.3s ease;
   flex-direction: column;
+  position: relative;
 }
 
 .screen--active {
@@ -403,14 +404,18 @@ ul {
 .btn-danger:hover { opacity: 1; }
 
 .btn-delete {
-  font-size: 1.1rem;
-  padding: 0.25rem 0.4rem;
-  min-height: 40px;
-  min-width: 36px;
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  font-size: 1.2rem;
+  padding: 0.4rem 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: var(--radius-sm);
   color: var(--color-accent);
-  opacity: 0.65;
+  opacity: 0.5;
   transition: opacity 0.15s ease;
+  z-index: 5;
 }
 .btn-delete:active { opacity: 1; }
 
