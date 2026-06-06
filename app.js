@@ -901,17 +901,17 @@
     // Delete buttons (appear in every screen header)
     $('btn-phrase-delete').addEventListener('click', function () {
       if (!currentPhrase) return;
-      if (!confirm('Sûr ?')) return;
+      if (!confirm('Supprimer définitivement :\n\n« ' + currentPhrase.fr + ' »')) return;
       deletePhrase(currentPhrase.id);
       updateHomeScreen();
       advance();
     });
 
     $('btn-acquis-delete').addEventListener('click', function () {
-      if (!acquisPhrases[acquisIndex]) return;
-      if (!confirm('Sûr ?')) return;
-      var id = acquisPhrases[acquisIndex].id;
-      deletePhrase(id);
+      var p = acquisPhrases[acquisIndex];
+      if (!p) return;
+      if (!confirm('Supprimer définitivement :\n\n« ' + p.fr + ' »')) return;
+      deletePhrase(p.id);
       acquisPhrases.splice(acquisIndex, 1);
       if (acquisIndex >= acquisPhrases.length) acquisIndex = 0;
       updateHomeScreen();
@@ -922,7 +922,7 @@
     $('btn-handsfree-delete').addEventListener('click', function () {
       var p = handsfreePhrases[handsfreeIndex];
       if (!p) return;
-      if (!confirm('Sûr ?')) return;
+      if (!confirm('Supprimer définitivement :\n\n« ' + p.fr + ' »')) return;
       deletePhrase(p.id);
       handsfreePhrases.splice(handsfreeIndex, 1);
       updateHomeScreen();
