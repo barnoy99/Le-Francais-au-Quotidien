@@ -771,7 +771,11 @@
   function renderChercherResults(query) {
     var q = query.trim().toLowerCase();
     var all = activePhrases();
-    var results = q ? all.filter(function (p) { return p.fr.toLowerCase().indexOf(q) !== -1; }) : all;
+    var results = q ? all.filter(function (p) {
+      if (p.fr && p.fr.toLowerCase().indexOf(q) !== -1) return true;
+      if (p.alt_usage && p.alt_usage.toLowerCase().indexOf(q) !== -1) return true;
+      return false;
+    }) : all;
 
     $('chercher-count').textContent = results.length + ' expression' + (results.length !== 1 ? 's' : '');
 
