@@ -1098,15 +1098,7 @@
     sessionSeen++;
     if (wasNew) sessionNew++;
 
-    // check if summary time
-    if (sessionSeen > 0 && sessionSeen % SUMMARY_INTERVAL === 0) {
-      setTimeout(function () {
-        revealTranslation();
-        setTimeout(function () { showSummary(); }, 1200);
-      }, 300);
-    } else {
-      setTimeout(function () { revealTranslation(); }, 300);
-    }
+    setTimeout(function () { revealTranslation(); }, 300);
   }
 
   // ── Init ──────────────────────────────────────────────
