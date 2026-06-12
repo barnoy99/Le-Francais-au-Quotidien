@@ -177,7 +177,6 @@ ul {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 0.75rem;
-  padding-right: 3rem; /* clear space for the absolute-positioned delete button */
 }
 
 .session-counter {
@@ -405,20 +404,17 @@ ul {
 .btn-danger:hover { opacity: 1; }
 
 .btn-delete {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: transparent;
   color: var(--text-secondary);
   opacity: 0.45;
+  flex-shrink: 0;
   transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.12s ease;
-  z-index: 5;
 }
 
 .btn-delete svg {
@@ -919,6 +915,11 @@ ul {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 7rem; /* space for fixed pause/×6 bar */
+}
+
+/* Acquis also has a fixed ×6 bar at the bottom */
+#screen-acquis .phrase-content {
+  padding-bottom: 7rem;
 }
 
 .handsfree-phase {

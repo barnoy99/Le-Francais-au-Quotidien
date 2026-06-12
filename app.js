@@ -15,6 +15,7 @@
   var lastShownId = null;
   var currentPhrase = null;
   var expandedProgressId = null;
+  var phraseHistory = []; // apprentissage back-navigation stack
   var acquisPhrases = [];
   var acquisIndex = 0;
   var handsfreeActive = false;
@@ -151,7 +152,8 @@
       level: level,
       lastSeen: Date.now(),
       timesSeen: d.timesSeen + 1,
-      hfSeen: d.hfSeen || 0
+      hfSeen: d.hfSeen || 0,
+      boost: d.boost || false
     };
     save();
     return wasNew;
@@ -170,9 +172,36 @@
       level: d.level,
       lastSeen: d.lastSeen,
       timesSeen: d.timesSeen,
-      hfSeen: (d.hfSeen || 0) + 1
+      hfSeen: (d.hfSeen || 0) + 1,
+      boost: d.boost || false
     };
     save();
+  }
+
+  // ── ×6 boost flag (persistent per phrase, covers main + alt) ──
+
+  function isBoosted(id) {
+    return !!(state.phrases[id] && state.phrases[id].boost);
+  }
+
+  function toggleBoost(id) {
+    var d = getPhraseData(id);
+    state.phrases[id] = {
+      level: d.level,
+      lastSeen: d.lastSeen,
+      timesSeen: d.timesSeen,
+      hfSeen: d.hfSeen || 0,
+      boost: !d.boost
+    };
+    save();
+    return state.phrases[id].boost;
+  }
+
+  function findPhraseById(id) {
+    for (var i = 0; i < PHRASES.length; i++) {
+      if (PHRASES[i].id === id) return PHRASES[i];
+    }
+    return null;
   }
 
   // ── Spaced repetition selection ────────────────────────
@@ -280,9 +309,22 @@
       showComplete();
       return;
     }
+    if (currentPhrase) {
+      phraseHistory.push(currentPhrase.id);
+      if (phraseHistory.length > 30) phraseHistory.shift();
+    }
     lastShownId = next.id;
     showScreen('screen-phrase');
     renderPhrase(next);
+  }
+
+  function phrasePrev() {
+    if (phraseHistory.length === 0) return; // nothing to go back to
+    var id = phraseHistory.pop();
+    var p = findPhraseById(id);
+    if (!p) return;
+    lastShownId = p.id;
+    renderPhrase(p);
   }
 
   function showComplete() {
@@ -430,6 +472,31 @@
     return a;
   }
 
+  // Weighted shuffle: boosted (×6) phrases get 2.5× weight, so they
+  // land earlier / more often at the front of each session's order.
+  function weightedShuffle(arr) {
+    var pool = arr.slice();
+    var out = [];
+    while (pool.length > 0) {
+      var total = 0;
+      var weights = [];
+      for (var i = 0; i < pool.length; i++) {
+        var w = isBoosted(pool[i].id) ? 2.5 : 1;
+        weights.push(w);
+        total += w;
+      }
+      var r = Math.random() * total;
+      var acc = 0;
+      var idx = pool.length - 1;
+      for (var i = 0; i < pool.length; i++) {
+        acc += weights[i];
+        if (r < acc) { idx = i; break; }
+      }
+      out.push(pool.splice(idx, 1)[0]);
+    }
+    return out;
+  }
+
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
     var count = mastered.length;
@@ -440,7 +507,7 @@
   }
 
   function startAcquis() {
-    acquisPhrases = shuffle(getMasteredPhrases());
+    acquisPhrases = weightedShuffle(getMasteredPhrases());
     acquisIndex = 0;
     if (acquisPhrases.length === 0) return;
     showAcquisPhrase();
@@ -458,8 +525,18 @@
     $('acquis-french').textContent = p.fr;
     $('acquis-alt').textContent = p.alt_usage || '';
     $('acquis-counter').textContent = (acquisIndex + 1) + ' / ' + acquisPhrases.length;
+    updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
+  }
+
+  function updateAcquisSixButton() {
+    var btn = $('btn-acquis-six');
+    if (!btn) return;
+    var p = acquisPhrases[acquisIndex];
+    var boosted = p ? isBoosted(p.id) : false;
+    btn.classList.toggle('activated', boosted);
+    btn.textContent = boosted ? '×6 ✓' : '×6';
   }
 
   function revealAcquis() {
@@ -624,7 +701,7 @@
   }
 
   function startHandsfree() {
-    handsfreePhrases = shuffle(getMasteredPhrases());
+    handsfreePhrases = weightedShuffle(getMasteredPhrases());
     handsfreeIndex = 0;
     handsfreeExercise = 'main';
     handsfreePaused = false;
@@ -682,11 +759,14 @@
     });
   }
 
+  // Reflects the persistent boost flag of the current phrase
   function updateSixButton() {
     var btn = $('btn-handsfree-six');
     if (!btn) return;
-    btn.classList.remove('activated');
-    btn.textContent = '×6';
+    var p = handsfreePhrases[handsfreeIndex];
+    var boosted = p ? isBoosted(p.id) : false;
+    btn.classList.toggle('activated', boosted);
+    btn.textContent = boosted ? '×6 ✓' : '×6';
   }
 
   function handsfreeStep() {
@@ -702,14 +782,14 @@
     handsfreeHistory.push({ index: handsfreeIndex, exercise: handsfreeExercise });
     if (handsfreeHistory.length > 30) handsfreeHistory.shift(); // cap history
 
-    // Reset per-exercise state
-    handsfreeReadTarget = 3;
+    var p = handsfreePhrases[handsfreeIndex];
+    $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
+
+    // Reset per-exercise state — boosted phrases start at 6 reads
+    handsfreeReadTarget = isBoosted(p.id) ? 6 : 3;
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     updateSixButton();
-
-    var p = handsfreePhrases[handsfreeIndex];
-    $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
 
     var englishText, frenchText;
     if (handsfreeExercise === 'main') {
@@ -952,20 +1032,37 @@
     });
 
     $('btn-handsfree-prev').addEventListener('click', skipPrevHandsfree);
+
+    // Apprentissage prev/next (header)
+    $('btn-phrase-prev').addEventListener('click', phrasePrev);
+    $('btn-phrase-next').addEventListener('click', function () {
+      advance(); // skip without rating
+    });
+
+    // Acquis prev/next (header)
+    $('btn-acquis-prev').addEventListener('click', function () {
+      if (acquisIndex > 0) { acquisIndex--; showAcquisPhrase(); }
+    });
+    $('btn-acquis-next').addEventListener('click', function () {
+      acquisIndex++;
+      showAcquisPhrase();
+    });
+
+    // Acquis ×6 boost toggle
+    $('btn-acquis-six').addEventListener('click', function () {
+      var p = acquisPhrases[acquisIndex];
+      if (!p) return;
+      toggleBoost(p.id);
+      updateAcquisSixButton();
+    });
     $('btn-handsfree-next').addEventListener('click', skipNextHandsfree);
 
     $('btn-handsfree-six').addEventListener('click', function () {
-      var btn = $('btn-handsfree-six');
-      if (btn.classList.contains('activated')) {
-        // Cancel — stop after current read
-        handsfreeReadTarget = Math.max(3, handsfreeLastReadNum + 1);
-        btn.classList.remove('activated');
-        btn.textContent = '×6';
-      } else {
-        // Activate — extend to 6 (or 3 more from wherever we are)
+      var p = handsfreePhrases[handsfreeIndex];
+      if (!p) return;
+      var nowBoosted = toggleBoost(p.id); // persistent — stays until cancelled
+      if (nowBoosted) {
         handsfreeReadTarget = Math.max(6, handsfreeLastReadNum + 3);
-        btn.classList.add('activated');
-        btn.textContent = 'Annuler ×6';
         // If we're in the 8s final pause, cancel it and do more reads
         if (handsfreeFinalPause && handsfreeCurrentFrench && handsfreeCurrentReadsDoneCallback) {
           handsfreeFinalPause = false;
@@ -973,7 +1070,11 @@
           if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
           doFrenchReads(handsfreeCurrentFrench, handsfreeLastReadNum + 1, handsfreeCurrentReadsDoneCallback);
         }
+      } else {
+        // Cancelled — finish the basic 3, or stop after current read if past 3
+        handsfreeReadTarget = handsfreeLastReadNum < 3 ? 3 : handsfreeLastReadNum + 1;
       }
+      updateSixButton();
     });
 
     // Acquis mode buttons
@@ -1022,19 +1123,7 @@
     });
 
     // Progress overlay
-    $('btn-progress').addEventListener('click', function () {
-      expandedProgressId = null;
-      renderProgress();
-      show($('overlay-progress'));
-    });
-
-    $('btn-acquis-progress').addEventListener('click', function () {
-      expandedProgressId = null;
-      renderProgress();
-      show($('overlay-progress'));
-    });
-
-    $('btn-handsfree-progress').addEventListener('click', function () {
+    $('btn-home-progress').addEventListener('click', function () {
       expandedProgressId = null;
       renderProgress();
       show($('overlay-progress'));
