@@ -472,7 +472,7 @@
     return a;
   }
 
-  // Weighted shuffle: boosted (×6) phrases get 2.5× weight, so they
+  // Weighted shuffle: boosted (×6) phrases get 3.5× weight, so they
   // land earlier / more often at the front of each session's order.
   function weightedShuffle(arr) {
     var pool = arr.slice();
@@ -481,7 +481,7 @@
       var total = 0;
       var weights = [];
       for (var i = 0; i < pool.length; i++) {
-        var w = isBoosted(pool[i].id) ? 2.5 : 1;
+        var w = isBoosted(pool[i].id) ? 3.5 : 1;
         weights.push(w);
         total += w;
       }
@@ -500,6 +500,8 @@
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
     var count = mastered.length;
+    var remaining = activePhrases().length - count;
+    $('apprentissage-count').textContent = '(' + remaining + ')';
     $('acquis-count').textContent = '(' + count + ')';
     $('btn-acquis').disabled = count === 0;
     $('handsfree-count').textContent = '(' + count + ')';
