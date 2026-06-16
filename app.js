@@ -276,6 +276,7 @@
 
     hide($('translation-reveal'));
     hide($('summary-card'));
+    hide($('phrase-next-bar'));
     show($('rating-buttons'));
 
     // re-enable rating buttons
@@ -289,6 +290,7 @@
   function revealTranslation() {
     hide($('rating-buttons'));
     show($('translation-reveal'));
+    show($('phrase-next-bar'));
   }
 
   function showSummary() {
@@ -300,6 +302,7 @@
 
     hide($('rating-buttons'));
     hide($('translation-reveal'));
+    hide($('phrase-next-bar'));
     show($('summary-card'));
   }
 
@@ -530,6 +533,7 @@
     updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
+    hide($('btn-suivant'));
   }
 
   function updateAcquisSixButton() {
@@ -544,6 +548,7 @@
   function revealAcquis() {
     hide($('acquis-reveal-area'));
     show($('acquis-revealed'));
+    show($('btn-suivant'));
   }
 
   function speakFrench(text) {
@@ -1102,6 +1107,24 @@
       releaseWakeLock();
       updateHomeScreen();
       showScreen('screen-home');
+    });
+
+    // Acquis keyboard shortcuts (desktop): ← previous, → next, space reveal
+    document.addEventListener('keydown', function (e) {
+      if (!$('screen-acquis').classList.contains('screen--active')) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (acquisIndex > 0) { acquisIndex--; showAcquisPhrase(); }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        acquisIndex++;
+        showAcquisPhrase();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        if ($('acquis-revealed').classList.contains('hidden')) {
+          revealAcquis();
+        }
+      }
     });
 
     // Rating buttons

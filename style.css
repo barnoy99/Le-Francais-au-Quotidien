@@ -180,7 +180,7 @@ ul {
 }
 
 .session-counter {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   font-family: var(--font-heading);
   font-style: italic;
@@ -919,7 +919,97 @@ ul {
 
 /* Acquis also has a fixed ×6 bar at the bottom */
 #screen-acquis .phrase-content {
-  padding-bottom: 7rem;
+  padding-top: 0.75rem;
+  padding-bottom: 5.5rem;
+}
+
+/* Tighter vertical rhythm so the screen fits without scrolling */
+#screen-acquis {
+  padding-bottom: 0.5rem;
+}
+
+#screen-acquis .acquis-prompt-card {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+#screen-acquis .phrase-divider {
+  margin: 0.75rem 0;
+}
+
+#screen-acquis .acquis-french-card {
+  padding: 1rem 1.25rem;
+}
+
+#screen-acquis .acquis-alt-usage {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1.25rem;
+}
+
+#screen-acquis .btn-next {
+  margin-top: 0.75rem;
+}
+
+/* ── Apprentissage: tighter vertical rhythm ── */
+#screen-phrase .phrase-content {
+  padding-top: 0.75rem;
+}
+
+#screen-phrase .phrase-context {
+  margin-bottom: 0.6rem;
+}
+
+#screen-phrase .phrase-card {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+#screen-phrase .phrase-divider {
+  margin: 0.75rem 0;
+}
+
+#screen-phrase .rating-buttons {
+  gap: 0.6rem;
+}
+
+#screen-phrase .rating-btn {
+  padding: 0.9rem 1rem;
+  min-height: 52px;
+}
+
+#screen-phrase .translation-reveal {
+  margin-top: 0.75rem;
+}
+
+#screen-phrase .translation-card {
+  padding: 1rem 1.25rem;
+}
+
+#screen-phrase .btn-next {
+  margin-top: 0.75rem;
+}
+
+/* ── Mains Libres: tighter vertical rhythm ── */
+#screen-handsfree .phrase-content {
+  padding-top: 0.75rem;
+  padding-bottom: 5.5rem;
+}
+
+#screen-handsfree .acquis-prompt-card {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+#screen-handsfree .acquis-french-card {
+  padding: 1rem 1.25rem;
+}
+
+#screen-handsfree .handsfree-phase {
+  margin-bottom: 0.6rem;
+}
+
+#screen-handsfree .handsfree-countdown {
+  margin: 0.75rem 0;
 }
 
 .handsfree-phase {
@@ -972,6 +1062,16 @@ ul {
   padding: 0.75rem 1rem 1.25rem;
   border-top: var(--border-subtle);
   z-index: 10;
+}
+
+/* Primary button docked inside the fixed bottom bar (Acquis "Suivant") */
+.handsfree-pause-wrap .btn-bar {
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+  padding: 0.6rem 2rem;
+  min-height: 44px;
+  font-size: 1.05rem;
 }
 
 .btn-handsfree-pause {

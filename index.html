@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=30">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
   <div id="app">
@@ -91,9 +91,6 @@
           <div class="translation-card">
             <p id="phrase-english" class="phrase-english"></p>
           </div>
-          <div style="display:flex;justify-content:center">
-            <button id="btn-next" class="btn-primary btn-next">Suivant</button>
-          </div>
         </div>
 
         <!-- Inline summary card (every 10 phrases) -->
@@ -120,6 +117,9 @@
             <button id="btn-dismiss-summary" class="btn-text">Continuer</button>
           </div>
         </div>
+      </div>
+      <div id="phrase-next-bar" class="handsfree-pause-wrap hidden">
+        <button id="btn-next" class="btn-primary btn-bar">Suivant</button>
       </div>
     </section>
 
@@ -174,12 +174,10 @@
             <p class="acquis-alt-label">Autre exemple</p>
             <p id="acquis-alt" class="acquis-alt-text"></p>
           </div>
-          <div style="display:flex;justify-content:center">
-            <button id="btn-suivant" class="btn-primary btn-next">Suivant</button>
-          </div>
         </div>
       </div>
       <div class="handsfree-pause-wrap">
+        <button id="btn-suivant" class="btn-primary btn-bar hidden">Suivant</button>
         <button id="btn-acquis-six" class="btn-handsfree-six">×6</button>
       </div>
     </section>
@@ -265,7 +263,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
-  <script src="data.js?v=7"></script>
-  <script src="app.js?v=26"></script>
+  <script src="data.js?v=9"></script>
+  <script src="app.js?v=29"></script>
 </body>
 </html>
