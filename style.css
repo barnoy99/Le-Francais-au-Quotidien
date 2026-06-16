@@ -1064,6 +1064,14 @@ ul {
   z-index: 10;
 }
 
+/* Acquis bar: ×6 on the left, Suivant on the right, spread to the edges of
+   the 540px content column so they're hard to mis-tap. */
+#screen-acquis .handsfree-pause-wrap {
+  justify-content: space-between;
+  padding-left: max(1rem, calc((100% - 540px) / 2 + 1rem));
+  padding-right: max(1rem, calc((100% - 540px) / 2 + 1rem));
+}
+
 /* Primary button docked inside the fixed bottom bar (Acquis "Suivant") */
 .handsfree-pause-wrap .btn-bar {
   width: auto;
