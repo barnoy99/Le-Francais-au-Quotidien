@@ -173,16 +173,15 @@ ul {
    ============================================================ */
 
 .phrase-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   padding-bottom: 0.75rem;
 }
 
-/* Home/Arrêter at the left, the prev/counter/next group centered.
+/* Home/Arrêter at the left; the prev/counter/next group pushed to the right
+   so the forward button sits at the right edge of the screen.
    (Delete now lives in the bottom bar, so the top has room to breathe.) */
-.phrase-header > .btn-text { grid-column: 1; justify-self: start; }
-.phrase-header > .handsfree-skip-row { grid-column: 2; justify-self: center; }
 
 .session-counter {
   font-size: 0.75rem;
@@ -1060,9 +1059,9 @@ ul {
    right — inset to the 540px content column so nothing flies to the corners. */
 .handsfree-pause-wrap {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto auto 1fr;
   align-items: center;
-  column-gap: 0.75rem;
+  column-gap: 0.85rem;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -1074,7 +1073,7 @@ ul {
 }
 
 .handsfree-pause-wrap .bar-left  { grid-column: 1; justify-self: start; }
-.handsfree-pause-wrap .bar-mid   { grid-column: 2; justify-self: center; }
+.handsfree-pause-wrap .bar-mid   { grid-column: 2; justify-self: start; }
 .handsfree-pause-wrap .bar-right { grid-column: 3; justify-self: end; }
 
 /* Primary action button docked inside the fixed bottom bar ("Suivant").
@@ -1084,7 +1083,7 @@ ul {
   width: auto;
   max-width: none;
   margin-top: 0;
-  padding: 0.6rem 1.25rem;
+  padding: 0.65rem 2.75rem;
   min-height: 44px;
   font-size: 1.05rem;
 }
@@ -1111,7 +1110,7 @@ ul {
 .handsfree-skip-row {
   display: flex;
   align-items: center;
-  gap: 1.4rem;
+  gap: 2.5rem;
 }
 
 .btn-skip {
