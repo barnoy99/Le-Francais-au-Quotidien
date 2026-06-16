@@ -276,7 +276,7 @@
 
     hide($('translation-reveal'));
     hide($('summary-card'));
-    hide($('phrase-next-bar'));
+    hide($('btn-next'));
     show($('rating-buttons'));
 
     // re-enable rating buttons
@@ -290,7 +290,7 @@
   function revealTranslation() {
     hide($('rating-buttons'));
     show($('translation-reveal'));
-    show($('phrase-next-bar'));
+    show($('btn-next'));
   }
 
   function showSummary() {
@@ -302,7 +302,7 @@
 
     hide($('rating-buttons'));
     hide($('translation-reveal'));
-    hide($('phrase-next-bar'));
+    hide($('btn-next'));
     show($('summary-card'));
   }
 

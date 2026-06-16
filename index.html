@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=34">
+  <link rel="stylesheet" href="style.css?v=35">
 </head>
 <body>
   <div id="app">
@@ -64,7 +64,6 @@
           <span id="session-counter" class="session-counter"></span>
           <button id="btn-phrase-next" class="btn-skip" aria-label="Suivant">⏭</button>
         </div>
-        <button id="btn-phrase-delete" class="btn-delete" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
 
       <div class="phrase-content">
@@ -118,8 +117,9 @@
           </div>
         </div>
       </div>
-      <div id="phrase-next-bar" class="handsfree-pause-wrap hidden">
-        <button id="btn-next" class="btn-primary btn-bar">Suivant</button>
+      <div id="phrase-next-bar" class="handsfree-pause-wrap">
+        <button id="btn-phrase-delete" class="btn-delete bar-left" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+        <button id="btn-next" class="btn-primary btn-bar bar-right hidden">Suivant</button>
       </div>
     </section>
 
@@ -152,7 +152,6 @@
           <span id="acquis-counter" class="session-counter"></span>
           <button id="btn-acquis-next" class="btn-skip" aria-label="Suivant">⏭</button>
         </div>
-        <button id="btn-acquis-delete" class="btn-delete" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
       <div class="phrase-content">
         <p id="acquis-context" class="phrase-context"></p>
@@ -177,8 +176,9 @@
         </div>
       </div>
       <div class="handsfree-pause-wrap">
-        <button id="btn-acquis-six" class="btn-handsfree-six">×6</button>
-        <button id="btn-suivant" class="btn-primary btn-bar hidden">Suivant</button>
+        <button id="btn-acquis-delete" class="btn-delete bar-left" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+        <button id="btn-acquis-six" class="btn-handsfree-six bar-mid">×6</button>
+        <button id="btn-suivant" class="btn-primary btn-bar bar-right hidden">Suivant</button>
       </div>
     </section>
 
@@ -201,7 +201,6 @@
           <span id="handsfree-counter" class="session-counter"></span>
           <button id="btn-handsfree-next" class="btn-skip" aria-label="Suivant">⏭</button>
         </div>
-        <button id="btn-handsfree-delete" class="btn-delete" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
       <div class="phrase-content handsfree-content">
         <p id="handsfree-phase" class="handsfree-phase"></p>
@@ -217,8 +216,9 @@
           <span id="handsfree-countdown-num" class="handsfree-countdown-num">–</span>
         </div>
         <div class="handsfree-pause-wrap">
-          <button id="btn-handsfree-pause" class="btn-handsfree-pause">⏸ Pause</button>
-          <button id="btn-handsfree-six" class="btn-handsfree-six">×6</button>
+          <button id="btn-handsfree-delete" class="btn-delete bar-left" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+          <button id="btn-handsfree-six" class="btn-handsfree-six bar-mid">×6</button>
+          <button id="btn-handsfree-pause" class="btn-handsfree-pause bar-right">⏸ Pause</button>
         </div>
       </div>
     </section>
@@ -264,6 +264,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=9"></script>
-  <script src="app.js?v=29"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>

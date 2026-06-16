@@ -173,11 +173,16 @@ ul {
    ============================================================ */
 
 .phrase-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding-bottom: 0.75rem;
 }
+
+/* Home/Arrêter at the left, the prev/counter/next group centered.
+   (Delete now lives in the bottom bar, so the top has room to breathe.) */
+.phrase-header > .btn-text { grid-column: 1; justify-self: start; }
+.phrase-header > .handsfree-skip-row { grid-column: 2; justify-self: center; }
 
 .session-counter {
   font-size: 0.75rem;
@@ -953,6 +958,7 @@ ul {
 /* ── Apprentissage: tighter vertical rhythm ── */
 #screen-phrase .phrase-content {
   padding-top: 0.75rem;
+  padding-bottom: 5.5rem;
 }
 
 #screen-phrase .phrase-context {
@@ -1049,35 +1055,36 @@ ul {
   50% { transform: scale(1.05); }
 }
 
+/* Consistent sticky bottom row on all practice screens:
+   delete at the left, ×6 in the middle, the frequently-tapped action at the
+   right — inset to the 540px content column so nothing flies to the corners. */
 .handsfree-pause-wrap {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.75rem;
+  column-gap: 0.75rem;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   background: var(--bg-primary);
-  padding: 0.75rem 1rem 1.25rem;
+  padding: 0.75rem max(1rem, calc((100% - 540px) / 2 + 1rem)) 1.25rem;
   border-top: var(--border-subtle);
   z-index: 10;
 }
 
-/* Acquis bar: ×6 on the left, Suivant on the right, spread to the edges of
-   the 540px content column so they're hard to mis-tap. */
-#screen-acquis .handsfree-pause-wrap {
-  justify-content: space-between;
-  padding-left: max(1rem, calc((100% - 540px) / 2 + 1rem));
-  padding-right: max(1rem, calc((100% - 540px) / 2 + 1rem));
-}
+.handsfree-pause-wrap .bar-left  { grid-column: 1; justify-self: start; }
+.handsfree-pause-wrap .bar-mid   { grid-column: 2; justify-self: center; }
+.handsfree-pause-wrap .bar-right { grid-column: 3; justify-self: end; }
 
-/* Primary button docked inside the fixed bottom bar (Acquis "Suivant") */
+/* Primary action button docked inside the fixed bottom bar ("Suivant").
+   Padding kept moderate so the right column stays balanced with the left,
+   which keeps ×6 centered and leaves a gap on each side. */
 .handsfree-pause-wrap .btn-bar {
   width: auto;
   max-width: none;
   margin-top: 0;
-  padding: 0.6rem 2rem;
+  padding: 0.6rem 1.25rem;
   min-height: 44px;
   font-size: 1.05rem;
 }
@@ -1089,8 +1096,9 @@ ul {
   color: var(--color-amber);
   border: 2px solid var(--color-amber-light);
   border-radius: var(--radius-pill);
-  padding: 0.6rem 2rem;
+  padding: 0.6rem 1.4rem;
   background: var(--bg-card);
+  white-space: nowrap;
   letter-spacing: 0.03em;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -1103,7 +1111,7 @@ ul {
 .handsfree-skip-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 1.4rem;
 }
 
 .btn-skip {
