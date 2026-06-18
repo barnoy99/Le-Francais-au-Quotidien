@@ -1255,25 +1255,49 @@ ul {
 
 .chercher-card-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   margin-top: 0.75rem;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .chercher-stats {
   font-size: 0.85rem;
   color: var(--text-secondary);
-  flex: 1;
+}
+
+.chercher-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.chercher-move {
+  font-size: 0.88rem;
+  color: var(--color-sage);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(107, 143, 113, 0.35);
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.chercher-move:active {
+  background: var(--color-sage-light);
+}
+
+.chercher-move:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .chercher-delete {
   font-size: 0.88rem;
   color: var(--color-accent);
-  padding: 0.3rem 0.65rem;
+  padding: 0.3rem 0.7rem;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(139, 45, 58, 0.25);
-  flex-shrink: 0;
+  margin-left: auto;
   transition: background 0.15s ease;
 }
 

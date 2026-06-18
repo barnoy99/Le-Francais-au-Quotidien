@@ -166,6 +166,20 @@
     save();
   }
 
+  // Move a phrase between pools: mastered (level 4 → Mes Acquis & Mains Libres)
+  // or back into the Apprentissage rotation (level < 4, eligible immediately).
+  function moveToPool(id, mastered) {
+    var d = getPhraseData(id);
+    state.phrases[id] = {
+      level: mastered ? 4 : 1,
+      lastSeen: mastered ? Date.now() : 0,
+      timesSeen: d.timesSeen || 0,
+      hfSeen: d.hfSeen || 0,
+      boost: d.boost || false
+    };
+    save();
+  }
+
   function incrementHfSeen(id) {
     var d = getPhraseData(id);
     state.phrases[id] = {
@@ -905,16 +919,43 @@
           card.appendChild(altEn);
         }
 
-        // Footer: stats + delete
+        // Footer: status + pool actions + delete
         var footer = document.createElement('div');
         footer.className = 'chercher-card-footer';
 
+        var isMastered = d.level === 4;
+
         var stats = document.createElement('span');
         stats.className = 'chercher-stats';
-        var parts = [];
+        var parts = [isMastered ? 'Acquise' : 'En apprentissage'];
         if (d.timesSeen > 0) parts.push('×' + d.timesSeen + ' apprentissage');
         if (d.hfSeen > 0) parts.push('◆' + d.hfSeen + ' mains libres');
-        stats.textContent = parts.length > 0 ? parts.join('  ') : 'Jamais pratiquée';
+        stats.textContent = parts.join('  ·  ');
+
+        var actions = document.createElement('div');
+        actions.className = 'chercher-actions';
+
+        var toAcquis = document.createElement('button');
+        toAcquis.className = 'chercher-move';
+        toAcquis.textContent = '→ Mes Acquis';
+        toAcquis.disabled = isMastered;
+        toAcquis.title = 'Déplacer vers Mes Acquis / Mains Libres';
+        toAcquis.addEventListener('click', function () {
+          moveToPool(p.id, true);
+          renderChercherResults($('chercher-input').value);
+          updateHomeScreen();
+        });
+
+        var toAppr = document.createElement('button');
+        toAppr.className = 'chercher-move';
+        toAppr.textContent = '→ Apprentissage';
+        toAppr.disabled = !isMastered;
+        toAppr.title = 'Déplacer vers Apprentissage';
+        toAppr.addEventListener('click', function () {
+          moveToPool(p.id, false);
+          renderChercherResults($('chercher-input').value);
+          updateHomeScreen();
+        });
 
         var delBtn = document.createElement('button');
         delBtn.className = 'chercher-delete';
@@ -927,8 +968,12 @@
           }
         });
 
+        actions.appendChild(toAcquis);
+        actions.appendChild(toAppr);
+        actions.appendChild(delBtn);
+
         footer.appendChild(stats);
-        footer.appendChild(delBtn);
+        footer.appendChild(actions);
         card.appendChild(footer);
         container.appendChild(card);
       })(results[i]);
