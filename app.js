@@ -31,6 +31,13 @@
   var handsfreeCurrentReadsDoneCallback = null; // onDone ref for re-entry from ×6
   var handsfreeTimerId = null;
   var handsfreeCountdownId = null;
+  // Pause/resume state so resume continues where it left off instead of
+  // restarting the whole step from the English sentence.
+  var handsfreeResumeMode = null;       // 'speech' | 'countdown' | 'step'
+  var handsfreeCountdownRemaining = 0;  // seconds left on the active countdown
+  var handsfreeCountdownLabel = '';     // label of the active countdown
+  var handsfreeCountdownDone = null;    // onDone of the active countdown
+  var handsfreePrevPhase = '';          // phase label to restore after resume
   var wakeLock = null;
   var audioCtx = null;
   var db = null;
@@ -669,6 +676,8 @@
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
+    handsfreeResumeMode = null;
+    handsfreeCountdownDone = null;
   }
 
   function stopHandsfree() {
@@ -682,7 +691,18 @@
 
   function pauseHandsfree() {
     handsfreePaused = true;
-    cancelCurrentStep();
+    handsfreePrevPhase = $('handsfree-phase').textContent;
+    // Suspend in place rather than cancelling, so resume continues here.
+    if ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
+      speechSynthesis.pause();
+      handsfreeResumeMode = 'speech';
+    } else if (handsfreeCountdownId) {
+      clearInterval(handsfreeCountdownId);
+      handsfreeCountdownId = null;
+      handsfreeResumeMode = 'countdown'; // remaining/label/done already stored
+    } else {
+      handsfreeResumeMode = 'step'; // mid-gap: replay current exercise on resume
+    }
     $('handsfree-phase').textContent = 'En pause…';
     $('btn-handsfree-pause').textContent = '▶ Reprendre';
   }
@@ -690,7 +710,21 @@
   function resumeHandsfree() {
     handsfreePaused = false;
     $('btn-handsfree-pause').textContent = '⏸ Pause';
-    handsfreeStep(); // replays current exercise from the start
+    if (handsfreeResumeMode === 'speech') {
+      // Continue the current utterance if the browser still holds it,
+      // otherwise replay the current exercise as a fallback.
+      if ('speechSynthesis' in window && (speechSynthesis.paused || speechSynthesis.speaking)) {
+        if (handsfreePrevPhase) $('handsfree-phase').textContent = handsfreePrevPhase;
+        speechSynthesis.resume();
+      } else {
+        handsfreeStep();
+      }
+    } else if (handsfreeResumeMode === 'countdown' && handsfreeCountdownDone) {
+      startCountdown(handsfreeCountdownRemaining, handsfreeCountdownLabel, handsfreeCountdownDone);
+    } else {
+      handsfreeStep();
+    }
+    handsfreeResumeMode = null;
   }
 
   function skipNextHandsfree() {
@@ -740,16 +774,20 @@
   function startCountdown(seconds, label, onDone) {
     if (!handsfreeActive) return;
     $('handsfree-phase').textContent = label;
-    var remaining = seconds;
-    $('handsfree-countdown-num').textContent = remaining;
+    handsfreeCountdownLabel = label;
+    handsfreeCountdownDone = onDone;
+    handsfreeCountdownRemaining = seconds;
+    $('handsfree-countdown-num').textContent = seconds;
     handsfreeCountdownId = setInterval(function () {
       if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
-      remaining--;
-      $('handsfree-countdown-num').textContent = remaining;
-      if (remaining <= 0) {
+      handsfreeCountdownRemaining--;
+      $('handsfree-countdown-num').textContent = handsfreeCountdownRemaining;
+      if (handsfreeCountdownRemaining <= 0) {
         clearInterval(handsfreeCountdownId);
         handsfreeCountdownId = null;
-        onDone();
+        var done = handsfreeCountdownDone;
+        handsfreeCountdownDone = null;
+        done();
       }
     }, 1000);
   }

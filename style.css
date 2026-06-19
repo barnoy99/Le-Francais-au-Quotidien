@@ -1130,22 +1130,27 @@ ul {
   color: var(--color-amber);
 }
 
+/* Off (default): empty pill with a green outline (same green as the accent
+   line on the English card) so it's clearly "not boosted". */
 .btn-handsfree-six {
   font-family: var(--font-heading);
   font-size: 1.05rem;
   font-weight: 700;
-  color: #fff;
-  border: none;
+  color: var(--color-sage);
+  border: 2px solid var(--color-sage);
   border-radius: var(--radius-pill);
   padding: 0.6rem 1.6rem;
-  background: #E07020;
+  background: transparent;
   min-height: 44px;
   white-space: nowrap;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
 
+/* On (boosted): solid, darker and more reddish orange so it stands out. */
 .btn-handsfree-six.activated {
-  background: #B85010;
+  color: #fff;
+  background: #B23A16;
+  border-color: #B23A16;
 }
 
 .btn-handsfree-six:active {
