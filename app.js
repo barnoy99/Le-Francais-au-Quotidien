@@ -175,14 +175,18 @@
 
   // Move a phrase between pools: mastered (level 4 → Mes Acquis & Mains Libres)
   // or back into the Apprentissage rotation (level < 4, eligible immediately).
-  function moveToPool(id, mastered) {
+  // boost: pass true/false to set the ×6 flag when mastering; omit to keep it.
+  function moveToPool(id, mastered, boost) {
     var d = getPhraseData(id);
+    var newBoost;
+    if (typeof boost === 'boolean') newBoost = boost;
+    else newBoost = mastered ? (d.boost || false) : false;
     state.phrases[id] = {
       level: mastered ? 4 : 1,
       lastSeen: mastered ? Date.now() : 0,
       timesSeen: d.timesSeen || 0,
       hfSeen: d.hfSeen || 0,
-      boost: d.boost || false
+      boost: mastered ? newBoost : false
     };
     save();
   }
@@ -216,6 +220,18 @@
     };
     save();
     return state.phrases[id].boost;
+  }
+
+  function setBoost(id, value) {
+    var d = getPhraseData(id);
+    state.phrases[id] = {
+      level: d.level,
+      lastSeen: d.lastSeen,
+      timesSeen: d.timesSeen,
+      hfSeen: d.hfSeen || 0,
+      boost: !!value
+    };
+    save();
   }
 
   function findPhraseById(id) {
@@ -963,9 +979,12 @@
 
         var isMastered = d.level === 4;
 
+        var boosted = isBoosted(p.id);
+
         var stats = document.createElement('span');
         stats.className = 'chercher-stats';
-        var parts = [isMastered ? 'Acquise' : 'En apprentissage'];
+        var status = isMastered ? ('Acquise ' + (boosted ? '×6' : '×3')) : 'En apprentissage';
+        var parts = [status];
         if (d.timesSeen > 0) parts.push('×' + d.timesSeen + ' apprentissage');
         if (d.hfSeen > 0) parts.push('◆' + d.hfSeen + ' mains libres');
         stats.textContent = parts.join('  ·  ');
@@ -973,27 +992,31 @@
         var actions = document.createElement('div');
         actions.className = 'chercher-actions';
 
-        var toAcquis = document.createElement('button');
-        toAcquis.className = 'chercher-move';
-        toAcquis.textContent = '→ Mes Acquis';
-        toAcquis.disabled = isMastered;
-        toAcquis.title = 'Déplacer vers Mes Acquis / Mains Libres';
-        toAcquis.addEventListener('click', function () {
-          moveToPool(p.id, true);
-          renderChercherResults($('chercher-input').value);
-          updateHomeScreen();
-        });
+        function moveBtn(label, cls, title, disabled, onClick) {
+          var b = document.createElement('button');
+          b.className = cls;
+          b.textContent = label;
+          b.title = title;
+          b.disabled = disabled;
+          b.addEventListener('click', function () {
+            onClick();
+            renderChercherResults($('chercher-input').value);
+            updateHomeScreen();
+          });
+          return b;
+        }
 
-        var toAppr = document.createElement('button');
-        toAppr.className = 'chercher-move';
-        toAppr.textContent = '→ Apprentissage';
-        toAppr.disabled = !isMastered;
-        toAppr.title = 'Déplacer vers Apprentissage';
-        toAppr.addEventListener('click', function () {
-          moveToPool(p.id, false);
-          renderChercherResults($('chercher-input').value);
-          updateHomeScreen();
-        });
+        var toAcquis3 = moveBtn('→ Acquis ×3', 'chercher-move',
+          'Déplacer vers Mes Acquis (×3)', isMastered && !boosted,
+          function () { moveToPool(p.id, true, false); });
+
+        var toAcquis6 = moveBtn('→ Acquis ×6', 'chercher-move chercher-move-boost',
+          'Déplacer vers Mes Acquis avec ×6', isMastered && boosted,
+          function () { moveToPool(p.id, true, true); });
+
+        var toAppr = moveBtn('→ Apprentissage', 'chercher-move',
+          'Déplacer vers Apprentissage', !isMastered,
+          function () { moveToPool(p.id, false); });
 
         var delBtn = document.createElement('button');
         delBtn.className = 'chercher-delete';
@@ -1006,7 +1029,8 @@
           }
         });
 
-        actions.appendChild(toAcquis);
+        actions.appendChild(toAcquis3);
+        actions.appendChild(toAcquis6);
         actions.appendChild(toAppr);
         actions.appendChild(delBtn);
 
@@ -1216,7 +1240,9 @@
       ratingBtns[i].addEventListener('click', function () {
         if (this.disabled) return;
         var level = parseInt(this.getAttribute('data-level'), 10);
-        handleRating(level);
+        var boostAttr = this.getAttribute('data-boost');
+        var boost = boostAttr === null ? undefined : (boostAttr === 'true');
+        handleRating(level, boost, this);
       });
     }
 
@@ -1279,19 +1305,20 @@
     });
   }
 
-  function handleRating(level) {
+  function handleRating(level, boost, chosenBtn) {
     if (!currentPhrase) return;
 
-    // disable buttons
+    // disable buttons; dim all except the one chosen
     var btns = document.querySelectorAll('.rating-btn');
     for (var i = 0; i < btns.length; i++) {
       btns[i].disabled = true;
-      if (parseInt(btns[i].getAttribute('data-level'), 10) !== level) {
+      if (chosenBtn && btns[i] !== chosenBtn) {
         btns[i].style.opacity = '0.35';
       }
     }
 
     var wasNew = setPhraseData(currentPhrase.id, level);
+    if (typeof boost === 'boolean') setBoost(currentPhrase.id, boost);
     sessionSeen++;
     if (wasNew) sessionNew++;
 

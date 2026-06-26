@@ -309,6 +309,13 @@ ul {
 .rating-unknown .rating-icon { color: var(--color-slate); }
 .rating-unknown:active { background: var(--color-slate-light); }
 
+/* ×6 — mastered + boost */
+.rating-boost {
+  border-left-color: #B23A16;
+}
+.rating-boost .rating-icon { color: #B23A16; }
+.rating-boost:active { background: rgba(178, 58, 22, 0.10); }
+
 /* ============================================================
    TRANSLATION REVEAL
    ============================================================ */
@@ -1294,6 +1301,15 @@ ul {
 .chercher-move:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+.chercher-move-boost {
+  color: #B23A16;
+  border-color: rgba(178, 58, 22, 0.4);
+}
+
+.chercher-move-boost:active {
+  background: rgba(178, 58, 22, 0.10);
 }
 
 .chercher-delete {
