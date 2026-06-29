@@ -31,13 +31,15 @@
   var handsfreeCurrentReadsDoneCallback = null; // onDone ref for re-entry from ×6
   var handsfreeTimerId = null;
   var handsfreeCountdownId = null;
-  // Pause/resume state so resume continues where it left off instead of
-  // restarting the whole step from the English sentence.
-  var handsfreeResumeMode = null;       // 'speech' | 'countdown' | 'step'
+  // Pause/resume state. A countdown freezes and resumes where it left off;
+  // a sentence being spoken re-reads from its start (mobile speech engines
+  // can't reliably resume mid-utterance).
   var handsfreeCountdownRemaining = 0;  // seconds left on the active countdown
   var handsfreeCountdownLabel = '';     // label of the active countdown
   var handsfreeCountdownDone = null;    // onDone of the active countdown
-  var handsfreePrevPhase = '';          // phase label to restore after resume
+  var handsfreeResumeAction = null;     // closure to run on resume
+  var handsfreeResumeSpeak = null;      // closure to re-speak the current sentence
+  var handsfreeLastPrevTime = 0;        // for double-tap "back" = previous item
   var wakeLock = null;
   var audioCtx = null;
   var db = null;
@@ -692,8 +694,9 @@
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
-    handsfreeResumeMode = null;
     handsfreeCountdownDone = null;
+    handsfreeResumeSpeak = null;
+    handsfreeResumeAction = null;
   }
 
   function stopHandsfree() {
@@ -706,45 +709,47 @@
   }
 
   function pauseHandsfree() {
+    if (!handsfreeActive) return;
     handsfreePaused = true;
-    handsfreePrevPhase = $('handsfree-phase').textContent;
-    // Suspend in place rather than cancelling, so resume continues here.
-    if ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
-      speechSynthesis.pause();
-      handsfreeResumeMode = 'speech';
-    } else if (handsfreeCountdownId) {
+    if (handsfreeCountdownId) {
+      // Freeze the countdown; resume restarts it with the seconds left.
       clearInterval(handsfreeCountdownId);
       handsfreeCountdownId = null;
-      handsfreeResumeMode = 'countdown'; // remaining/label/done already stored
+      var label = handsfreeCountdownLabel, remaining = handsfreeCountdownRemaining, done = handsfreeCountdownDone;
+      handsfreeResumeAction = function () { startCountdown(remaining, label, done); };
+    } else if (handsfreeResumeSpeak) {
+      // Mid-sentence: cancel and re-read it from the start on resume
+      // (mobile speech engines can't reliably resume a paused utterance).
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      handsfreeResumeAction = handsfreeResumeSpeak;
     } else {
-      handsfreeResumeMode = 'step'; // mid-gap: replay current exercise on resume
+      // Mid-gap (e.g. during a beep): replay the current exercise.
+      if (handsfreeHistory.length > 0) handsfreeHistory.pop();
+      handsfreeResumeAction = function () { handsfreeStep(); };
     }
     $('handsfree-phase').textContent = 'En pause…';
     $('btn-handsfree-pause').textContent = '▶ Reprendre';
   }
 
   function resumeHandsfree() {
+    if (!handsfreeActive) return;
     handsfreePaused = false;
     $('btn-handsfree-pause').textContent = '⏸ Pause';
-    if (handsfreeResumeMode === 'speech') {
-      // Continue the current utterance if the browser still holds it,
-      // otherwise replay the current exercise as a fallback.
-      if ('speechSynthesis' in window && (speechSynthesis.paused || speechSynthesis.speaking)) {
-        if (handsfreePrevPhase) $('handsfree-phase').textContent = handsfreePrevPhase;
-        speechSynthesis.resume();
-      } else {
-        handsfreeStep();
-      }
-    } else if (handsfreeResumeMode === 'countdown' && handsfreeCountdownDone) {
-      startCountdown(handsfreeCountdownRemaining, handsfreeCountdownLabel, handsfreeCountdownDone);
-    } else {
-      handsfreeStep();
-    }
-    handsfreeResumeMode = null;
+    var action = handsfreeResumeAction;
+    handsfreeResumeAction = null;
+    if (action) action();
+    else handsfreeStep();
+  }
+
+  function clearPausedUI() {
+    handsfreePaused = false;
+    $('btn-handsfree-pause').textContent = '⏸ Pause';
   }
 
   function skipNextHandsfree() {
     if (!handsfreeActive) return;
+    clearPausedUI();
+    handsfreeLastPrevTime = 0;
     cancelCurrentStep();
     var p = handsfreePhrases[handsfreeIndex];
     if (handsfreeExercise === 'main' && p && p.alt_usage) {
@@ -756,18 +761,25 @@
     handsfreeStep();
   }
 
+  // Apple-Music-style "back": first press restarts the current sentence;
+  // a second press within 3s jumps to the previous item.
   function skipPrevHandsfree() {
     if (!handsfreeActive) return;
+    clearPausedUI();
     cancelCurrentStep();
-    // Pop the current entry (pushed at start of this step)
+    var now = Date.now();
+    var doublePress = (now - handsfreeLastPrevTime) < 3000;
+    handsfreeLastPrevTime = now;
+    // Drop the current entry (handsfreeStep re-pushes it).
     if (handsfreeHistory.length > 0) handsfreeHistory.pop();
-    // Pop the previous entry and restore it (will be re-pushed by handsfreeStep)
-    if (handsfreeHistory.length > 0) {
+    if (doublePress && handsfreeHistory.length > 0) {
+      // Go to the actual previous item.
       var prev = handsfreeHistory.pop();
       handsfreeIndex = prev.index;
       handsfreeExercise = prev.exercise;
+      handsfreeLastPrevTime = 0; // a further back restarts that item first
     }
-    // If history is empty we just replay the current/first exercise (index unchanged)
+    // else: first press → restart current item (index/exercise unchanged)
     handsfreeStep();
   }
 
@@ -789,6 +801,7 @@
   // Reusable countdown: ring stays visible at all times, calls onDone when it hits 0
   function startCountdown(seconds, label, onDone) {
     if (!handsfreeActive) return;
+    handsfreeResumeSpeak = null; // we're in a countdown, not speaking
     $('handsfree-phase').textContent = label;
     handsfreeCountdownLabel = label;
     handsfreeCountdownDone = onDone;
@@ -814,14 +827,25 @@
     $('handsfree-countdown-num').textContent = '♪';
   }
 
+  // Speak a sentence and register a resume hook, so pausing mid-sentence and
+  // resuming re-reads it from the start (reliable across browsers).
+  function speakHF(label, speakFn, text, onEnd) {
+    if (!handsfreeActive) return;
+    handsfreeResumeSpeak = function () { speakHF(label, speakFn, text, onEnd); };
+    showSpeakingIndicator(label);
+    speakFn(text, function () {
+      if (!handsfreeActive || handsfreePaused) return;
+      handsfreeResumeSpeak = null;
+      onEnd();
+    });
+  }
+
   // Recursive French readings — checks handsfreeReadTarget live so ×6 works mid-exercise
   function doFrenchReads(frenchText, readNum, onDone) {
     if (!handsfreeActive) return;
     playDing('fr', function () {
       if (!handsfreeActive) return;
-      showSpeakingIndicator('Répétez !');
-      speakFrenchCb(frenchText, function () {
-        if (!handsfreeActive) return;
+      speakHF('Répétez !', speakFrenchCb, frenchText, function () {
         handsfreeLastReadNum = readNum; // record completed read
         if (readNum >= handsfreeReadTarget) {
           onDone();
@@ -885,9 +909,7 @@
 
     playDing('en', function () {
       if (!handsfreeActive) return;
-      speakEnglish(englishText, function () {
-        if (!handsfreeActive) return;
-
+      speakHF('Écoutez en anglais…', speakEnglish, englishText, function () {
         // 2s countdown after English, then 9s thinking countdown
         handsfreeCurrentFrench = frenchText;
         var advanceFn = function () {
