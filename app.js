@@ -1357,4 +1357,9 @@
   });
 
   document.addEventListener('DOMContentLoaded', setup);
+
+  // Offline support — cache the app shell so it works without internet
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
 })();
