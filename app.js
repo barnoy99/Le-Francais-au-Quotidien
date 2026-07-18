@@ -850,7 +850,7 @@
         if (readNum >= handsfreeReadTarget) {
           onDone();
         } else {
-          startCountdown(7, 'Encore…', function () {
+          startCountdown(8, 'Encore…', function () {
             doFrenchReads(frenchText, readNum + 1, onDone);
           });
         }
