@@ -40,6 +40,7 @@
   var handsfreeResumeAction = null;     // closure to run on resume
   var handsfreeResumeSpeak = null;      // closure to re-speak the current sentence
   var handsfreeLastPrevTime = 0;        // for double-tap "back" = previous item
+  var handsfreeGen = 0;                 // generation token — stale async callbacks bail out
   var wakeLock = null;
   var audioCtx = null;
   var db = null;
@@ -687,8 +688,11 @@
     }
   }
 
-  // Shared cancellation — stops speech, timers, and final-pause flag
+  // Shared cancellation — stops speech, timers, and final-pause flag.
+  // Bumps the generation token so callbacks from the cancelled step
+  // (e.g. a cancelled utterance's onend, a pending ding) become no-ops.
   function cancelCurrentStep() {
+    handsfreeGen++;
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
@@ -801,24 +805,27 @@
   // Reusable countdown: ring stays visible at all times, calls onDone when it hits 0
   function startCountdown(seconds, label, onDone) {
     if (!handsfreeActive) return;
+    // Never allow two countdown intervals at once — kill any leftover first.
+    if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
     handsfreeResumeSpeak = null; // we're in a countdown, not speaking
     $('handsfree-phase').textContent = label;
     handsfreeCountdownLabel = label;
     handsfreeCountdownDone = onDone;
     handsfreeCountdownRemaining = seconds;
     $('handsfree-countdown-num').textContent = seconds;
-    handsfreeCountdownId = setInterval(function () {
-      if (!handsfreeActive) { clearInterval(handsfreeCountdownId); return; }
+    var intervalId = setInterval(function () {
+      if (!handsfreeActive) { clearInterval(intervalId); return; }
       handsfreeCountdownRemaining--;
-      $('handsfree-countdown-num').textContent = handsfreeCountdownRemaining;
+      $('handsfree-countdown-num').textContent = Math.max(0, handsfreeCountdownRemaining);
       if (handsfreeCountdownRemaining <= 0) {
-        clearInterval(handsfreeCountdownId);
-        handsfreeCountdownId = null;
+        clearInterval(intervalId);
+        if (handsfreeCountdownId === intervalId) handsfreeCountdownId = null;
         var done = handsfreeCountdownDone;
         handsfreeCountdownDone = null;
-        done();
+        if (done) done();
       }
     }, 1000);
+    handsfreeCountdownId = intervalId;
   }
 
   // Show ♪ in countdown ring to indicate speech is playing
@@ -829,12 +836,15 @@
 
   // Speak a sentence and register a resume hook, so pausing mid-sentence and
   // resuming re-reads it from the start (reliable across browsers).
+  // Browsers fire onend even for CANCELLED utterances, so the callback checks
+  // the generation token and bails if this step has since been cancelled.
   function speakHF(label, speakFn, text, onEnd) {
-    if (!handsfreeActive) return;
+    if (!handsfreeActive || handsfreePaused) return;
+    var gen = handsfreeGen;
     handsfreeResumeSpeak = function () { speakHF(label, speakFn, text, onEnd); };
     showSpeakingIndicator(label);
     speakFn(text, function () {
-      if (!handsfreeActive || handsfreePaused) return;
+      if (!handsfreeActive || handsfreePaused || gen !== handsfreeGen) return;
       handsfreeResumeSpeak = null;
       onEnd();
     });
@@ -843,8 +853,9 @@
   // Recursive French readings — checks handsfreeReadTarget live so ×6 works mid-exercise
   function doFrenchReads(frenchText, readNum, onDone) {
     if (!handsfreeActive) return;
+    var gen = handsfreeGen;
     playDing('fr', function () {
-      if (!handsfreeActive) return;
+      if (!handsfreeActive || handsfreePaused || gen !== handsfreeGen) return;
       speakHF('Répétez !', speakFrenchCb, frenchText, function () {
         handsfreeLastReadNum = readNum; // record completed read
         if (readNum >= handsfreeReadTarget) {
@@ -907,8 +918,9 @@
     incrementHfSeen(p.id);
     showSpeakingIndicator('Écoutez en anglais…');
 
+    var gen = handsfreeGen;
     playDing('en', function () {
-      if (!handsfreeActive) return;
+      if (!handsfreeActive || handsfreePaused || gen !== handsfreeGen) return;
       speakHF('Écoutez en anglais…', speakEnglish, englishText, function () {
         // 2s countdown after English, then 9s thinking countdown
         handsfreeCurrentFrench = frenchText;
