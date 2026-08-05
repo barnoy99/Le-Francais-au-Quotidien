@@ -1045,6 +1045,13 @@ ul {
   font-family: var(--font-heading);
   font-size: 3.5rem;
   font-weight: 600;
+  /* Cormorant Garamond defaults to OLD-STYLE figures: 3/4/5/7/9 hang below
+     the baseline and 6/8 rise above it, so digits looked vertically random
+     inside the ring. Force lining (uniform-height) figures so every digit
+     sits on the baseline and centres identically. */
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  line-height: 1;
   color: var(--color-amber);
   width: 80px;
   height: 80px;

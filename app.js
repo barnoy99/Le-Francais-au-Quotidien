@@ -515,7 +515,7 @@
     return a;
   }
 
-  // Weighted shuffle: boosted (×6) phrases get 3.5× weight, so they
+  // Weighted shuffle: boosted (×6) phrases get 2× weight, so they
   // land earlier / more often at the front of each session's order.
   function weightedShuffle(arr) {
     var pool = arr.slice();
@@ -524,7 +524,7 @@
       var total = 0;
       var weights = [];
       for (var i = 0; i < pool.length; i++) {
-        var w = isBoosted(pool[i].id) ? 3.5 : 1;
+        var w = isBoosted(pool[i].id) ? 2 : 1;
         weights.push(w);
         total += w;
       }
