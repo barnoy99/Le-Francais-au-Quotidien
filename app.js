@@ -18,6 +18,11 @@
   var phraseHistory = []; // apprentissage back-navigation stack
   var acquisPhrases = [];
   var acquisIndex = 0;
+  var acquisBatchLen = 0;
+  var acquisMaxSeen = 0;
+  var handsfreeBatchLen = 0;
+  var handsfreeMaxSeen = 0;
+  var handsfreeCustomPool = false;   // true for the Difficiles-only session
   var handsfreeActive = false;
   var handsfreePaused = false;
   var handsfreePhrases = [];
@@ -77,7 +82,8 @@
   // ── Persistence ────────────────────────────────────────
 
   function defaults() {
-    return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [] };
+    return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [],
+             hfCycle: [], hfCursor: 0, acqCycle: [], acqCursor: 0 };
   }
 
   function activePhrases() {
@@ -152,20 +158,36 @@
 
   function getPhraseData(id) {
     if (state.phrases[id]) return state.phrases[id];
-    return { level: 0, lastSeen: 0, timesSeen: 0 };
+    return { level: 0, lastSeen: 0, timesSeen: 0, hfSeen: 0, boost: false,
+             hardScore: 0, hardManual: false, misses: 0 };
+  }
+
+  // Single writer: merges changes into the existing record so no field is ever
+  // dropped by accident (level, boost, hfSeen, hardScore, misses… all survive).
+  function writePhrase(id, changes) {
+    var d = getPhraseData(id);
+    var next = {
+      level: d.level || 0,
+      lastSeen: d.lastSeen || 0,
+      timesSeen: d.timesSeen || 0,
+      hfSeen: d.hfSeen || 0,
+      boost: d.boost || false,
+      hardScore: d.hardScore || 0,
+      hardManual: d.hardManual || false,
+      misses: d.misses || 0
+    };
+    for (var k in changes) {
+      if (Object.prototype.hasOwnProperty.call(changes, k)) next[k] = changes[k];
+    }
+    state.phrases[id] = next;
+    save();
+    return next;
   }
 
   function setPhraseData(id, level) {
     var d = getPhraseData(id);
-    var wasNew = d.timesSeen === 0;
-    state.phrases[id] = {
-      level: level,
-      lastSeen: Date.now(),
-      timesSeen: d.timesSeen + 1,
-      hfSeen: d.hfSeen || 0,
-      boost: d.boost || false
-    };
-    save();
+    var wasNew = (d.timesSeen || 0) === 0;
+    writePhrase(id, { level: level, lastSeen: Date.now(), timesSeen: (d.timesSeen || 0) + 1 });
     return wasNew;
   }
 
@@ -184,26 +206,15 @@
     var newBoost;
     if (typeof boost === 'boolean') newBoost = boost;
     else newBoost = mastered ? (d.boost || false) : false;
-    state.phrases[id] = {
+    writePhrase(id, {
       level: mastered ? 4 : 1,
       lastSeen: mastered ? Date.now() : 0,
-      timesSeen: d.timesSeen || 0,
-      hfSeen: d.hfSeen || 0,
       boost: mastered ? newBoost : false
-    };
-    save();
+    });
   }
 
   function incrementHfSeen(id) {
-    var d = getPhraseData(id);
-    state.phrases[id] = {
-      level: d.level,
-      lastSeen: d.lastSeen,
-      timesSeen: d.timesSeen,
-      hfSeen: (d.hfSeen || 0) + 1,
-      boost: d.boost || false
-    };
-    save();
+    writePhrase(id, { hfSeen: (getPhraseData(id).hfSeen || 0) + 1 });
   }
 
   // ── ×6 boost flag (persistent per phrase, covers main + alt) ──
@@ -213,28 +224,47 @@
   }
 
   function toggleBoost(id) {
-    var d = getPhraseData(id);
-    state.phrases[id] = {
-      level: d.level,
-      lastSeen: d.lastSeen,
-      timesSeen: d.timesSeen,
-      hfSeen: d.hfSeen || 0,
-      boost: !d.boost
-    };
-    save();
-    return state.phrases[id].boost;
+    return writePhrase(id, { boost: !getPhraseData(id).boost }).boost;
   }
 
   function setBoost(id, value) {
+    writePhrase(id, { boost: !!value });
+  }
+
+  // ── Difficulty (automatic from Mes Acquis recall + manual override) ──
+
+  function isHard(id) {
+    var d = state.phrases[id];
+    if (!d) return false;
+    return !!d.hardManual || (d.hardScore || 0) >= 2;
+  }
+
+  function setHardManual(id, value) {
+    writePhrase(id, { hardManual: !!value });
+  }
+
+  // "Pas su" makes a phrase hard immediately; two clean recalls clear it again.
+  function recordAcquisOutcome(id, knew) {
     var d = getPhraseData(id);
-    state.phrases[id] = {
-      level: d.level,
-      lastSeen: d.lastSeen,
-      timesSeen: d.timesSeen,
-      hfSeen: d.hfSeen || 0,
-      boost: !!value
-    };
-    save();
+    var score = d.hardScore || 0;
+    if (knew) {
+      writePhrase(id, { hardScore: Math.max(score - 1, 0) });
+    } else {
+      writePhrase(id, { hardScore: Math.min(score + 3, 5), misses: (d.misses || 0) + 1 });
+    }
+    invalidateCycles();
+  }
+
+  // How many copies of a phrase go into one rotation cycle.
+  function cycleCopies(id) {
+    var n = 1;
+    if (isBoosted(id)) n *= 2;
+    if (isHard(id)) n *= 2;
+    return n;
+  }
+
+  function getHardPhrases() {
+    return getMasteredPhrases().filter(function (p) { return isHard(p.id); });
   }
 
   function findPhraseById(id) {
@@ -382,19 +412,21 @@
     var mastered = [];
     var familiar = [];
     var learning = [];
-    var hard = [];
+    var notYet = [];
     var unseen = [];
+    var difficult = [];   // mastered but hard to recall
 
     var active = activePhrases();
     for (var i = 0; i < active.length; i++) {
       var p = active[i];
       var d = getPhraseData(p.id);
       var entry = { phrase: p, data: d };
+      if (d.level === 4 && isHard(p.id)) { difficult.push(entry); continue; }
       switch (d.level) {
         case 4: mastered.push(entry); break;
         case 3: familiar.push(entry); break;
         case 2: learning.push(entry); break;
-        case 1: hard.push(entry); break;
+        case 1: notYet.push(entry); break;
         default: unseen.push(entry); break;
       }
     }
@@ -421,10 +453,11 @@
     list.innerHTML = '';
 
     var groups = [
+      { title: 'Difficiles', cls: 'new', items: difficult },
       { title: 'Maîtrisées', cls: 'mastered', items: mastered },
       { title: 'Familières', cls: 'familiar', items: familiar },
       { title: 'En apprentissage', cls: 'learning', items: learning },
-      { title: 'Difficiles', cls: 'new', items: hard },
+      { title: 'Pas encore', cls: 'learning', items: notYet },
       { title: 'Pas encore vues', cls: 'unseen', items: unseen }
     ];
 
@@ -540,6 +573,80 @@
     return out;
   }
 
+  // ── Rotation playlist ──────────────────────────────────
+  // A per-session reshuffle gave wildly uneven coverage: with the whole pool
+  // redrawn every time, some phrases came up constantly and others never (21
+  // mastered phrases had never been played). Instead we build one cycle in which
+  // every phrase appears once per unit of weight (plain 1, ×6 or hard 2, hard+×6
+  // 4), then walk through it across sessions. Every phrase is guaranteed its turn.
+
+  function poolSignature(pool) {
+    var totalWeight = 0;
+    for (var i = 0; i < pool.length; i++) totalWeight += cycleCopies(pool[i].id);
+    return pool.length + ':' + totalWeight;
+  }
+
+  function buildCycle(pool) {
+    var cyc = [];
+    for (var i = 0; i < pool.length; i++) {
+      var copies = cycleCopies(pool[i].id);
+      for (var k = 0; k < copies; k++) cyc.push(pool[i].id);
+    }
+    // shuffle
+    for (var i = cyc.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = cyc[i]; cyc[i] = cyc[j]; cyc[j] = t;
+    }
+    // spacing pass — push apart copies of the same phrase landing close together
+    for (var i = 1; i < cyc.length; i++) {
+      for (var back = 1; back <= 10 && i - back >= 0; back++) {
+        if (cyc[i] === cyc[i - back]) {
+          var swap = Math.min(cyc.length - 1, i + 20 + Math.floor(Math.random() * 30));
+          var tmp = cyc[i]; cyc[i] = cyc[swap]; cyc[swap] = tmp;
+          break;
+        }
+      }
+    }
+    return cyc;
+  }
+
+  // Returns the next `count` phrases from the persistent cycle, rebuilding it
+  // when exhausted or when the pool changed. `key` is 'hf' or 'acq'.
+  function takeFromCycle(key, pool, count) {
+    var cycleKey = key + 'Cycle', cursorKey = key + 'Cursor', sigKey = key + 'Sig';
+    var byId = {};
+    for (var i = 0; i < pool.length; i++) byId[pool[i].id] = pool[i];
+    var sig = poolSignature(pool);
+
+    if (!state[cycleKey] || !state[cycleKey].length || state[sigKey] !== sig) {
+      state[cycleKey] = buildCycle(pool);
+      state[cursorKey] = 0;
+      state[sigKey] = sig;
+    }
+
+    var out = [];
+    var guard = 0;
+    while (out.length < count && guard < 5000) {
+      guard++;
+      if (state[cursorKey] >= state[cycleKey].length) {
+        state[cycleKey] = buildCycle(pool);   // cycle complete — start a fresh one
+        state[cursorKey] = 0;
+      }
+      var id = state[cycleKey][state[cursorKey]];
+      state[cursorKey]++;
+      var p = byId[id];
+      if (p) out.push(p);                     // skip ids no longer in the pool
+    }
+    save();
+    return out;
+  }
+
+  // Called when boost/difficulty changes so the cycle is rebuilt with new weights.
+  function invalidateCycles() {
+    state.hfSig = null;
+    state.acqSig = null;
+  }
+
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
     var count = mastered.length;
@@ -549,20 +656,58 @@
     $('btn-acquis').disabled = count === 0;
     $('handsfree-count').textContent = '(' + count + ')';
     $('btn-handsfree').disabled = count === 0;
+
+    var hardCount = getHardPhrases().length;
+    var hardBtn = $('btn-difficiles');
+    if (hardBtn) {
+      hardBtn.textContent = 'Difficiles (' + hardCount + ')';
+      if (hardCount === 0) hide(hardBtn); else show(hardBtn);
+    }
+  }
+
+  // A session pulls a batch from the cycle; whatever it doesn't reach is handed
+  // back on exit so no phrase loses its turn.
+  var SESSION_BATCH = 60;
+
+  function releaseBatch(key, batchLen, maxSeen) {
+    if (batchLen > 0) {
+      var unused = batchLen - maxSeen;
+      if (unused > 0) state[key + 'Cursor'] = Math.max(0, (state[key + 'Cursor'] || 0) - unused);
+      save();
+    }
   }
 
   function startAcquis() {
-    acquisPhrases = weightedShuffle(getMasteredPhrases());
+    var pool = getMasteredPhrases();
+    if (pool.length === 0) return;
+    acquisPhrases = takeFromCycle('acq', pool, Math.min(SESSION_BATCH, pool.length * 4));
+    acquisBatchLen = acquisPhrases.length;
+    acquisMaxSeen = 0;
     acquisIndex = 0;
     if (acquisPhrases.length === 0) return;
     showAcquisPhrase();
   }
 
+  function endAcquisSession() {
+    releaseBatch('acq', acquisBatchLen, acquisMaxSeen);
+    acquisBatchLen = 0;
+  }
+
   function showAcquisPhrase() {
     if (acquisIndex >= acquisPhrases.length) {
-      showScreen('screen-acquis-done');
-      return;
+      // batch spent — pull the next slice of the cycle so the session continues
+      var pool = getMasteredPhrases();
+      var more = pool.length ? takeFromCycle('acq', pool, SESSION_BATCH) : [];
+      if (more.length) {
+        acquisPhrases = acquisPhrases.concat(more);
+        acquisBatchLen += more.length;
+      } else {
+        endAcquisSession();
+        showScreen('screen-acquis-done');
+        return;
+      }
     }
+    acquisMaxSeen = Math.max(acquisMaxSeen, acquisIndex + 1);
     var p = acquisPhrases[acquisIndex];
     showScreen('screen-acquis');
     $('acquis-context').textContent = p.context;
@@ -573,7 +718,7 @@
     updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
-    hide($('btn-suivant'));
+    hide($('acquis-answers'));
   }
 
   function updateAcquisSixButton() {
@@ -588,7 +733,7 @@
   function revealAcquis() {
     hide($('acquis-reveal-area'));
     show($('acquis-revealed'));
-    show($('btn-suivant'));
+    show($('acquis-answers'));
   }
 
   function speakFrench(text) {
@@ -703,10 +848,16 @@
     handsfreeResumeAction = null;
   }
 
+  function endHandsfreeSession() {
+    if (!handsfreeCustomPool) releaseBatch('hf', handsfreeBatchLen, handsfreeMaxSeen);
+    handsfreeBatchLen = 0;
+  }
+
   function stopHandsfree() {
     handsfreeActive = false;
     handsfreePaused = false;
     cancelCurrentStep();
+    endHandsfreeSession();
     releaseWakeLock();
     updateHomeScreen();
     showScreen('screen-home');
@@ -787,8 +938,19 @@
     handsfreeStep();
   }
 
-  function startHandsfree() {
-    handsfreePhrases = weightedShuffle(getMasteredPhrases());
+  // pool omitted → the full mastered rotation; pool given → a filtered session
+  // (Difficiles), which uses a plain weighted shuffle since the set is small.
+  function startHandsfree(pool) {
+    handsfreeCustomPool = !!pool;
+    if (handsfreeCustomPool) {
+      handsfreePhrases = weightedShuffle(pool);
+      handsfreeBatchLen = 0;
+    } else {
+      var source = getMasteredPhrases();
+      handsfreePhrases = source.length ? takeFromCycle('hf', source, Math.min(SESSION_BATCH, source.length * 4)) : [];
+      handsfreeBatchLen = handsfreePhrases.length;
+    }
+    handsfreeMaxSeen = 0;
     handsfreeIndex = 0;
     handsfreeExercise = 'main';
     handsfreePaused = false;
@@ -892,11 +1054,21 @@
   function handsfreeStep() {
     if (!handsfreeActive) return;
     if (handsfreeIndex >= handsfreePhrases.length) {
-      handsfreeActive = false;
-      releaseWakeLock();
-      showScreen('screen-acquis-done');
-      return;
+      // full rotation: pull the next slice and keep going; filtered session: done
+      var src = handsfreeCustomPool ? [] : getMasteredPhrases();
+      var more = src.length ? takeFromCycle('hf', src, SESSION_BATCH) : [];
+      if (more.length) {
+        handsfreePhrases = handsfreePhrases.concat(more);
+        handsfreeBatchLen += more.length;
+      } else {
+        handsfreeActive = false;
+        endHandsfreeSession();
+        releaseWakeLock();
+        showScreen('screen-acquis-done');
+        return;
+      }
     }
+    handsfreeMaxSeen = Math.max(handsfreeMaxSeen, handsfreeIndex + 1);
 
     // Push current state to history for multi-step skip-back
     handsfreeHistory.push({ index: handsfreeIndex, exercise: handsfreeExercise });
@@ -906,7 +1078,7 @@
     $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
 
     // Reset per-exercise state — boosted phrases start at 6 reads
-    handsfreeReadTarget = isBoosted(p.id) ? 6 : 3;
+    handsfreeReadTarget = (isBoosted(p.id) || isHard(p.id)) ? 6 : 3;
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     updateSixButton();
@@ -1029,6 +1201,7 @@
         stats.className = 'chercher-stats';
         var status = isMastered ? ('Acquise ' + (boosted ? '×6' : '×3')) : 'En apprentissage';
         var parts = [status];
+        if (isHard(p.id)) parts.push('Difficile');
         if (d.timesSeen > 0) parts.push('×' + d.timesSeen + ' apprentissage');
         if (d.hfSeen > 0) parts.push('◆' + d.hfSeen + ' mains libres');
         stats.textContent = parts.join('  ·  ');
@@ -1062,6 +1235,18 @@
           'Déplacer vers Apprentissage', !isMastered,
           function () { moveToPool(p.id, false); });
 
+        var hardNow = isHard(p.id);
+        var hardBtn = moveBtn(hardNow ? 'Difficile ✓' : 'Difficile',
+          'chercher-move chercher-move-hard' + (hardNow ? ' activated' : ''),
+          hardNow ? 'Ne plus marquer comme difficile' : 'Marquer comme difficile',
+          false,
+          function () {
+            // clearing also resets the automatic score, otherwise it stays hard
+            if (hardNow) writePhrase(p.id, { hardManual: false, hardScore: 0 });
+            else setHardManual(p.id, true);
+            invalidateCycles();
+          });
+
         var delBtn = document.createElement('button');
         delBtn.className = 'chercher-delete';
         delBtn.textContent = 'Supprimer';
@@ -1076,6 +1261,7 @@
         actions.appendChild(toAcquis3);
         actions.appendChild(toAcquis6);
         actions.appendChild(toAppr);
+        if (isMastered) actions.appendChild(hardBtn);
         actions.appendChild(delBtn);
 
         footer.appendChild(stats);
@@ -1119,6 +1305,12 @@
 
     $('btn-handsfree').addEventListener('click', function () {
       startHandsfree();
+    });
+
+    $('btn-difficiles').addEventListener('click', function () {
+      var hard = getHardPhrases();
+      if (hard.length === 0) return;
+      startHandsfree(hard);
     });
 
     $('btn-chercher').addEventListener('click', function () {
@@ -1211,6 +1403,7 @@
       var p = acquisPhrases[acquisIndex];
       if (!p) return;
       toggleBoost(p.id);
+      invalidateCycles();
       updateAcquisSixButton();
     });
     $('btn-handsfree-next').addEventListener('click', skipNextHandsfree);
@@ -1219,6 +1412,7 @@
       var p = handsfreePhrases[handsfreeIndex];
       if (!p) return;
       var nowBoosted = toggleBoost(p.id); // persistent — stays until cancelled
+      invalidateCycles();
       if (nowBoosted) {
         handsfreeReadTarget = Math.max(6, handsfreeLastReadNum + 3);
         // If we're in the 8s final pause, cancel it and do more reads
@@ -1244,12 +1438,18 @@
       }
     });
 
-    $('btn-suivant').addEventListener('click', function () {
+    // Recall outcome: both answers advance; "Pas su" marks the phrase difficult.
+    function answerAcquis(knew) {
+      var p = acquisPhrases[acquisIndex];
+      if (p) recordAcquisOutcome(p.id, knew);
       acquisIndex++;
       showAcquisPhrase();
-    });
+    }
+    $('btn-acquis-su').addEventListener('click', function () { answerAcquis(true); });
+    $('btn-acquis-pas-su').addEventListener('click', function () { answerAcquis(false); });
 
     $('btn-acquis-home').addEventListener('click', function () {
+      endAcquisSession();
       updateHomeScreen();
       showScreen('screen-home');
     });

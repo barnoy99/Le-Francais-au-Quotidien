@@ -1096,6 +1096,73 @@ ul {
 .handsfree-pause-wrap .bar-mid   { grid-column: 2; justify-self: start; }
 .handsfree-pause-wrap .bar-right { grid-column: 3; justify-self: end; }
 
+/* Mes Acquis recall answers — sized and spaced so the two opposite meanings
+   can't be mis-tapped (23px between them, 34px clear of ×6 at 375px). */
+.acquis-answers {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.btn-answer {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.6rem 1.1rem;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-answer--yes {
+  color: var(--color-sage);
+  border: 2px solid var(--color-sage);
+}
+
+.btn-answer--yes:active {
+  background: var(--color-sage);
+  color: #fff;
+}
+
+.btn-answer--no {
+  color: var(--color-slate);
+  border: 2px solid var(--color-slate);
+}
+
+.btn-answer--no:active {
+  background: var(--color-slate);
+  color: #fff;
+}
+
+/* Home screen: secondary links row (Difficiles + Progrès) — same row so the
+   home screen never needs to scroll. */
+.home-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.btn-difficiles {
+  color: #B23A16;
+}
+
+/* Chercher: mark a phrase difficult by hand */
+.chercher-move-hard {
+  color: #B23A16;
+  border-color: rgba(178, 58, 22, 0.4);
+}
+
+.chercher-move-hard.activated {
+  background: #B23A16;
+  border-color: #B23A16;
+  color: #fff;
+}
+
 /* Primary action button docked inside the fixed bottom bar ("Suivant").
    Padding kept moderate so the right column stays balanced with the left,
    which keeps ×6 centered and leaves a gap on each side. */
