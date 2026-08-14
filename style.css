@@ -1052,6 +1052,7 @@ ul {
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: "lnum" 1, "tnum" 1;
   line-height: 1;
+  white-space: nowrap;   /* never let two digits stack onto separate lines */
   color: var(--color-amber);
   width: 80px;
   height: 80px;
@@ -1061,6 +1062,11 @@ ul {
   align-items: center;
   justify-content: center;
   animation: pulse-soft 1s ease-in-out infinite;
+}
+
+/* 10, 11, 12… — shrink so both digits sit comfortably inside the ring */
+.handsfree-countdown-num.two-digit {
+  font-size: 2.4rem;
 }
 
 @keyframes pulse-soft {

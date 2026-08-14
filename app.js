@@ -803,6 +803,16 @@
   }
 
   // Reusable countdown: ring stays visible at all times, calls onDone when it hits 0
+  // Two-digit values need a smaller font or they overflow / wrap inside the
+  // 80px ring (especially when the webfont hasn't loaded and the wider
+  // fallback serif is used, e.g. offline).
+  function setCountdownNum(value) {
+    var el = $('handsfree-countdown-num');
+    var txt = String(value);
+    el.textContent = txt;
+    el.classList.toggle('two-digit', txt.length > 1);
+  }
+
   function startCountdown(seconds, label, onDone) {
     if (!handsfreeActive) return;
     // Never allow two countdown intervals at once — kill any leftover first.
@@ -812,11 +822,11 @@
     handsfreeCountdownLabel = label;
     handsfreeCountdownDone = onDone;
     handsfreeCountdownRemaining = seconds;
-    $('handsfree-countdown-num').textContent = seconds;
+    setCountdownNum(seconds);
     var intervalId = setInterval(function () {
       if (!handsfreeActive) { clearInterval(intervalId); return; }
       handsfreeCountdownRemaining--;
-      $('handsfree-countdown-num').textContent = Math.max(0, handsfreeCountdownRemaining);
+      setCountdownNum(Math.max(0, handsfreeCountdownRemaining));
       if (handsfreeCountdownRemaining <= 0) {
         clearInterval(intervalId);
         if (handsfreeCountdownId === intervalId) handsfreeCountdownId = null;
@@ -831,7 +841,7 @@
   // Show ♪ in countdown ring to indicate speech is playing
   function showSpeakingIndicator(label) {
     if (label) $('handsfree-phase').textContent = label;
-    $('handsfree-countdown-num').textContent = '♪';
+    setCountdownNum('♪');
   }
 
   // Speak a sentence and register a resume hook, so pausing mid-sentence and
