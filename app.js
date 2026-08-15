@@ -722,7 +722,10 @@
     $('acquis-english').textContent = p.en;
     $('acquis-french').textContent = p.fr;
     $('acquis-alt').textContent = p.alt_usage || '';
-    $('acquis-counter').textContent = (acquisIndex + 1) + ' / ' + acquisPhrases.length;
+    // Denominator is the pool you're working through, not the internal batch
+    // size (sessions top up transparently as you go).
+    $('acquis-counter').textContent = (acquisIndex + 1) + ' / ' +
+      (acquisCustomPool ? acquisPhrases.length : getMasteredPhrases().length);
     updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
@@ -1092,7 +1095,8 @@
     if (handsfreeHistory.length > 30) handsfreeHistory.shift(); // cap history
 
     var p = handsfreePhrases[handsfreeIndex];
-    $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
+    $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' +
+      (handsfreeCustomPool ? handsfreePhrases.length : getMasteredPhrases().length);
 
     // Reset per-exercise state — boosted phrases start at 6 reads
     handsfreeReadTarget = isBoosted(p.id) ? 6 : 3;
