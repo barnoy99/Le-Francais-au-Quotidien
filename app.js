@@ -243,16 +243,13 @@
     writePhrase(id, { hardManual: !!value });
   }
 
-  // "Pas su" makes a phrase hard immediately; two clean recalls clear it again.
-  function recordAcquisOutcome(id, knew) {
-    var d = getPhraseData(id);
-    var score = d.hardScore || 0;
-    if (knew) {
-      writePhrase(id, { hardScore: Math.max(score - 1, 0) });
-    } else {
-      writePhrase(id, { hardScore: Math.min(score + 3, 5), misses: (d.misses || 0) + 1 });
-    }
+  // Simple on/off flag, like ×6. Clearing also zeroes any legacy auto-score.
+  function toggleHard(id) {
+    var nowHard = !isHard(id);
+    if (nowHard) writePhrase(id, { hardManual: true });
+    else writePhrase(id, { hardManual: false, hardScore: 0 });
     invalidateCycles();
+    return nowHard;
   }
 
   // How many copies of a phrase go into one rotation cycle.
@@ -718,7 +715,7 @@
     updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
-    hide($('acquis-answers'));
+    hide($('btn-suivant'));
   }
 
   function updateAcquisSixButton() {
@@ -727,13 +724,21 @@
     var p = acquisPhrases[acquisIndex];
     var boosted = p ? isBoosted(p.id) : false;
     btn.classList.toggle('activated', boosted);
-    btn.textContent = boosted ? '×6 ✓' : '×6';
+    btn.textContent = '×6';
+    updateFlagButton('btn-acquis-hard', p);
+  }
+
+  // Shared by both screens — reflects the difficulty flag of the current phrase
+  function updateFlagButton(btnId, phrase) {
+    var btn = $(btnId);
+    if (!btn) return;
+    btn.classList.toggle('activated', phrase ? isHard(phrase.id) : false);
   }
 
   function revealAcquis() {
     hide($('acquis-reveal-area'));
     show($('acquis-revealed'));
-    show($('acquis-answers'));
+    show($('btn-suivant'));
   }
 
   function speakFrench(text) {
@@ -1048,7 +1053,8 @@
     var p = handsfreePhrases[handsfreeIndex];
     var boosted = p ? isBoosted(p.id) : false;
     btn.classList.toggle('activated', boosted);
-    btn.textContent = boosted ? '×6 ✓' : '×6';
+    btn.textContent = '×6';
+    updateFlagButton('btn-handsfree-hard', p);
   }
 
   function handsfreeStep() {
@@ -1078,7 +1084,7 @@
     $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length;
 
     // Reset per-exercise state — boosted phrases start at 6 reads
-    handsfreeReadTarget = (isBoosted(p.id) || isHard(p.id)) ? 6 : 3;
+    handsfreeReadTarget = isBoosted(p.id) ? 6 : 3;
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     updateSixButton();
@@ -1438,15 +1444,25 @@
       }
     });
 
-    // Recall outcome: both answers advance; "Pas su" marks the phrase difficult.
-    function answerAcquis(knew) {
-      var p = acquisPhrases[acquisIndex];
-      if (p) recordAcquisOutcome(p.id, knew);
+    $('btn-suivant').addEventListener('click', function () {
       acquisIndex++;
       showAcquisPhrase();
-    }
-    $('btn-acquis-su').addEventListener('click', function () { answerAcquis(true); });
-    $('btn-acquis-pas-su').addEventListener('click', function () { answerAcquis(false); });
+    });
+
+    // Difficulty flag — on/off, from either practice screen
+    $('btn-acquis-hard').addEventListener('click', function () {
+      var p = acquisPhrases[acquisIndex];
+      if (!p) return;
+      toggleHard(p.id);
+      updateFlagButton('btn-acquis-hard', p);
+    });
+
+    $('btn-handsfree-hard').addEventListener('click', function () {
+      var p = handsfreePhrases[handsfreeIndex];
+      if (!p) return;
+      toggleHard(p.id);
+      updateFlagButton('btn-handsfree-hard', p);
+    });
 
     $('btn-acquis-home').addEventListener('click', function () {
       endAcquisSession();
