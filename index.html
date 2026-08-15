@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=48">
 </head>
 <body>
   <div id="app">
@@ -54,7 +54,8 @@
             <svg class="btn-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </button>
           <div class="home-links">
-            <button id="btn-difficiles" class="btn-text btn-difficiles hidden">Difficiles (0)</button>
+            <button id="btn-difficiles" class="btn-text btn-difficiles hidden" title="Écouter les difficiles (Mains Libres)">⚑ Écouter (0)</button>
+            <button id="btn-difficiles-acquis" class="btn-text btn-difficiles hidden" title="Réviser les difficiles (rappel)">⚑ Réviser (0)</button>
             <button id="btn-home-progress" class="btn-text">Progrès</button>
           </div>
         </div>
@@ -280,6 +281,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=27"></script>
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=43"></script>
 </body>
 </html>

@@ -23,6 +23,7 @@
   var handsfreeBatchLen = 0;
   var handsfreeMaxSeen = 0;
   var handsfreeCustomPool = false;   // true for the Difficiles-only session
+  var acquisCustomPool = false;      // same, for Mes Acquis
   var handsfreeActive = false;
   var handsfreePaused = false;
   var handsfreePhrases = [];
@@ -655,11 +656,12 @@
     $('btn-handsfree').disabled = count === 0;
 
     var hardCount = getHardPhrases().length;
-    var hardBtn = $('btn-difficiles');
-    if (hardBtn) {
-      hardBtn.textContent = 'Difficiles (' + hardCount + ')';
-      if (hardCount === 0) hide(hardBtn); else show(hardBtn);
-    }
+    [['btn-difficiles', '⚑ Écouter'], ['btn-difficiles-acquis', '⚑ Réviser']].forEach(function (pair) {
+      var btn = $(pair[0]);
+      if (!btn) return;
+      btn.textContent = pair[1] + ' (' + hardCount + ')';
+      if (hardCount === 0) hide(btn); else show(btn);
+    });
   }
 
   // A session pulls a batch from the cycle; whatever it doesn't reach is handed
@@ -674,11 +676,19 @@
     }
   }
 
-  function startAcquis() {
-    var pool = getMasteredPhrases();
-    if (pool.length === 0) return;
-    acquisPhrases = takeFromCycle('acq', pool, Math.min(SESSION_BATCH, pool.length * 4));
-    acquisBatchLen = acquisPhrases.length;
+  // pool omitted → the full mastered rotation; pool given → a filtered session
+  // (Difficiles), which uses a plain shuffle since the set is small.
+  function startAcquis(pool) {
+    acquisCustomPool = !!pool;
+    var source = pool || getMasteredPhrases();
+    if (source.length === 0) return;
+    if (acquisCustomPool) {
+      acquisPhrases = weightedShuffle(source);
+      acquisBatchLen = 0;
+    } else {
+      acquisPhrases = takeFromCycle('acq', source, Math.min(SESSION_BATCH, source.length * 4));
+      acquisBatchLen = acquisPhrases.length;
+    }
     acquisMaxSeen = 0;
     acquisIndex = 0;
     if (acquisPhrases.length === 0) return;
@@ -693,7 +703,8 @@
   function showAcquisPhrase() {
     if (acquisIndex >= acquisPhrases.length) {
       // batch spent — pull the next slice of the cycle so the session continues
-      var pool = getMasteredPhrases();
+      // (a filtered Difficiles session just ends instead)
+      var pool = acquisCustomPool ? [] : getMasteredPhrases();
       var more = pool.length ? takeFromCycle('acq', pool, SESSION_BATCH) : [];
       if (more.length) {
         acquisPhrases = acquisPhrases.concat(more);
@@ -1317,6 +1328,12 @@
       var hard = getHardPhrases();
       if (hard.length === 0) return;
       startHandsfree(hard);
+    });
+
+    $('btn-difficiles-acquis').addEventListener('click', function () {
+      var hard = getHardPhrases();
+      if (hard.length === 0) return;
+      startAcquis(hard);
     });
 
     $('btn-chercher').addEventListener('click', function () {

@@ -1138,12 +1138,27 @@ ul {
 
 /* Home screen: secondary links row (Difficiles + Progrès) — same row so the
    home screen never needs to scroll. */
+/* Three links share one row (Écouter / Réviser / Progrès), so they run a
+   little smaller — measured to span 325px of the 339px available at 375px,
+   while keeping 44px tap targets. */
 .home-links {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 0.9rem;
   margin-top: 0.25rem;
+}
+
+.home-links .btn-text {
+  font-size: 0.95rem;
+  padding: 0.45rem 0.5rem;
+  /* the ⚑ falls back to a symbol font with taller metrics, which inflates the
+     line box — fix the height and centre so all three links match */
+  height: 44px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-difficiles {
