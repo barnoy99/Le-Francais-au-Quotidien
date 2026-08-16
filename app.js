@@ -43,6 +43,7 @@
   var handsfreeCountdownRemaining = 0;  // seconds left on the active countdown
   var handsfreeCountdownLabel = '';     // label of the active countdown
   var handsfreeCountdownDone = null;    // onDone of the active countdown
+  var handsfreeCountdownTick = null;    // optional per-second hook (caption changes)
   var handsfreeResumeAction = null;     // closure to run on resume
   var handsfreeResumeSpeak = null;      // closure to re-speak the current sentence
   var handsfreeLastPrevTime = 0;        // for double-tap "back" = previous item
@@ -863,6 +864,7 @@
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     handsfreeCountdownDone = null;
+    handsfreeCountdownTick = null;
     handsfreeResumeSpeak = null;
     handsfreeResumeAction = null;
   }
@@ -889,8 +891,9 @@
       // Freeze the countdown; resume restarts it with the seconds left.
       clearInterval(handsfreeCountdownId);
       handsfreeCountdownId = null;
-      var label = handsfreeCountdownLabel, remaining = handsfreeCountdownRemaining, done = handsfreeCountdownDone;
-      handsfreeResumeAction = function () { startCountdown(remaining, label, done); };
+      var label = handsfreeCountdownLabel, remaining = handsfreeCountdownRemaining,
+          done = handsfreeCountdownDone, tick = handsfreeCountdownTick;
+      handsfreeResumeAction = function () { startCountdown(remaining, label, done, tick); };
     } else if (handsfreeResumeSpeak) {
       // Mid-sentence: cancel and re-read it from the start on resume
       // (mobile speech engines can't reliably resume a paused utterance).
@@ -994,25 +997,36 @@
     el.classList.toggle('two-digit', txt.length > 1);
   }
 
-  function startCountdown(seconds, label, onDone) {
+  // Sets the phase caption and keeps it in sync for pause/resume
+  function setPhaseLabel(txt) {
+    $('handsfree-phase').textContent = txt;
+    handsfreeCountdownLabel = txt;
+  }
+
+  // onTick(remaining) is optional — used to change the caption partway through
+  // a countdown without restarting the numbers.
+  function startCountdown(seconds, label, onDone, onTick) {
     if (!handsfreeActive) return;
     // Never allow two countdown intervals at once — kill any leftover first.
     if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
     handsfreeResumeSpeak = null; // we're in a countdown, not speaking
-    $('handsfree-phase').textContent = label;
-    handsfreeCountdownLabel = label;
+    setPhaseLabel(label);
     handsfreeCountdownDone = onDone;
+    handsfreeCountdownTick = onTick || null;
     handsfreeCountdownRemaining = seconds;
     setCountdownNum(seconds);
+    if (onTick) onTick(seconds);
     var intervalId = setInterval(function () {
       if (!handsfreeActive) { clearInterval(intervalId); return; }
       handsfreeCountdownRemaining--;
       setCountdownNum(Math.max(0, handsfreeCountdownRemaining));
+      if (handsfreeCountdownTick) handsfreeCountdownTick(handsfreeCountdownRemaining);
       if (handsfreeCountdownRemaining <= 0) {
         clearInterval(intervalId);
         if (handsfreeCountdownId === intervalId) handsfreeCountdownId = null;
         var done = handsfreeCountdownDone;
         handsfreeCountdownDone = null;
+        handsfreeCountdownTick = null;
         if (done) done();
       }
     }, 1000);
@@ -1142,10 +1156,15 @@
           });
         };
         handsfreeCurrentReadsDoneCallback = advanceFn;
-        startCountdown(2, 'Écoutez en anglais…', function () {
-          startCountdown(9, 'Rappelez-vous…', function () {
-            doFrenchReads(frenchText, 1, advanceFn);
-          });
+        // One continuous 11s countdown (2s to finish taking in the English,
+        // then 9s to recall). Previously these were two separate countdowns,
+        // so the ring showed "2, 1" and then restarted at "9" — which read
+        // like a broken 12, 11, 10… Now the number runs straight down and only
+        // the caption changes when the thinking time starts.
+        startCountdown(11, 'Écoutez en anglais…', function () {
+          doFrenchReads(frenchText, 1, advanceFn);
+        }, function (remaining) {
+          if (remaining === 9) setPhaseLabel('Rappelez-vous…');
         });
       });
     });
