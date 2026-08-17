@@ -4,6 +4,11 @@ French phrase-learning PWA. Plain HTML/CSS/JS, no build step. Deployed as a
 static site straight from this repo's `master` branch — a change is live only
 after it lands on `master`.
 
+> **Read `HANDOFF.md` first** for the full picture: architecture, the rotation
+> /pass system, difficulty flag, UI layout budgets, current stats, and the
+> gotchas (chiefly: the local preview reads and writes the user's LIVE progress
+> data, and the service worker serves cached assets).
+
 ## Adding phrases (most common request)
 
 - Phrases live in `data.js` as `var PHRASES = [...]`.
@@ -34,5 +39,10 @@ Skipping any of these leaves users' devices serving stale files.
   hosting. Do not cache firebaseio.com requests in the service worker.
 - Pools: `level === 4` = mastered (Mes Acquis + Mains Libres draw from it);
   anything lower is in the Apprentissage spaced-repetition rotation.
-  Per-phrase `boost` flag = "×6" (six hands-free repetitions instead of three).
+  Per-phrase `boost` flag = "×6" (six hands-free repetitions instead of three);
+  `hardManual` = the ⚑ difficulty flag (doubles frequency only).
+- All phrase writes go through `writePhrase(id, changes)` — it merges, so no
+  field is silently dropped. Never rebuild a phrase record inline.
+- Order comes from a persistent rotation cycle (`acqCycle`/`hfCycle` + cursors +
+  `*Pass` progress maps), not a per-session shuffle. See `HANDOFF.md` §4.
 - UI language is French; code comments in English. Keep edits minimal and scoped.
