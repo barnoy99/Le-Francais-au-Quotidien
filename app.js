@@ -85,7 +85,8 @@
 
   function defaults() {
     return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [],
-             hfCycle: [], hfCursor: 0, acqCycle: [], acqCursor: 0 };
+             hfCycle: [], hfCursor: 0, hfPass: {},
+             acqCycle: [], acqCursor: 0, acqPass: {} };
   }
 
   function activePhrases() {
@@ -599,17 +600,27 @@
     return arr;
   }
 
-  function buildCycle(pool, weighted) {
-    // Build in rounds: round 1 holds every phrase, round 2 only those with a
-    // second copy, and so on. Concatenating rounds puts a phrase's copies
-    // roughly a full round apart instead of a few cards apart.
-    var copiesOf = {}, maxCopies = 1;
+  // `done` (optional) maps id → how many copies of it have already been shown
+  // in the current pass; those are left out so a rebuild doesn't repeat them.
+  function buildCycle(pool, weighted, done) {
+    var copiesOf = {}, maxCopies = 1, anyLeft = false;
     for (var i = 0; i < pool.length; i++) {
-      var c = weighted ? cycleCopies(pool[i].id) : 1;
-      copiesOf[pool[i].id] = c;
+      var id = pool[i].id;
+      var c = weighted ? cycleCopies(id) : 1;
+      if (done) c = Math.max(0, c - (done[id] || 0));
+      copiesOf[id] = c;
+      if (c > 0) anyLeft = true;
       if (c > maxCopies) maxCopies = c;
     }
-    if (!weighted || maxCopies === 1) return shuffleIds(pool.map(function (p) { return p.id; }));
+    if (!anyLeft) return [];   // pass finished — caller starts a fresh one
+
+    if (!weighted || maxCopies === 1) {
+      var single = [];
+      for (var i = 0; i < pool.length; i++) {
+        if (copiesOf[pool[i].id] > 0) single.push(pool[i].id);
+      }
+      return shuffleIds(single);
+    }
 
     // Spread each phrase's copies evenly around the cycle: a phrase with k
     // copies aims for slots one N/k stride apart (k=2 → ~half a cycle between
@@ -641,16 +652,24 @@
   // Returns the next `count` phrases from the persistent cycle, rebuilding it
   // when exhausted or when the pool changed. `key` is 'hf' or 'acq'.
   function takeFromCycle(key, pool, count) {
-    var cycleKey = key + 'Cycle', cursorKey = key + 'Cursor', sigKey = key + 'Sig';
+    var cycleKey = key + 'Cycle', cursorKey = key + 'Cursor',
+        sigKey = key + 'Sig', passKey = key + 'Pass';
     var byId = {};
     for (var i = 0; i < pool.length; i++) byId[pool[i].id] = pool[i];
     var weighted = usesWeightedCycle(key);
     var sig = poolSignature(pool, weighted);
+    if (!state[passKey]) state[passKey] = {};
 
+    // Rebuild when the pool changes — but only over what's still owed this
+    // pass, so mastering/flagging a phrase no longer restarts the rotation.
     if (!state[cycleKey] || !state[cycleKey].length || state[sigKey] !== sig) {
-      state[cycleKey] = buildCycle(pool, weighted);
+      state[cycleKey] = buildCycle(pool, weighted, state[passKey]);
       state[cursorKey] = 0;
       state[sigKey] = sig;
+      if (!state[cycleKey].length) {          // nothing owed → begin a new pass
+        state[passKey] = {};
+        state[cycleKey] = buildCycle(pool, weighted);
+      }
     }
 
     var out = [];
@@ -658,8 +677,13 @@
     while (out.length < count && guard < 5000) {
       guard++;
       if (state[cursorKey] >= state[cycleKey].length) {
-        state[cycleKey] = buildCycle(pool, weighted);   // cycle complete — start fresh
+        // The cycle has served everything it owed, so lay out the next pass in
+        // full. (Filtering by what's been *seen* only applies when the pool
+        // changes — see above; doing it here would re-serve the same phrase
+        // over and over, because the pre-fetch runs ahead of what's displayed.)
+        state[cycleKey] = avoidEarlyRepeat(buildCycle(pool, weighted), state[key + 'Last']);
         state[cursorKey] = 0;
+        if (!state[cycleKey].length) break;
       }
       var id = state[cycleKey][state[cursorKey]];
       state[cursorKey]++;
@@ -668,6 +692,40 @@
     }
     save();
     return out;
+  }
+
+  // Keeps the phrase you just saw from reappearing at the top of the next pass
+  function avoidEarlyRepeat(cyc, lastId) {
+    if (!lastId || cyc.length < 8) return cyc;
+    var guard = Math.min(20, Math.floor(cyc.length / 2));
+    for (var i = 0; i < guard; i++) {
+      if (cyc[i] === lastId) {
+        var half = Math.floor(cyc.length / 2);
+        var k = Math.min(cyc.length - 1, half + Math.floor(Math.random() * half));
+        var t = cyc[i]; cyc[i] = cyc[k]; cyc[k] = t;
+      }
+    }
+    return cyc;
+  }
+
+  // Counts a phrase as covered in the current pass (called when it's shown).
+  // If the previous pass was already complete, this card opens a new one — so
+  // the final card of a pass still displays "221 / 221" before it rolls over.
+  function markPassSeen(key, id, poolSize) {
+    var passKey = key + 'Pass';
+    if (!state[passKey]) state[passKey] = {};
+    if (poolSize && passProgress(key) >= poolSize) state[passKey] = {};
+    state[passKey][id] = (state[passKey][id] || 0) + 1;
+    state[key + 'Last'] = id;
+    save();
+  }
+
+  // How many distinct phrases have been covered in the current pass
+  function passProgress(key) {
+    var p = state[key + 'Pass'] || {};
+    var n = 0;
+    for (var id in p) { if (p[id] > 0) n++; }
+    return n;
   }
 
   // Called when boost/difficulty changes so the cycle is rebuilt with new weights.
@@ -748,15 +806,17 @@
     }
     acquisMaxSeen = Math.max(acquisMaxSeen, acquisIndex + 1);
     var p = acquisPhrases[acquisIndex];
+    if (!acquisCustomPool) markPassSeen('acq', p.id, getMasteredPhrases().length);
     showScreen('screen-acquis');
     $('acquis-context').textContent = p.context;
     $('acquis-english').textContent = p.en;
     $('acquis-french').textContent = p.fr;
     $('acquis-alt').textContent = p.alt_usage || '';
-    // Denominator is the pool you're working through, not the internal batch
-    // size (sessions top up transparently as you go).
-    $('acquis-counter').textContent = (acquisIndex + 1) + ' / ' +
-      (acquisCustomPool ? acquisPhrases.length : getMasteredPhrases().length);
+    // Shows progress through the current pass over your whole collection —
+    // it carries across sessions, so "45 / 221" means 45 covered so far.
+    $('acquis-counter').textContent = acquisCustomPool
+      ? (acquisIndex + 1) + ' / ' + acquisPhrases.length
+      : passProgress('acq') + ' / ' + getMasteredPhrases().length;
     updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
@@ -1139,8 +1199,11 @@
     if (handsfreeHistory.length > 30) handsfreeHistory.shift(); // cap history
 
     var p = handsfreePhrases[handsfreeIndex];
-    $('handsfree-counter').textContent = (handsfreeIndex + 1) + ' / ' +
-      (handsfreeCustomPool ? handsfreePhrases.length : getMasteredPhrases().length);
+    // count the phrase once per visit, not once per exercise (main + alt)
+    if (!handsfreeCustomPool && handsfreeExercise === 'main') markPassSeen('hf', p.id, getMasteredPhrases().length);
+    $('handsfree-counter').textContent = handsfreeCustomPool
+      ? (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length
+      : passProgress('hf') + ' / ' + getMasteredPhrases().length;
 
     // Reset per-exercise state — boosted phrases start at 6 reads
     handsfreeReadTarget = isBoosted(p.id) ? 6 : 3;
