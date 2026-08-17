@@ -1205,8 +1205,9 @@
       ? (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length
       : passProgress('hf') + ' / ' + getMasteredPhrases().length;
 
-    // Reset per-exercise state — boosted phrases start at 6 reads
-    handsfreeReadTarget = isBoosted(p.id) ? 6 : 3;
+    // Reset per-exercise state — boosted phrases start at 6 reads, except in a
+    // filtered (⚑ Écouter) session, where every phrase gets a plain 3.
+    handsfreeReadTarget = (!handsfreeCustomPool && isBoosted(p.id)) ? 6 : 3;
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     updateSixButton();
@@ -1552,6 +1553,9 @@
       if (!p) return;
       var nowBoosted = toggleBoost(p.id); // persistent — stays until cancelled
       invalidateCycles();
+      // In a filtered (⚑ Écouter) session the flag is recorded for the main
+      // rotation but never changes this session's readings — always 3.
+      if (handsfreeCustomPool) { updateSixButton(); return; }
       if (nowBoosted) {
         handsfreeReadTarget = Math.max(6, handsfreeLastReadNum + 3);
         // If we're in the 8s final pause, cancel it and do more reads

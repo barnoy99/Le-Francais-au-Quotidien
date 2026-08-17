@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=52`, `style.css?v=48`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v32'`.
+**Current versions:** `app.js?v=53`, `style.css?v=48`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v33'`.
 
 **Always `git pull` first** — the user also runs Claude Code sessions from their
 phone against this repo and merges PRs, so master moves independently. Phrase-id
@@ -56,6 +56,9 @@ preceded by a beep, with **8s** gaps ("Encore…") → **8s** "Suivant…" → n
 
 N = **6 if the phrase is ×6, else 3**. Difficulty does *not* change N (user's
 explicit choice). Each phrase plays as two exercises: main sentence, then alt.
+**Exception:** in a filtered ⚑ Écouter session N is **always 3**, ×6 or not —
+tapping ×6 there still records the flag for the main rotation but doesn't extend
+the current exercise (`handsfreeCustomPool` guards both spots).
 
 Pause freezes a countdown and resumes it; pausing mid-sentence re-reads that
 sentence from the start on resume (mobile speech engines can't resume reliably).
@@ -129,7 +132,7 @@ Effect: **doubles frequency only** (2 copies per Mains Libres cycle). It does no
 change the number of readings.
 
 Two home-screen links appear when the count > 0, hidden at 0:
-- **⚑ Écouter (N)** → Mains Libres with only flagged phrases
+- **⚑ Écouter (N)** → Mains Libres with only flagged phrases, every one read 3×
 - **⚑ Réviser (N)** → Mes Acquis recall with only flagged phrases
 
 ---
