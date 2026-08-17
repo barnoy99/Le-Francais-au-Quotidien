@@ -579,34 +579,63 @@
   // every phrase appears once per unit of weight (plain 1, ×6 or hard 2, hard+×6
   // 4), then walk through it across sessions. Every phrase is guaranteed its turn.
 
-  function poolSignature(pool) {
+  // Mains Libres repeats ×6/hard phrases within a pass; Mes Acquis does not —
+  // meeting the same card again a few minutes after seeing its answer tests
+  // short-term memory, not recall.
+  function usesWeightedCycle(key) { return key === 'hf'; }
+
+  function poolSignature(pool, weighted) {
+    if (!weighted) return pool.length + ':1';
     var totalWeight = 0;
     for (var i = 0; i < pool.length; i++) totalWeight += cycleCopies(pool[i].id);
     return pool.length + ':' + totalWeight;
   }
 
-  function buildCycle(pool) {
-    var cyc = [];
-    for (var i = 0; i < pool.length; i++) {
-      var copies = cycleCopies(pool[i].id);
-      for (var k = 0; k < copies; k++) cyc.push(pool[i].id);
-    }
-    // shuffle
-    for (var i = cyc.length - 1; i > 0; i--) {
+  function shuffleIds(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
-      var t = cyc[i]; cyc[i] = cyc[j]; cyc[j] = t;
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
     }
-    // spacing pass — push apart copies of the same phrase landing close together
-    for (var i = 1; i < cyc.length; i++) {
-      for (var back = 1; back <= 10 && i - back >= 0; back++) {
-        if (cyc[i] === cyc[i - back]) {
-          var swap = Math.min(cyc.length - 1, i + 20 + Math.floor(Math.random() * 30));
-          var tmp = cyc[i]; cyc[i] = cyc[swap]; cyc[swap] = tmp;
-          break;
-        }
+    return arr;
+  }
+
+  function buildCycle(pool, weighted) {
+    // Build in rounds: round 1 holds every phrase, round 2 only those with a
+    // second copy, and so on. Concatenating rounds puts a phrase's copies
+    // roughly a full round apart instead of a few cards apart.
+    var copiesOf = {}, maxCopies = 1;
+    for (var i = 0; i < pool.length; i++) {
+      var c = weighted ? cycleCopies(pool[i].id) : 1;
+      copiesOf[pool[i].id] = c;
+      if (c > maxCopies) maxCopies = c;
+    }
+    if (!weighted || maxCopies === 1) return shuffleIds(pool.map(function (p) { return p.id; }));
+
+    // Spread each phrase's copies evenly around the cycle: a phrase with k
+    // copies aims for slots one N/k stride apart (k=2 → ~half a cycle between
+    // them, k=4 → ~a quarter), from a random starting offset. Collisions walk
+    // forward to the next free slot. Most-constrained phrases are placed first.
+    var total = 0;
+    for (var i = 0; i < pool.length; i++) total += copiesOf[pool[i].id];
+
+    var order = pool.slice().sort(function (a, b) {
+      var d = copiesOf[b.id] - copiesOf[a.id];
+      return d !== 0 ? d : (Math.random() - 0.5);
+    });
+
+    var slots = new Array(total);
+    for (var i = 0; i < order.length; i++) {
+      var id = order[i].id, k = copiesOf[id];
+      var stride = total / k;
+      var offset = Math.random() * total;
+      for (var j = 0; j < k; j++) {
+        var pos = Math.round(offset + j * stride) % total;
+        var tries = 0;
+        while (slots[pos] !== undefined && tries < total) { pos = (pos + 1) % total; tries++; }
+        slots[pos] = id;
       }
     }
-    return cyc;
+    return slots;
   }
 
   // Returns the next `count` phrases from the persistent cycle, rebuilding it
@@ -615,10 +644,11 @@
     var cycleKey = key + 'Cycle', cursorKey = key + 'Cursor', sigKey = key + 'Sig';
     var byId = {};
     for (var i = 0; i < pool.length; i++) byId[pool[i].id] = pool[i];
-    var sig = poolSignature(pool);
+    var weighted = usesWeightedCycle(key);
+    var sig = poolSignature(pool, weighted);
 
     if (!state[cycleKey] || !state[cycleKey].length || state[sigKey] !== sig) {
-      state[cycleKey] = buildCycle(pool);
+      state[cycleKey] = buildCycle(pool, weighted);
       state[cursorKey] = 0;
       state[sigKey] = sig;
     }
@@ -628,7 +658,7 @@
     while (out.length < count && guard < 5000) {
       guard++;
       if (state[cursorKey] >= state[cycleKey].length) {
-        state[cycleKey] = buildCycle(pool);   // cycle complete — start a fresh one
+        state[cycleKey] = buildCycle(pool, weighted);   // cycle complete — start fresh
         state[cursorKey] = 0;
       }
       var id = state[cycleKey][state[cursorKey]];
