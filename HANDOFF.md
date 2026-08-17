@@ -186,8 +186,9 @@ mobile preset (375×812).
 
 - **325** entries in `data.js`; **34** deleted → **293 active** phrases
   = **586 French sentences** (every entry has an alt) / 1,172 with English
-- **221 mastered**, 27 in progress, 45 never seen
-- **16 flagged difficult**; ~152 of the mastered ones are ×6
+- **223 mastered**, ~25 in progress, ~45 never seen (these drift daily — the
+  user practises most days, so re-count rather than trusting these figures)
+- **16 flagged difficult**; ~151 of the mastered ones are ×6
 - ~3,000 sentences heard in Mains Libres, ~560 sessions, roughly 40/day
 
 ---
@@ -209,9 +210,13 @@ mobile preset (375×812).
 
 ## 10. Loose ends / possible next steps
 
-- **Firebase security rules:** the DB was in Test Mode with rules expiring.
-  The user was given the scoped-open rules to publish in the console and said
-  they'd handle it. If sync ever stops working, that's the first suspect.
+- **Firebase security rules:** the DB started in Test Mode, whose rules expire
+  after 30 days; the user was given scoped-open rules to publish. Verified since:
+  a client read succeeds and cloud/local data match exactly, so access is *not*
+  blocked. A client can't tell whether the rules are now permanent, so if sync
+  ever stops this is still the first suspect (console → Realtime Database →
+  Rules). Note Firebase strips `null` values, so the cloud holds fewer phrase
+  records than localStorage — that's expected, not data loss.
 - The **⚑ glyph** uses a system font stack so it resolves; if it looks wrong on
   the user's phone, swap it for `!` or a short word.
 - `hardScore` / `misses` are dead fields — safe to remove if ever tidying.
