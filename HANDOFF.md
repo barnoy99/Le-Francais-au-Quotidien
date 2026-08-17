@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=53`, `style.css?v=48`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v33'`.
+**Current versions:** `app.js?v=54`, `style.css?v=48`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v34'`.
 
 **Always `git pull` first** — the user also runs Claude Code sessions from their
 phone against this repo and merges PRs, so master moves independently. Phrase-id
@@ -56,9 +56,7 @@ preceded by a beep, with **8s** gaps ("Encore…") → **8s** "Suivant…" → n
 
 N = **6 if the phrase is ×6, else 3**. Difficulty does *not* change N (user's
 explicit choice). Each phrase plays as two exercises: main sentence, then alt.
-**Exception:** in a filtered ⚑ Écouter session N is **always 3**, ×6 or not —
-tapping ×6 there still records the flag for the main rotation but doesn't extend
-the current exercise (`handsfreeCustomPool` guards both spots).
+**⚑ Écouter is different on both counts** — see §5a.
 
 Pause freezes a countdown and resumes it; pausing mid-sentence re-reads that
 sentence from the start on resume (mobile speech engines can't resume reliably).
@@ -83,7 +81,8 @@ state = {
   phrases: { id: { level, lastSeen, timesSeen, hfSeen,
                    boost, hardManual, hardScore, misses } },
   acqCycle: [ids], acqCursor, acqPass: {id:count}, acqSig, acqLast,
-  hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast
+  hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast,
+  ecCycle: ["id:main"|"id:alt"], ecCursor        // ⚑ Écouter pass, §5a
 }
 ```
 
@@ -117,8 +116,9 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   shown (`avoidEarlyRepeat`).
 - Pool changes (mastering, deleting, toggling ×6/⚑) call `invalidateCycles()`;
   the rebuild covers **only what's still owed**, so progress isn't lost.
-- Filtered sessions (⚑ Écouter / ⚑ Réviser) use a plain `weightedShuffle` and
-  deliberately do **not** touch the cycles or pass counts.
+- **⚑ Réviser** uses a plain `weightedShuffle` and deliberately does **not**
+  touch the cycles or pass counts. **⚑ Écouter** has its own persistent pass
+  (`ecCycle`/`ecCursor`) and likewise leaves `hfCycle`/`hfPass` alone — see §5a.
 
 ---
 
@@ -132,8 +132,35 @@ Effect: **doubles frequency only** (2 copies per Mains Libres cycle). It does no
 change the number of readings.
 
 Two home-screen links appear when the count > 0, hidden at 0:
-- **⚑ Écouter (N)** → Mains Libres with only flagged phrases, every one read 3×
+- **⚑ Écouter (N)** → Mains Libres with only flagged phrases (see §5a)
 - **⚑ Réviser (N)** → Mes Acquis recall with only flagged phrases
+
+### 5a. ⚑ Écouter — its own persistent pass
+
+Écouter does *not* share the Mains Libres rotation, and its rules differ:
+
+- **Every sentence is read 4×** (`ECOUTER_READS`), ×6 or not. Tapping ×6 during
+  an Écouter session records the flag for the main rotation but never changes
+  the current sentence's reading count.
+- **Main and alt are independent items**, shuffled apart from each other — not
+  the "phrase = two exercises back-to-back" of the normal rotation. `ecSpread`
+  shuffles, then pushes any two sentences of the same phrase at least
+  `max(2, n/8)` slots apart (measured on live data: closest pair 5 of 32).
+- **The order persists**: `state.ecCycle` is a list of `"id:main"` / `"id:alt"`
+  keys, `state.ecCursor` walks it across sessions. Quitting hands the
+  interrupted sentence back (cursor − 1), so you resume on it rather than past
+  it. Counter shows `cursor / total`, e.g. `4 / 32`.
+- **The pass ends with `screen-ecouter-done`** ("Félicitations !", also spoken,
+  since the phone is probably in a pocket), which clears `ecCycle` — the next
+  session shuffles a brand-new order.
+- **Flag changes reach a pass already in progress**: `syncEcouterQueue()` (hung
+  off `invalidateCycles`, so every toggle path hits it) splices newly flagged
+  sentences into the part not yet played and drops un-flagged ones. Items before
+  the cursor keep their place, so nothing repeats and nothing loses its turn.
+- Sentences are pulled from the queue **one at a time** in `handsfreeStep`,
+  which is what lets a mid-session flag be picked up without restarting.
+  `handsfreeExercises` / `handsfreePositions` are parallel to `handsfreePhrases`
+  for this mode only.
 
 ---
 

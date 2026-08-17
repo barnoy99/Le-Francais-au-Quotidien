@@ -8,6 +8,9 @@
   var INTERVALS = [0, 120000, 86400000, 604800000, Infinity];
   // level → selection weight (0=unseen, 1=hard, 2=learning, 3=familiar)
   var WEIGHTS = [2, 4, 3, 1];
+  // ⚑ Écouter reads every sentence this many times, ×6 flag or not
+  var ECOUTER_READS = 4;
+  var ECOUTER_DONE_SPEECH = 'Félicitations ! Vous avez écouté toutes vos expressions difficiles.';
 
   var state;
   var sessionSeen = 0;
@@ -29,6 +32,11 @@
   var handsfreePhrases = [];
   var handsfreeIndex = 0;
   var handsfreeExercise = 'main'; // 'main' or 'alt'
+  // ⚑ Écouter only: main and alt are independent items pulled one at a time
+  // from the persistent queue, so each index needs its own exercise and its
+  // position in the pass (kept here so ⏮ still shows the right counter).
+  var handsfreeExercises = [];
+  var handsfreePositions = [];
   var handsfreeHistory = []; // stack of {index, exercise} for multi-step skip-back
   var handsfreeReadTarget = 3;          // 3 or 6, reset per exercise
   var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
@@ -86,7 +94,8 @@
   function defaults() {
     return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [],
              hfCycle: [], hfCursor: 0, hfPass: {},
-             acqCycle: [], acqCursor: 0, acqPass: {} };
+             acqCycle: [], acqCursor: 0, acqPass: {},
+             ecCycle: [], ecCursor: 0 };
   }
 
   function activePhrases() {
@@ -729,9 +738,140 @@
   }
 
   // Called when boost/difficulty changes so the cycle is rebuilt with new weights.
+  // Difficulty also changes who belongs in the ⚑ Écouter pass, so reconcile that
+  // queue here too — one hook covers every place a flag can be toggled.
   function invalidateCycles() {
     state.hfSig = null;
     state.acqSig = null;
+    syncEcouterQueue();
+  }
+
+  // ── ⚑ Écouter queue ────────────────────────────────────
+  // The flagged pool is small, so it skips the weighted rotation and gets a
+  // plain playlist instead: each flagged phrase contributes its main and its alt
+  // as two independent items, shuffled together. `ecCursor` walks the list
+  // across sessions; when it reaches the end the pass is over (félicitations)
+  // and the next session shuffles a fresh one.
+
+  function ecKey(id, exercise) { return id + ':' + exercise; }
+
+  function ecParse(key) {
+    var bits = String(key).split(':');
+    return { id: parseInt(bits[0], 10), exercise: bits[1] === 'alt' ? 'alt' : 'main' };
+  }
+
+  // Every sentence that belongs in a pass right now, phrase order.
+  function ecEligibleKeys() {
+    var keys = [], hard = getHardPhrases();
+    for (var i = 0; i < hard.length; i++) {
+      keys.push(ecKey(hard[i].id, 'main'));
+      if (hard[i].alt_usage) keys.push(ecKey(hard[i].id, 'alt'));
+    }
+    return keys;
+  }
+
+  // Guards a queued item at play time against changes the queue never saw
+  // (phrase deleted from data.js, un-mastered, un-flagged on another device).
+  function ecPlayable(id) {
+    if (!isHard(id)) return false;
+    if ((state.deletedIds || []).indexOf(id) !== -1) return false;
+    if (getPhraseData(id).level !== 4) return false;
+    return !!findPhraseById(id);
+  }
+
+  function ecTooClose(list, pos, key, minGap) {
+    var id = ecParse(key).id;
+    var from = Math.max(0, pos - minGap + 1), to = Math.min(list.length, pos + minGap);
+    for (var k = from; k < to; k++) {
+      if (k !== pos && list[k] && ecParse(list[k]).id === id) return true;
+    }
+    return false;
+  }
+
+  // Shuffle, then push apart the two sentences of the same phrase — a raw
+  // shuffle of ~32 items lands several pairs side by side, and hearing a
+  // phrase's alt right after its main defeats the point of separating them.
+  function ecSpread(keys) {
+    var out = shuffleIds(keys.slice());
+    var minGap = Math.max(2, Math.floor(out.length / 8));
+    for (var attempt = 0; attempt < 6; attempt++) {
+      var clean = true;
+      for (var i = 0; i < out.length; i++) {
+        if (!ecTooClose(out, i, out[i], minGap)) continue;
+        clean = false;
+        for (var j = 0; j < out.length; j++) {      // find a swap that suits both
+          if (j === i) continue;
+          var a = out[i], b = out[j];
+          out[i] = b; out[j] = a;
+          if (!ecTooClose(out, i, b, minGap) && !ecTooClose(out, j, a, minGap)) break;
+          out[i] = a; out[j] = b;                   // no good — put them back
+        }
+      }
+      if (clean) break;   // nothing left to fix (or nothing fixable — best effort)
+    }
+    return out;
+  }
+
+  function ecBuildPass() {
+    state.ecCycle = ecSpread(ecEligibleKeys());
+    state.ecCursor = 0;
+  }
+
+  // Keeps a pass in progress in step with the flag list: a phrase flagged now
+  // drops into the part not played yet, so it's heard in this same session; an
+  // un-flagged one disappears from the pass entirely. Items already played keep
+  // their place, so nothing is repeated and nothing loses its turn.
+  function syncEcouterQueue() {
+    var cycle = state.ecCycle || [];
+    if (!cycle.length) return;                     // no pass in progress
+    var cursor = Math.min(state.ecCursor || 0, cycle.length);
+    if (cursor >= cycle.length) return;            // finished; rebuilt on next start
+
+    var eligible = {}, order = ecEligibleKeys();
+    for (var i = 0; i < order.length; i++) eligible[order[i]] = true;
+
+    var seen = {}, head = [], tail = [];
+    for (var i = 0; i < cycle.length; i++) {
+      var k = cycle[i];
+      if (!eligible[k] || seen[k]) continue;       // dropped, or a stray duplicate
+      seen[k] = true;
+      (i < cursor ? head : tail).push(k);
+    }
+    for (var i = 0; i < order.length; i++) {       // newly flagged → still to come
+      if (seen[order[i]]) continue;
+      seen[order[i]] = true;
+      tail.splice(Math.floor(Math.random() * (tail.length + 1)), 0, order[i]);
+    }
+
+    state.ecCycle = head.concat(tail);
+    state.ecCursor = head.length;
+    save();
+  }
+
+  // Next sentence of the pass, or null when it's complete. Builds a fresh pass
+  // when there isn't one. Returns { p, exercise, position }.
+  function ecTakeNext() {
+    if (!state.ecCycle || !state.ecCycle.length) ecBuildPass();
+    var cycle = state.ecCycle || [];
+    while ((state.ecCursor || 0) < cycle.length) {
+      var item = ecParse(cycle[state.ecCursor]);
+      state.ecCursor++;
+      var p = ecPlayable(item.id) ? findPhraseById(item.id) : null;
+      var text = p && (item.exercise === 'alt' ? p.alt_usage : p.fr);
+      if (text) {
+        save();
+        return { p: p, exercise: item.exercise, position: state.ecCursor };
+      }
+    }
+    save();
+    return null;
+  }
+
+  // The pass is over — clear it so the next session shuffles a new order.
+  function ecResetPass() {
+    state.ecCycle = [];
+    state.ecCursor = 0;
+    save();
   }
 
   function updateHomeScreen() {
@@ -960,8 +1100,28 @@
   }
 
   function endHandsfreeSession() {
-    if (!handsfreeCustomPool) releaseBatch('hf', handsfreeBatchLen, handsfreeMaxSeen);
+    if (handsfreeCustomPool) {
+      // Hand back the sentence that was playing when you quit, so resuming
+      // later picks it up again instead of skipping it (same idea as
+      // releaseBatch for the main rotation).
+      var pos = handsfreePositions[handsfreeIndex];
+      if (pos && pos === state.ecCursor) { state.ecCursor = pos - 1; save(); }
+      return;
+    }
+    releaseBatch('hf', handsfreeBatchLen, handsfreeMaxSeen);
     handsfreeBatchLen = 0;
+  }
+
+  // Whole ⚑ Écouter pass done: say so out loud (the phone is probably in a
+  // pocket), stop, and clear the pass so the next session shuffles a new one.
+  function finishEcouterPass() {
+    handsfreeActive = false;
+    endHandsfreeSession();
+    ecResetPass();
+    releaseWakeLock();
+    updateHomeScreen();
+    showScreen('screen-ecouter-done');
+    speakFrenchCb(ECOUTER_DONE_SPEECH);
   }
 
   function stopHandsfree() {
@@ -1013,18 +1173,25 @@
     $('btn-handsfree-pause').textContent = '⏸ Pause';
   }
 
-  function skipNextHandsfree() {
-    if (!handsfreeActive) return;
-    clearPausedUI();
-    handsfreeLastPrevTime = 0;
-    cancelCurrentStep();
-    var p = handsfreePhrases[handsfreeIndex];
+  // Move on to the next thing to play. In the full rotation a phrase is two
+  // exercises (main, then alt); in ⚑ Écouter every sentence is its own queue
+  // item, so there is no main→alt step inside a phrase.
+  function advanceHandsfreeItem(p) {
+    if (handsfreeCustomPool) { handsfreeIndex++; return; }
     if (handsfreeExercise === 'main' && p && p.alt_usage) {
       handsfreeExercise = 'alt';
     } else {
       handsfreeExercise = 'main';
       handsfreeIndex++;
     }
+  }
+
+  function skipNextHandsfree() {
+    if (!handsfreeActive) return;
+    clearPausedUI();
+    handsfreeLastPrevTime = 0;
+    cancelCurrentStep();
+    advanceHandsfreeItem(handsfreePhrases[handsfreeIndex]);
     handsfreeStep();
   }
 
@@ -1050,24 +1217,28 @@
     handsfreeStep();
   }
 
-  // pool omitted → the full mastered rotation; pool given → a filtered session
-  // (Difficiles), which uses a plain weighted shuffle since the set is small.
+  // pool omitted → the full mastered rotation; pool given → the ⚑ Écouter
+  // session, which walks its own persistent queue one sentence at a time.
   function startHandsfree(pool) {
     handsfreeCustomPool = !!pool;
+    handsfreeExercises = [];
+    handsfreePositions = [];
     if (handsfreeCustomPool) {
-      handsfreePhrases = weightedShuffle(pool);
+      if (pool.length === 0) return;
+      syncEcouterQueue();     // pick up flags added since the pass was built
+      handsfreePhrases = [];  // filled from the queue as the session goes
       handsfreeBatchLen = 0;
     } else {
       var source = getMasteredPhrases();
       handsfreePhrases = source.length ? takeFromCycle('hf', source, Math.min(SESSION_BATCH, source.length * 4)) : [];
       handsfreeBatchLen = handsfreePhrases.length;
+      if (handsfreePhrases.length === 0) return;
     }
     handsfreeMaxSeen = 0;
     handsfreeIndex = 0;
     handsfreeExercise = 'main';
     handsfreePaused = false;
     handsfreeHistory = [];
-    if (handsfreePhrases.length === 0) return;
     initAudio(); // create AudioContext on user gesture (tap)
     handsfreeActive = true;
     $('btn-handsfree-pause').textContent = '⏸ Pause';
@@ -1178,20 +1349,31 @@
   function handsfreeStep() {
     if (!handsfreeActive) return;
     if (handsfreeIndex >= handsfreePhrases.length) {
-      // full rotation: pull the next slice and keep going; filtered session: done
-      var src = handsfreeCustomPool ? [] : getMasteredPhrases();
-      var more = src.length ? takeFromCycle('hf', src, SESSION_BATCH) : [];
-      if (more.length) {
-        handsfreePhrases = handsfreePhrases.concat(more);
-        handsfreeBatchLen += more.length;
+      if (handsfreeCustomPool) {
+        // ⚑ Écouter: one sentence at a time, so a phrase flagged mid-session is
+        // already in the queue by the time we get here.
+        var item = ecTakeNext();
+        if (!item) { finishEcouterPass(); return; }
+        handsfreePhrases.push(item.p);
+        handsfreeExercises.push(item.exercise);
+        handsfreePositions.push(item.position);
       } else {
-        handsfreeActive = false;
-        endHandsfreeSession();
-        releaseWakeLock();
-        showScreen('screen-acquis-done');
-        return;
+        // full rotation: pull the next slice and keep going
+        var src = getMasteredPhrases();
+        var more = src.length ? takeFromCycle('hf', src, SESSION_BATCH) : [];
+        if (more.length) {
+          handsfreePhrases = handsfreePhrases.concat(more);
+          handsfreeBatchLen += more.length;
+        } else {
+          handsfreeActive = false;
+          endHandsfreeSession();
+          releaseWakeLock();
+          showScreen('screen-acquis-done');
+          return;
+        }
       }
     }
+    if (handsfreeCustomPool) handsfreeExercise = handsfreeExercises[handsfreeIndex];
     handsfreeMaxSeen = Math.max(handsfreeMaxSeen, handsfreeIndex + 1);
 
     // Push current state to history for multi-step skip-back
@@ -1202,12 +1384,12 @@
     // count the phrase once per visit, not once per exercise (main + alt)
     if (!handsfreeCustomPool && handsfreeExercise === 'main') markPassSeen('hf', p.id, getMasteredPhrases().length);
     $('handsfree-counter').textContent = handsfreeCustomPool
-      ? (handsfreeIndex + 1) + ' / ' + handsfreePhrases.length
+      ? handsfreePositions[handsfreeIndex] + ' / ' + (state.ecCycle || []).length
       : passProgress('hf') + ' / ' + getMasteredPhrases().length;
 
     // Reset per-exercise state — boosted phrases start at 6 reads, except in a
-    // filtered (⚑ Écouter) session, where every phrase gets a plain 3.
-    handsfreeReadTarget = (!handsfreeCustomPool && isBoosted(p.id)) ? 6 : 3;
+    // ⚑ Écouter session, where every sentence gets ECOUTER_READS regardless.
+    handsfreeReadTarget = handsfreeCustomPool ? ECOUTER_READS : (isBoosted(p.id) ? 6 : 3);
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     updateSixButton();
@@ -1240,12 +1422,7 @@
           handsfreeFinalPause = true;
           startCountdown(8, 'Suivant…', function () {
             handsfreeFinalPause = false;
-            if (handsfreeExercise === 'main' && p.alt_usage) {
-              handsfreeExercise = 'alt';
-            } else {
-              handsfreeExercise = 'main';
-              handsfreeIndex++;
-            }
+            advanceHandsfreeItem(p);
             handsfreeStep();
           });
         };
@@ -1498,12 +1675,19 @@
       if (!p) return;
       if (!confirm('Supprimer définitivement :\n\n« ' + p.fr + ' »')) return;
       deletePhrase(p.id);
-      handsfreePhrases.splice(handsfreeIndex, 1);
       updateHomeScreen();
+      cancelCurrentStep();
+      if (handsfreeCustomPool) {
+        // The queue drops the phrase's other sentence on its own; just move on.
+        syncEcouterQueue();
+        handsfreeIndex++;
+        handsfreeStep();
+        return;
+      }
+      handsfreePhrases.splice(handsfreeIndex, 1);
       if (handsfreePhrases.length === 0) { stopHandsfree(); return; }
       if (handsfreeIndex >= handsfreePhrases.length) handsfreeIndex = 0;
       handsfreeExercise = 'main';
-      cancelCurrentStep();
       handsfreeStep();
     });
 
@@ -1608,6 +1792,13 @@
     });
 
     $('btn-acquis-done-home').addEventListener('click', function () {
+      releaseWakeLock();
+      updateHomeScreen();
+      showScreen('screen-home');
+    });
+
+    $('btn-ecouter-done-home').addEventListener('click', function () {
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
       releaseWakeLock();
       updateHomeScreen();
       showScreen('screen-home');
