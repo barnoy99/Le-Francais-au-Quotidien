@@ -180,7 +180,7 @@
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             </button>
           </div>
-          <div class="acquis-alt-usage">
+          <div id="acquis-alt-block" class="acquis-alt-usage">
             <p class="acquis-alt-label">Autre exemple</p>
             <p id="acquis-alt" class="acquis-alt-text"></p>
           </div>
@@ -213,6 +213,16 @@
         <h2 class="complete-title">Félicitations !</h2>
         <p class="complete-text">Vous avez écouté toutes vos expressions difficiles. La prochaine séance repartira dans un nouvel ordre.</p>
         <button id="btn-ecouter-done-home" class="btn-primary">Accueil</button>
+      </div>
+    </section>
+
+    <!-- ⚑ RÉVISER PASS COMPLETE -->
+    <section id="screen-reviser-done" class="screen">
+      <div class="complete-content">
+        <p class="complete-icon">✦</p>
+        <h2 class="complete-title">Félicitations !</h2>
+        <p class="complete-text">Vous avez révisé toutes vos expressions difficiles. La prochaine séance repartira dans un nouvel ordre.</p>
+        <button id="btn-reviser-done-home" class="btn-primary">Accueil</button>
       </div>
     </section>
 
@@ -291,6 +301,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=27"></script>
-  <script src="app.js?v=54"></script>
+  <script src="app.js?v=55"></script>
 </body>
 </html>

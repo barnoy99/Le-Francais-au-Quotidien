@@ -27,8 +27,15 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=54`, `style.css?v=48`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v34'`.
+**Current versions:** `app.js?v=55`, `style.css?v=48`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v35'`.
+
+**Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
+API; the build then sat reporting `status: building` forever while the site kept
+serving the previous version. `gh run list` showed the real state (`failure`).
+`gh api --method POST repos/<repo>/pages/builds` re-deploys the same commit
+without adding a no-op commit. Always confirm the live URL actually serves the
+new `?v=N` — pushed is not deployed.
 
 **Always `git pull` first** — the user also runs Claude Code sessions from their
 phone against this repo and merges PRs, so master moves independently. Phrase-id
@@ -82,7 +89,8 @@ state = {
                    boost, hardManual, hardScore, misses } },
   acqCycle: [ids], acqCursor, acqPass: {id:count}, acqSig, acqLast,
   hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast,
-  ecCycle: ["id:main"|"id:alt"], ecCursor        // ⚑ Écouter pass, §5a
+  ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
+  rvCycle: ["id:main"|"id:alt"], rvCursor        // ⚑ Réviser pass, §5a
 }
 ```
 
@@ -116,9 +124,9 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   shown (`avoidEarlyRepeat`).
 - Pool changes (mastering, deleting, toggling ×6/⚑) call `invalidateCycles()`;
   the rebuild covers **only what's still owed**, so progress isn't lost.
-- **⚑ Réviser** uses a plain `weightedShuffle` and deliberately does **not**
-  touch the cycles or pass counts. **⚑ Écouter** has its own persistent pass
-  (`ecCycle`/`ecCursor`) and likewise leaves `hfCycle`/`hfPass` alone — see §5a.
+- **Both ⚑ modes bypass all of the above.** Écouter and Réviser each have their
+  own persistent pass (`ecCycle`/`ecCursor`, `rvCycle`/`rvCursor`) and leave
+  `hfCycle`/`hfPass` and `acqCycle`/`acqPass` completely alone — see §5a.
 
 ---
 
@@ -133,34 +141,49 @@ change the number of readings.
 
 Two home-screen links appear when the count > 0, hidden at 0:
 - **⚑ Écouter (N)** → Mains Libres with only flagged phrases (see §5a)
-- **⚑ Réviser (N)** → Mes Acquis recall with only flagged phrases
+- **⚑ Réviser (N)** → Mes Acquis recall with only flagged phrases (see §5a)
 
-### 5a. ⚑ Écouter — its own persistent pass
+### 5a. The two ⚑ passes — persistent, and independent of each other
 
-Écouter does *not* share the Mains Libres rotation, and its rules differ:
+Neither filtered mode shares the rotation its parent mode uses. Both run on one
+implementation, the `fq*` helpers, parameterised by a prefix:
 
-- **Every sentence is read 4×** (`ECOUTER_READS`), ×6 or not. Tapping ×6 during
-  an Écouter session records the flag for the main rotation but never changes
-  the current sentence's reading count.
+| prefix | mode | state |
+|---|---|---|
+| `'ec'` | ⚑ Écouter (Mains Libres) | `ecCycle` / `ecCursor` |
+| `'rv'` | ⚑ Réviser (Mes Acquis) | `rvCycle` / `rvCursor` |
+
+They are **independent** — listening never consumes your reviewing. Shared rules:
+
+- **Écouter reads every sentence 4×** (`ECOUTER_READS`), ×6 or not. Tapping ×6
+  during an Écouter session records the flag for the main rotation but never
+  changes the current sentence's reading count.
 - **Main and alt are independent items**, shuffled apart from each other — not
-  the "phrase = two exercises back-to-back" of the normal rotation. `ecSpread`
+  the "phrase = two exercises back-to-back" of the normal rotation. `fqSpread`
   shuffles, then pushes any two sentences of the same phrase at least
   `max(2, n/8)` slots apart (measured on live data: closest pair 5 of 32).
-- **The order persists**: `state.ecCycle` is a list of `"id:main"` / `"id:alt"`
-  keys, `state.ecCursor` walks it across sessions. Quitting hands the
+  In **Réviser** this also means one sentence per card: the "Autre exemple"
+  block (`acquis-alt-block`) is hidden, since it would give the answer away.
+- **The order persists**: the cycle is a list of `"id:main"` / `"id:alt"` keys
+  and the cursor walks it across sessions. Quitting hands the
   interrupted sentence back (cursor − 1), so you resume on it rather than past
   it. Counter shows `cursor / total`, e.g. `4 / 32`.
-- **The pass ends with `screen-ecouter-done`** ("Félicitations !", also spoken,
-  since the phone is probably in a pocket), which clears `ecCycle` — the next
-  session shuffles a brand-new order.
-- **Flag changes reach a pass already in progress**: `syncEcouterQueue()` (hung
-  off `invalidateCycles`, so every toggle path hits it) splices newly flagged
-  sentences into the part not yet played and drops un-flagged ones. Items before
+- **The pass ends with a *Félicitations* screen** — `screen-ecouter-done` or
+  `screen-reviser-done`. Écouter also speaks it, since the phone is probably in
+  a pocket; Réviser doesn't. Either way the pass is cleared and the next session
+  shuffles a brand-new order.
+- **Flag changes reach a pass already in progress**: `syncFlagQueue(prefix)`
+  (hung off `invalidateCycles`, which syncs both passes, so every toggle path
+  hits it) splices newly flagged sentences into the part not yet reached and
+  drops un-flagged ones. Items before
   the cursor keep their place, so nothing repeats and nothing loses its turn.
-- Sentences are pulled from the queue **one at a time** in `handsfreeStep`,
-  which is what lets a mid-session flag be picked up without restarting.
-  `handsfreeExercises` / `handsfreePositions` are parallel to `handsfreePhrases`
-  for this mode only.
+- Sentences are pulled from the queue **one at a time** — in `handsfreeStep`
+  for Écouter, `showAcquisPhrase` for Réviser — which is what lets a mid-session
+  flag be picked up without restarting. Each mode keeps `*Exercises` and
+  `*Positions` arrays parallel to its phrase array, for these modes only.
+- Regression risk: `showAcquisPhrase` and `handsfreeStep` now serve both the
+  normal rotation and a ⚑ pass. Check plain Mes Acquis / Mains Libres still work
+  after touching either.
 
 ---
 

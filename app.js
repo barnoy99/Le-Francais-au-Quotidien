@@ -20,6 +20,10 @@
   var expandedProgressId = null;
   var phraseHistory = []; // apprentissage back-navigation stack
   var acquisPhrases = [];
+  // ⚑ Réviser only: like Écouter, each card is a single sentence pulled from
+  // the persistent queue, so every index carries its own exercise and position.
+  var acquisExercises = [];
+  var acquisPositions = [];
   var acquisIndex = 0;
   var acquisBatchLen = 0;
   var acquisMaxSeen = 0;
@@ -95,7 +99,8 @@
     return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [],
              hfCycle: [], hfCursor: 0, hfPass: {},
              acqCycle: [], acqCursor: 0, acqPass: {},
-             ecCycle: [], ecCursor: 0 };
+             ecCycle: [], ecCursor: 0,
+             rvCycle: [], rvCursor: 0 };
   }
 
   function activePhrases() {
@@ -557,31 +562,6 @@
     return a;
   }
 
-  // Weighted shuffle: boosted (×6) phrases get 2× weight, so they
-  // land earlier / more often at the front of each session's order.
-  function weightedShuffle(arr) {
-    var pool = arr.slice();
-    var out = [];
-    while (pool.length > 0) {
-      var total = 0;
-      var weights = [];
-      for (var i = 0; i < pool.length; i++) {
-        var w = isBoosted(pool[i].id) ? 2 : 1;
-        weights.push(w);
-        total += w;
-      }
-      var r = Math.random() * total;
-      var acc = 0;
-      var idx = pool.length - 1;
-      for (var i = 0; i < pool.length; i++) {
-        acc += weights[i];
-        if (r < acc) { idx = i; break; }
-      }
-      out.push(pool.splice(idx, 1)[0]);
-    }
-    return out;
-  }
-
   // ── Rotation playlist ──────────────────────────────────
   // A per-session reshuffle gave wildly uneven coverage: with the whole pool
   // redrawn every time, some phrases came up constantly and others never (21
@@ -738,52 +718,57 @@
   }
 
   // Called when boost/difficulty changes so the cycle is rebuilt with new weights.
-  // Difficulty also changes who belongs in the ⚑ Écouter pass, so reconcile that
-  // queue here too — one hook covers every place a flag can be toggled.
+  // Difficulty also changes who belongs in the ⚑ passes, so reconcile those
+  // queues here too — one hook covers every place a flag can be toggled.
   function invalidateCycles() {
     state.hfSig = null;
     state.acqSig = null;
-    syncEcouterQueue();
+    syncFlagQueue('ec');
+    syncFlagQueue('rv');
   }
 
-  // ── ⚑ Écouter queue ────────────────────────────────────
+  // ── ⚑ flagged-pass queues ──────────────────────────────
   // The flagged pool is small, so it skips the weighted rotation and gets a
   // plain playlist instead: each flagged phrase contributes its main and its alt
-  // as two independent items, shuffled together. `ecCursor` walks the list
-  // across sessions; when it reaches the end the pass is over (félicitations)
-  // and the next session shuffles a fresh one.
+  // as two independent items, shuffled together. A cursor walks the list across
+  // sessions; when it reaches the end the pass is over (félicitations) and the
+  // next session shuffles a fresh one.
+  //
+  // Two independent passes share this code, one per mode — listening must not
+  // consume your reviewing and vice versa:
+  //   'ec' → ⚑ Écouter (Mains Libres)   'rv' → ⚑ Réviser (Mes Acquis)
 
-  function ecKey(id, exercise) { return id + ':' + exercise; }
+  function fqKey(id, exercise) { return id + ':' + exercise; }
 
-  function ecParse(key) {
+  function fqParse(key) {
     var bits = String(key).split(':');
     return { id: parseInt(bits[0], 10), exercise: bits[1] === 'alt' ? 'alt' : 'main' };
   }
 
   // Every sentence that belongs in a pass right now, phrase order.
-  function ecEligibleKeys() {
+  function fqEligibleKeys() {
     var keys = [], hard = getHardPhrases();
     for (var i = 0; i < hard.length; i++) {
-      keys.push(ecKey(hard[i].id, 'main'));
-      if (hard[i].alt_usage) keys.push(ecKey(hard[i].id, 'alt'));
+      keys.push(fqKey(hard[i].id, 'main'));
+      if (hard[i].alt_usage) keys.push(fqKey(hard[i].id, 'alt'));
     }
     return keys;
   }
 
   // Guards a queued item at play time against changes the queue never saw
   // (phrase deleted from data.js, un-mastered, un-flagged on another device).
-  function ecPlayable(id) {
+  function fqPlayable(id) {
     if (!isHard(id)) return false;
     if ((state.deletedIds || []).indexOf(id) !== -1) return false;
     if (getPhraseData(id).level !== 4) return false;
     return !!findPhraseById(id);
   }
 
-  function ecTooClose(list, pos, key, minGap) {
-    var id = ecParse(key).id;
+  function fqTooClose(list, pos, key, minGap) {
+    var id = fqParse(key).id;
     var from = Math.max(0, pos - minGap + 1), to = Math.min(list.length, pos + minGap);
     for (var k = from; k < to; k++) {
-      if (k !== pos && list[k] && ecParse(list[k]).id === id) return true;
+      if (k !== pos && list[k] && fqParse(list[k]).id === id) return true;
     }
     return false;
   }
@@ -791,19 +776,19 @@
   // Shuffle, then push apart the two sentences of the same phrase — a raw
   // shuffle of ~32 items lands several pairs side by side, and hearing a
   // phrase's alt right after its main defeats the point of separating them.
-  function ecSpread(keys) {
+  function fqSpread(keys) {
     var out = shuffleIds(keys.slice());
     var minGap = Math.max(2, Math.floor(out.length / 8));
     for (var attempt = 0; attempt < 6; attempt++) {
       var clean = true;
       for (var i = 0; i < out.length; i++) {
-        if (!ecTooClose(out, i, out[i], minGap)) continue;
+        if (!fqTooClose(out, i, out[i], minGap)) continue;
         clean = false;
         for (var j = 0; j < out.length; j++) {      // find a swap that suits both
           if (j === i) continue;
           var a = out[i], b = out[j];
           out[i] = b; out[j] = a;
-          if (!ecTooClose(out, i, b, minGap) && !ecTooClose(out, j, a, minGap)) break;
+          if (!fqTooClose(out, i, b, minGap) && !fqTooClose(out, j, a, minGap)) break;
           out[i] = a; out[j] = b;                   // no good — put them back
         }
       }
@@ -812,22 +797,27 @@
     return out;
   }
 
-  function ecBuildPass() {
-    state.ecCycle = ecSpread(ecEligibleKeys());
-    state.ecCursor = 0;
+  // `prefix` is 'ec' or 'rv' — the two passes are stored separately.
+  function fqCycleKey(prefix) { return prefix + 'Cycle'; }
+  function fqCursorKey(prefix) { return prefix + 'Cursor'; }
+
+  function fqBuildPass(prefix) {
+    state[fqCycleKey(prefix)] = fqSpread(fqEligibleKeys());
+    state[fqCursorKey(prefix)] = 0;
   }
 
   // Keeps a pass in progress in step with the flag list: a phrase flagged now
-  // drops into the part not played yet, so it's heard in this same session; an
-  // un-flagged one disappears from the pass entirely. Items already played keep
+  // drops into the part not reached yet, so it turns up in this same session; an
+  // un-flagged one disappears from the pass entirely. Items already covered keep
   // their place, so nothing is repeated and nothing loses its turn.
-  function syncEcouterQueue() {
-    var cycle = state.ecCycle || [];
+  function syncFlagQueue(prefix) {
+    var cycleKey = fqCycleKey(prefix), cursorKey = fqCursorKey(prefix);
+    var cycle = state[cycleKey] || [];
     if (!cycle.length) return;                     // no pass in progress
-    var cursor = Math.min(state.ecCursor || 0, cycle.length);
+    var cursor = Math.min(state[cursorKey] || 0, cycle.length);
     if (cursor >= cycle.length) return;            // finished; rebuilt on next start
 
-    var eligible = {}, order = ecEligibleKeys();
+    var eligible = {}, order = fqEligibleKeys();
     for (var i = 0; i < order.length; i++) eligible[order[i]] = true;
 
     var seen = {}, head = [], tail = [];
@@ -843,24 +833,25 @@
       tail.splice(Math.floor(Math.random() * (tail.length + 1)), 0, order[i]);
     }
 
-    state.ecCycle = head.concat(tail);
-    state.ecCursor = head.length;
+    state[cycleKey] = head.concat(tail);
+    state[cursorKey] = head.length;
     save();
   }
 
   // Next sentence of the pass, or null when it's complete. Builds a fresh pass
   // when there isn't one. Returns { p, exercise, position }.
-  function ecTakeNext() {
-    if (!state.ecCycle || !state.ecCycle.length) ecBuildPass();
-    var cycle = state.ecCycle || [];
-    while ((state.ecCursor || 0) < cycle.length) {
-      var item = ecParse(cycle[state.ecCursor]);
-      state.ecCursor++;
-      var p = ecPlayable(item.id) ? findPhraseById(item.id) : null;
+  function fqTakeNext(prefix) {
+    var cycleKey = fqCycleKey(prefix), cursorKey = fqCursorKey(prefix);
+    if (!state[cycleKey] || !state[cycleKey].length) fqBuildPass(prefix);
+    var cycle = state[cycleKey] || [];
+    while ((state[cursorKey] || 0) < cycle.length) {
+      var item = fqParse(cycle[state[cursorKey]]);
+      state[cursorKey]++;
+      var p = fqPlayable(item.id) ? findPhraseById(item.id) : null;
       var text = p && (item.exercise === 'alt' ? p.alt_usage : p.fr);
       if (text) {
         save();
-        return { p: p, exercise: item.exercise, position: state.ecCursor };
+        return { p: p, exercise: item.exercise, position: state[cursorKey] };
       }
     }
     save();
@@ -868,10 +859,17 @@
   }
 
   // The pass is over — clear it so the next session shuffles a new order.
-  function ecResetPass() {
-    state.ecCycle = [];
-    state.ecCursor = 0;
+  function fqResetPass(prefix) {
+    state[fqCycleKey(prefix)] = [];
+    state[fqCursorKey(prefix)] = 0;
     save();
+  }
+
+  // The English prompt and the French sentence for one queue item.
+  function fqTexts(p, exercise) {
+    return exercise === 'alt'
+      ? { en: p.alt_usage_en || p.alt_usage || '', fr: p.alt_usage || '' }
+      : { en: p.en, fr: p.fr };
   }
 
   function updateHomeScreen() {
@@ -905,43 +903,62 @@
     }
   }
 
-  // pool omitted → the full mastered rotation; pool given → a filtered session
-  // (Difficiles), which uses a plain shuffle since the set is small.
+  // pool omitted → the full mastered rotation; pool given → the ⚑ Réviser
+  // session, which walks its own persistent queue one sentence at a time.
   function startAcquis(pool) {
     acquisCustomPool = !!pool;
     var source = pool || getMasteredPhrases();
     if (source.length === 0) return;
+    acquisExercises = [];
+    acquisPositions = [];
     if (acquisCustomPool) {
-      acquisPhrases = weightedShuffle(source);
+      syncFlagQueue('rv');    // pick up flags added since the pass was built
+      acquisPhrases = [];     // filled from the queue as the session goes
       acquisBatchLen = 0;
     } else {
       acquisPhrases = takeFromCycle('acq', source, Math.min(SESSION_BATCH, source.length * 4));
       acquisBatchLen = acquisPhrases.length;
+      if (acquisPhrases.length === 0) return;
     }
     acquisMaxSeen = 0;
     acquisIndex = 0;
-    if (acquisPhrases.length === 0) return;
     showAcquisPhrase();
   }
 
   function endAcquisSession() {
+    if (acquisCustomPool) {
+      // Hand back the sentence you were on, so resuming later picks it up
+      // again instead of skipping it.
+      var pos = acquisPositions[acquisIndex];
+      if (pos && pos === state.rvCursor) { state.rvCursor = pos - 1; save(); }
+      return;
+    }
     releaseBatch('acq', acquisBatchLen, acquisMaxSeen);
     acquisBatchLen = 0;
   }
 
   function showAcquisPhrase() {
     if (acquisIndex >= acquisPhrases.length) {
-      // batch spent — pull the next slice of the cycle so the session continues
-      // (a filtered Difficiles session just ends instead)
-      var pool = acquisCustomPool ? [] : getMasteredPhrases();
-      var more = pool.length ? takeFromCycle('acq', pool, SESSION_BATCH) : [];
-      if (more.length) {
-        acquisPhrases = acquisPhrases.concat(more);
-        acquisBatchLen += more.length;
+      if (acquisCustomPool) {
+        // ⚑ Réviser: one sentence at a time, so a phrase flagged mid-session is
+        // already in the queue by the time we get here.
+        var item = fqTakeNext('rv');
+        if (!item) { finishReviserPass(); return; }
+        acquisPhrases.push(item.p);
+        acquisExercises.push(item.exercise);
+        acquisPositions.push(item.position);
       } else {
-        endAcquisSession();
-        showScreen('screen-acquis-done');
-        return;
+        // batch spent — pull the next slice of the cycle so the session continues
+        var pool = getMasteredPhrases();
+        var more = pool.length ? takeFromCycle('acq', pool, SESSION_BATCH) : [];
+        if (more.length) {
+          acquisPhrases = acquisPhrases.concat(more);
+          acquisBatchLen += more.length;
+        } else {
+          endAcquisSession();
+          showScreen('screen-acquis-done');
+          return;
+        }
       }
     }
     acquisMaxSeen = Math.max(acquisMaxSeen, acquisIndex + 1);
@@ -949,18 +966,37 @@
     if (!acquisCustomPool) markPassSeen('acq', p.id, getMasteredPhrases().length);
     showScreen('screen-acquis');
     $('acquis-context').textContent = p.context;
-    $('acquis-english').textContent = p.en;
-    $('acquis-french').textContent = p.fr;
-    $('acquis-alt').textContent = p.alt_usage || '';
+    if (acquisCustomPool) {
+      // One sentence per card — main and alt are separate items in the pass,
+      // so the "Autre exemple" block would give the answer away.
+      var t = fqTexts(p, acquisExercises[acquisIndex]);
+      $('acquis-english').textContent = t.en;
+      $('acquis-french').textContent = t.fr;
+      $('acquis-alt').textContent = '';
+      hide($('acquis-alt-block'));
+    } else {
+      $('acquis-english').textContent = p.en;
+      $('acquis-french').textContent = p.fr;
+      $('acquis-alt').textContent = p.alt_usage || '';
+      show($('acquis-alt-block'));
+    }
     // Shows progress through the current pass over your whole collection —
     // it carries across sessions, so "45 / 221" means 45 covered so far.
     $('acquis-counter').textContent = acquisCustomPool
-      ? (acquisIndex + 1) + ' / ' + acquisPhrases.length
+      ? acquisPositions[acquisIndex] + ' / ' + (state.rvCycle || []).length
       : passProgress('acq') + ' / ' + getMasteredPhrases().length;
     updateAcquisSixButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
     hide($('btn-suivant'));
+  }
+
+  // Whole ⚑ Réviser pass done — clear it so the next session shuffles a new one.
+  function finishReviserPass() {
+    endAcquisSession();
+    fqResetPass('rv');
+    updateHomeScreen();
+    showScreen('screen-reviser-done');
   }
 
   function updateAcquisSixButton() {
@@ -1117,7 +1153,7 @@
   function finishEcouterPass() {
     handsfreeActive = false;
     endHandsfreeSession();
-    ecResetPass();
+    fqResetPass('ec');
     releaseWakeLock();
     updateHomeScreen();
     showScreen('screen-ecouter-done');
@@ -1225,7 +1261,7 @@
     handsfreePositions = [];
     if (handsfreeCustomPool) {
       if (pool.length === 0) return;
-      syncEcouterQueue();     // pick up flags added since the pass was built
+      syncFlagQueue('ec');     // pick up flags added since the pass was built
       handsfreePhrases = [];  // filled from the queue as the session goes
       handsfreeBatchLen = 0;
     } else {
@@ -1352,7 +1388,7 @@
       if (handsfreeCustomPool) {
         // ⚑ Écouter: one sentence at a time, so a phrase flagged mid-session is
         // already in the queue by the time we get here.
-        var item = ecTakeNext();
+        var item = fqTakeNext('ec');
         if (!item) { finishEcouterPass(); return; }
         handsfreePhrases.push(item.p);
         handsfreeExercises.push(item.exercise);
@@ -1663,9 +1699,16 @@
       if (!p) return;
       if (!confirm('Supprimer définitivement :\n\n« ' + p.fr + ' »')) return;
       deletePhrase(p.id);
+      updateHomeScreen();
+      if (acquisCustomPool) {
+        // The queue drops the phrase's other sentence on its own; just move on.
+        syncFlagQueue('rv');
+        acquisIndex++;
+        showAcquisPhrase();
+        return;
+      }
       acquisPhrases.splice(acquisIndex, 1);
       if (acquisIndex >= acquisPhrases.length) acquisIndex = 0;
-      updateHomeScreen();
       if (acquisPhrases.length === 0) { showScreen('screen-acquis-done'); return; }
       showAcquisPhrase();
     });
@@ -1679,7 +1722,7 @@
       cancelCurrentStep();
       if (handsfreeCustomPool) {
         // The queue drops the phrase's other sentence on its own; just move on.
-        syncEcouterQueue();
+        syncFlagQueue('ec');
         handsfreeIndex++;
         handsfreeStep();
         return;
@@ -1760,9 +1803,9 @@
     $('btn-reveler').addEventListener('click', revealAcquis);
 
     $('btn-tts').addEventListener('click', function () {
-      if (acquisPhrases[acquisIndex]) {
-        speakFrench(acquisPhrases[acquisIndex].fr);
-      }
+      var p = acquisPhrases[acquisIndex];
+      if (!p) return;
+      speakFrench(acquisCustomPool ? fqTexts(p, acquisExercises[acquisIndex]).fr : p.fr);
     });
 
     $('btn-suivant').addEventListener('click', function () {
@@ -1793,6 +1836,11 @@
 
     $('btn-acquis-done-home').addEventListener('click', function () {
       releaseWakeLock();
+      updateHomeScreen();
+      showScreen('screen-home');
+    });
+
+    $('btn-reviser-done-home').addEventListener('click', function () {
       updateHomeScreen();
       showScreen('screen-home');
     });
