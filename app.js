@@ -100,7 +100,8 @@
              hfCycle: [], hfCursor: 0, hfPass: {},
              acqCycle: [], acqCursor: 0, acqPass: {},
              ecCycle: [], ecCursor: 0,
-             rvCycle: [], rvCursor: 0 };
+             rvCycle: [], rvCursor: 0,
+             acquisAutoPlay: false };
   }
 
   function activePhrases() {
@@ -938,6 +939,10 @@
   }
 
   function showAcquisPhrase() {
+    // One item is pulled per step, so the index must never run more than one
+    // past the array — if it does (e.g. a stray advance after the pass closed)
+    // the pull would land at the end and leave this index empty.
+    if (acquisCustomPool && acquisIndex > acquisPhrases.length) acquisIndex = acquisPhrases.length;
     if (acquisIndex >= acquisPhrases.length) {
       if (acquisCustomPool) {
         // ⚑ Réviser: one sentence at a time, so a phrase flagged mid-session is
@@ -964,6 +969,8 @@
     acquisMaxSeen = Math.max(acquisMaxSeen, acquisIndex + 1);
     var p = acquisPhrases[acquisIndex];
     if (!acquisCustomPool) markPassSeen('acq', p.id, getMasteredPhrases().length);
+    // a new card, so nothing from the previous one should still be talking
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
     showScreen('screen-acquis');
     $('acquis-context').textContent = p.context;
     if (acquisCustomPool) {
@@ -985,10 +992,56 @@
     $('acquis-counter').textContent = acquisCustomPool
       ? acquisPositions[acquisIndex] + ' / ' + (state.rvCycle || []).length
       : passProgress('acq') + ' / ' + getMasteredPhrases().length;
+    setCounterSize('acquis-counter', acquisCustomPool);
     updateAcquisSixButton();
+    updateAutoButton();
     show($('acquis-reveal-area'));
     hide($('acquis-revealed'));
     hide($('btn-suivant'));
+  }
+
+  // The ⚑ passes show their counter large and in the accent colour; the normal
+  // rotations keep the small italic one. The row is the flex container whose
+  // gap has to tighten to make room, so the class goes there.
+  function setCounterSize(counterId, large) {
+    var row = $(counterId).parentNode;
+    if (row) row.classList.toggle('handsfree-skip-row--large', !!large);
+  }
+
+  // ── Lecture automatique (Mes Acquis / ⚑ Réviser) ───────
+  function isAutoPlay() { return !!state.acquisAutoPlay; }
+
+  function toggleAutoPlay() {
+    state.acquisAutoPlay = !state.acquisAutoPlay;
+    save();
+    return state.acquisAutoPlay;
+  }
+
+  function updateAutoButton() {
+    var btn = $('btn-acquis-auto');
+    if (btn) btn.classList.toggle('activated', isAutoPlay());
+  }
+
+  // Speaks the revealed sentence(s). The normal rotation reveals the main
+  // sentence and its alt, so it reads both in turn; a ⚑ Réviser card only ever
+  // holds one sentence.
+  function playRevealed() {
+    var p = acquisPhrases[acquisIndex];
+    if (!p) return;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (acquisCustomPool) {
+      speakFrench(fqTexts(p, acquisExercises[acquisIndex]).fr);
+      return;
+    }
+    // Normal rotation: the card carries the main sentence and its alt, so read
+    // both — unless you've moved on or left before the first one finishes.
+    var atIndex = acquisIndex;
+    speakFrenchCb(p.fr, function () {
+      if (acquisIndex === atIndex && p.alt_usage &&
+          $('screen-acquis').classList.contains('screen--active')) {
+        speakFrench(p.alt_usage);
+      }
+    });
   }
 
   // Whole ⚑ Réviser pass done — clear it so the next session shuffles a new one.
@@ -1020,6 +1073,7 @@
     hide($('acquis-reveal-area'));
     show($('acquis-revealed'));
     show($('btn-suivant'));
+    if (isAutoPlay()) playRevealed();
   }
 
   function speakFrench(text) {
@@ -1384,6 +1438,8 @@
 
   function handsfreeStep() {
     if (!handsfreeActive) return;
+    // same one-at-a-time invariant as showAcquisPhrase
+    if (handsfreeCustomPool && handsfreeIndex > handsfreePhrases.length) handsfreeIndex = handsfreePhrases.length;
     if (handsfreeIndex >= handsfreePhrases.length) {
       if (handsfreeCustomPool) {
         // ⚑ Écouter: one sentence at a time, so a phrase flagged mid-session is
@@ -1422,6 +1478,7 @@
     $('handsfree-counter').textContent = handsfreeCustomPool
       ? handsfreePositions[handsfreeIndex] + ' / ' + (state.ecCycle || []).length
       : passProgress('hf') + ' / ' + getMasteredPhrases().length;
+    setCounterSize('handsfree-counter', handsfreeCustomPool);
 
     // Reset per-exercise state — boosted phrases start at 6 reads, except in a
     // ⚑ Écouter session, where every sentence gets ECOUTER_READS regardless.
@@ -1813,6 +1870,15 @@
       showAcquisPhrase();
     });
 
+    $('btn-acquis-auto').addEventListener('click', function () {
+      var on = toggleAutoPlay();
+      updateAutoButton();
+      // turning it on mid-card plays what's already revealed, so the toggle
+      // proves itself straight away instead of waiting for the next Révéler
+      if (on && !$('acquis-revealed').classList.contains('hidden')) playRevealed();
+      else if (!on && 'speechSynthesis' in window) speechSynthesis.cancel();
+    });
+
     // Difficulty flag — on/off, from either practice screen
     $('btn-acquis-hard').addEventListener('click', function () {
       var p = acquisPhrases[acquisIndex];
@@ -1829,6 +1895,7 @@
     });
 
     $('btn-acquis-home').addEventListener('click', function () {
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
       endAcquisSession();
       updateHomeScreen();
       showScreen('screen-home');

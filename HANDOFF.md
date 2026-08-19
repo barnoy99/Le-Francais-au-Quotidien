@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=55`, `style.css?v=48`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v35'`.
+**Current versions:** `app.js?v=56`, `style.css?v=49`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v36'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -90,7 +90,8 @@ state = {
   acqCycle: [ids], acqCursor, acqPass: {id:count}, acqSig, acqLast,
   hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast,
   ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
-  rvCycle: ["id:main"|"id:alt"], rvCursor        // ⚑ Réviser pass, §5a
+  rvCycle: ["id:main"|"id:alt"], rvCursor,       // ⚑ Réviser pass, §5a
+  acquisAutoPlay: bool                           // "auto" toggle, §5b
 }
 ```
 
@@ -183,7 +184,28 @@ They are **independent** — listening never consumes your reviewing. Shared rul
   `*Positions` arrays parallel to its phrase array, for these modes only.
 - Regression risk: `showAcquisPhrase` and `handsfreeStep` now serve both the
   normal rotation and a ⚑ pass. Check plain Mes Acquis / Mains Libres still work
-  after touching either.
+  after touching either. Both **clamp the index** to at most one past the array:
+  they pull one item per step, and a stray advance after a pass closes would
+  otherwise push to the end and leave the current index empty (a crash).
+- **The counter is large only in these two modes** — 1.7rem, accent red, lining
+  + tabular figures, via `handsfree-skip-row--large` on the row (set by
+  `setCounterSize`). The row's gap drops 2.5rem → 1rem to pay for the width:
+  at 375px "13 / 32" is 85px against the small counter's 29px, which otherwise
+  shoves the row into Accueil. The gap rule needs the doubled class
+  `.handsfree-skip-row.handsfree-skip-row--large` — the base rule is ~1000 lines
+  further down style.css and wins at equal specificity.
+
+### 5b. Lecture automatique (`auto`)
+
+A gold pill on the **context line** of the Mes Acquis screen (so it serves both
+plain Mes Acquis and ⚑ Réviser), persisted as `state.acquisAutoPlay`, off by
+default. When armed, `revealAcquis` speaks the sentence: in ⚑ Réviser the single
+sentence on the card; in the normal rotation the main sentence and then its alt,
+chained off the first one's `onend` and abandoned if you advance or leave.
+Tapping it while a card is already revealed plays immediately, so the toggle
+proves itself without waiting for the next Révéler.
+
+Placement was forced by measurement, not taste — see §6.
 
 ---
 
@@ -200,6 +222,13 @@ mobile preset (375×812).
   three states — Acquis/Suivant, Mains Libres/Pause, Mains Libres/**Reprendre**
   (the widest) — currently end exactly at 357. Mes Acquis' Suivant is
   deliberately narrower than Apprentissage's because it carries four controls.
+- **The Mes Acquis bar is full at four controls.** Adding a fifth (the `auto`
+  pill) pushed Suivant to a right edge of **411px** on a 375px screen — clipped
+  rather than scrolled, since the bar is `position: fixed`. Putting it in the
+  French card instead cost that sentence a third of its width (225px → 152px,
+  4 lines → 6). It lives on the context line, which costs **16px of height and
+  nothing horizontally**: with a long phrase plus its alt, normal Mes Acquis
+  still clears the bar by 100px, ⚑ Réviser by 282px, and neither scrolls.
 - The home screen has **~5px of vertical slack** — a 5th full-size button
   overflows by 91px. That's why Écouter/Réviser/Progrès share one row as small
   text links (span 321px, all exactly 44px tall).

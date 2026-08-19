@@ -1214,6 +1214,27 @@ ul {
   gap: 2.5rem;
 }
 
+/* ⚑ Écouter / ⚑ Réviser: the pass counter is the one number you read mid-drill,
+   so it goes large and in the accent colour — readable without reading glasses.
+   Cormorant defaults to old-style figures (3/4/5/7/9 sit low), so lining and
+   tabular figures are forced, same fix as the countdown ring. The gap tightens
+   to pay for the extra width: at 375px "13 / 32" is 85px against the small
+   counter's 29px, which would otherwise shove the row into Accueil.
+   Doubled class — .handsfree-skip-row sets the gap later in this file. */
+.handsfree-skip-row.handsfree-skip-row--large {
+  gap: 1rem;
+}
+
+.handsfree-skip-row--large .session-counter {
+  font-size: 1.7rem;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--color-accent);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  white-space: nowrap;
+}
+
 .btn-skip {
   font-size: 1.25rem;
   color: var(--text-secondary);
@@ -1245,6 +1266,49 @@ ul {
   min-height: 44px;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Lecture automatique — parked on the context line, the only spare real estate
+   on this screen: the sticky bar has no room (a fifth control pushed Suivant
+   54px off a 375px screen) and putting it in the French card cost that sentence
+   a third of its width. Here it costs ~16px of height and nothing horizontally,
+   and it is reachable before revealing as well as after. Text, not a glyph, so
+   it cannot fail to resolve on the phone. */
+.acquis-context-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.acquis-context-row .phrase-context {
+  margin-bottom: 0;
+}
+
+.btn-auto {
+  height: 36px;
+  padding: 0 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-gold);
+  background: transparent;
+  color: var(--color-gold);
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-auto.activated {
+  color: #fff;
+  background: var(--color-gold);
+}
+
+.btn-auto:active {
+  opacity: 0.85;
 }
 
 /* On (boosted): solid, darker and more reddish orange so it stands out. */
