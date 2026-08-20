@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=56`, `style.css?v=49`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v36'`.
+**Current versions:** `app.js?v=57`, `style.css?v=49`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v37'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,7 +156,7 @@ implementation, the `fq*` helpers, parameterised by a prefix:
 
 They are **independent** — listening never consumes your reviewing. Shared rules:
 
-- **Écouter reads every sentence 4×** (`ECOUTER_READS`), ×6 or not. Tapping ×6
+- **Écouter reads every sentence 2×** (`ECOUTER_READS`), ×6 or not. Tapping ×6
   during an Écouter session records the flag for the main rotation but never
   changes the current sentence's reading count.
 - **Main and alt are independent items**, shuffled apart from each other — not

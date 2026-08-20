@@ -9,7 +9,7 @@
   // level → selection weight (0=unseen, 1=hard, 2=learning, 3=familiar)
   var WEIGHTS = [2, 4, 3, 1];
   // ⚑ Écouter reads every sentence this many times, ×6 flag or not
-  var ECOUTER_READS = 4;
+  var ECOUTER_READS = 2;
   var ECOUTER_DONE_SPEECH = 'Félicitations ! Vous avez écouté toutes vos expressions difficiles.';
 
   var state;
