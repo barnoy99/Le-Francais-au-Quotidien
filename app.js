@@ -99,6 +99,7 @@
     return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [],
              hfCycle: [], hfCursor: 0, hfPass: {},
              acqCycle: [], acqCursor: 0, acqPass: {},
+             hfBase: 0,
              ecCycle: [], ecCursor: 0,
              rvCycle: [], rvCursor: 0,
              acquisAutoPlay: false };
@@ -641,23 +642,40 @@
 
   // Returns the next `count` phrases from the persistent cycle, rebuilding it
   // when exhausted or when the pool changed. `key` is 'hf' or 'acq'.
-  function takeFromCycle(key, pool, count) {
+  // Slots of the current round already served before `*Cycle` was last laid
+  // out. A mid-pass rebuild covers only what's still owed, so its cursor starts
+  // at 0 again — this keeps the counter counting through the whole round.
+  function passBase(key) { return state[key + 'Base'] || 0; }
+
+  function takeFromCycle(key, pool, count, positionsOut) {
     var cycleKey = key + 'Cycle', cursorKey = key + 'Cursor',
-        sigKey = key + 'Sig', passKey = key + 'Pass';
+        sigKey = key + 'Sig', passKey = key + 'Pass', baseKey = key + 'Base';
     var byId = {};
     for (var i = 0; i < pool.length; i++) byId[pool[i].id] = pool[i];
     var weighted = usesWeightedCycle(key);
     var sig = poolSignature(pool, weighted);
     if (!state[passKey]) state[passKey] = {};
 
+    // First run after the upgrade: infer how far into the round the existing
+    // cycle already is, so the counter doesn't restart mid-round.
+    if (state[baseKey] === undefined) {
+      var full = 0;
+      for (var i = 0; i < pool.length; i++) full += weighted ? cycleCopies(pool[i].id) : 1;
+      state[baseKey] = Math.max(0, full - ((state[cycleKey] || []).length));
+    }
+
     // Rebuild when the pool changes — but only over what's still owed this
     // pass, so mastering/flagging a phrase no longer restarts the rotation.
     if (!state[cycleKey] || !state[cycleKey].length || state[sigKey] !== sig) {
+      // The re-laid cycle covers only what is still owed, so the round's
+      // progress so far is exactly what the pass map says has been played.
+      state[baseKey] = passPlayed(key);
       state[cycleKey] = buildCycle(pool, weighted, state[passKey]);
       state[cursorKey] = 0;
       state[sigKey] = sig;
-      if (!state[cycleKey].length) {          // nothing owed → begin a new pass
+      if (!state[cycleKey].length) {          // nothing owed → begin a new round
         state[passKey] = {};
+        state[baseKey] = 0;
         state[cycleKey] = buildCycle(pool, weighted);
       }
     }
@@ -673,12 +691,18 @@
         // over and over, because the pre-fetch runs ahead of what's displayed.)
         state[cycleKey] = avoidEarlyRepeat(buildCycle(pool, weighted), state[key + 'Last']);
         state[cursorKey] = 0;
+        state[passKey] = {};                  // a full new round starts here
+        state[baseKey] = 0;
         if (!state[cycleKey].length) break;
       }
+      var abs = passBase(key) + state[cursorKey];
       var id = state[cycleKey][state[cursorKey]];
       state[cursorKey]++;
       var p = byId[id];
-      if (p) out.push(p);                     // skip ids no longer in the pool
+      if (p) {                                // skip ids no longer in the pool
+        out.push(p);
+        if (positionsOut) positionsOut.push(abs);
+      }
     }
     save();
     return out;
@@ -701,6 +725,13 @@
   // Counts a phrase as covered in the current pass (called when it's shown).
   // If the previous pass was already complete, this card opens a new one — so
   // the final card of a pass still displays "221 / 221" before it rolls over.
+  // The pass map is "copies played in the current round"; it is cleared when a
+  // round is laid out in full (see takeFromCycle).
+  //
+  // Mes Acquis also passes `poolSize`, which clears the map as soon as every
+  // phrase has been covered — its counter is a coverage count and needs that to
+  // wrap. Mains Libres does not: its counter is a position through the round,
+  // and clearing mid-round would let a rebuild re-queue copies already heard.
   function markPassSeen(key, id, poolSize) {
     var passKey = key + 'Pass';
     if (!state[passKey]) state[passKey] = {};
@@ -708,6 +739,14 @@
     state[passKey][id] = (state[passKey][id] || 0) + 1;
     state[key + 'Last'] = id;
     save();
+  }
+
+  // Copies played in the current round — the base the counter continues from
+  // when a rebuild re-lays only what is still owed.
+  function passPlayed(key) {
+    var p = state[key + 'Pass'] || {}, n = 0;
+    for (var id in p) n += p[id] || 0;
+    return n;
   }
 
   // How many distinct phrases have been covered in the current pass
@@ -1000,6 +1039,16 @@
     hide($('btn-suivant'));
   }
 
+  // Sentences in the round now under way. Taken from the round itself — slots
+  // already played plus slots still queued — rather than recomputed from the
+  // current weights, which drift the moment you toggle ×6 or ⚑ mid-round and
+  // would let the position read past the total. Each slot is two sentences
+  // (main, alt), and a ×6/⚑ phrase holds several slots, so its sentences are
+  // counted again each time they come round.
+  function roundSentenceTotal() {
+    return (passBase('hf') + ((state.hfCycle || []).length)) * 2;
+  }
+
   // The ⚑ passes show their counter large and in the accent colour; the normal
   // rotations keep the small italic one. The row is the flex container whose
   // gap has to tighten to make room, so the class goes there.
@@ -1192,13 +1241,13 @@
   function endHandsfreeSession() {
     if (handsfreeCustomPool) {
       // Hand back the sentence that was playing when you quit, so resuming
-      // later picks it up again instead of skipping it (same idea as
-      // releaseBatch for the main rotation).
+      // later picks it up again instead of skipping it.
       var pos = handsfreePositions[handsfreeIndex];
       if (pos && pos === state.ecCursor) { state.ecCursor = pos - 1; save(); }
       return;
     }
-    releaseBatch('hf', handsfreeBatchLen, handsfreeMaxSeen);
+    // The full rotation now pulls one phrase at a time, so there is no
+    // pre-fetched remainder to release — what was taken was played.
     handsfreeBatchLen = 0;
   }
 
@@ -1319,10 +1368,12 @@
       handsfreePhrases = [];  // filled from the queue as the session goes
       handsfreeBatchLen = 0;
     } else {
-      var source = getMasteredPhrases();
-      handsfreePhrases = source.length ? takeFromCycle('hf', source, Math.min(SESSION_BATCH, source.length * 4)) : [];
-      handsfreeBatchLen = handsfreePhrases.length;
-      if (handsfreePhrases.length === 0) return;
+      // Pulled one at a time in handsfreeStep, like the ⚑ passes: nothing is
+      // consumed until it is actually played, so quitting can't skip a phrase
+      // and the counter is an exact position rather than a fetch position.
+      if (getMasteredPhrases().length === 0) return;
+      handsfreePhrases = [];
+      handsfreeBatchLen = 0;
     }
     handsfreeMaxSeen = 0;
     handsfreeIndex = 0;
@@ -1438,8 +1489,8 @@
 
   function handsfreeStep() {
     if (!handsfreeActive) return;
-    // same one-at-a-time invariant as showAcquisPhrase
-    if (handsfreeCustomPool && handsfreeIndex > handsfreePhrases.length) handsfreeIndex = handsfreePhrases.length;
+    // same one-at-a-time invariant as showAcquisPhrase — both modes pull singly
+    if (handsfreeIndex > handsfreePhrases.length) handsfreeIndex = handsfreePhrases.length;
     if (handsfreeIndex >= handsfreePhrases.length) {
       if (handsfreeCustomPool) {
         // ⚑ Écouter: one sentence at a time, so a phrase flagged mid-session is
@@ -1450,12 +1501,13 @@
         handsfreeExercises.push(item.exercise);
         handsfreePositions.push(item.position);
       } else {
-        // full rotation: pull the next slice and keep going
+        // full rotation: take the next single phrase off the cycle
         var src = getMasteredPhrases();
-        var more = src.length ? takeFromCycle('hf', src, SESSION_BATCH) : [];
+        var morePos = [];
+        var more = src.length ? takeFromCycle('hf', src, 1, morePos) : [];
         if (more.length) {
           handsfreePhrases = handsfreePhrases.concat(more);
-          handsfreeBatchLen += more.length;
+          handsfreePositions = handsfreePositions.concat(morePos);
         } else {
           handsfreeActive = false;
           endHandsfreeSession();
@@ -1474,10 +1526,17 @@
 
     var p = handsfreePhrases[handsfreeIndex];
     // count the phrase once per visit, not once per exercise (main + alt)
-    if (!handsfreeCustomPool && handsfreeExercise === 'main') markPassSeen('hf', p.id, getMasteredPhrases().length);
+    if (!handsfreeCustomPool && handsfreeExercise === 'main') markPassSeen('hf', p.id);
+    // ⚑ Écouter counts sentences through its pass; the full rotation now does
+    // the same — each slot is two sentences (main, alt), and a ×6/⚑ phrase
+    // holds several slots per round, so its sentences are counted each time
+    // they come round rather than once.
+    var slot = handsfreePositions[handsfreeIndex];
     $('handsfree-counter').textContent = handsfreeCustomPool
-      ? handsfreePositions[handsfreeIndex] + ' / ' + (state.ecCycle || []).length
-      : passProgress('hf') + ' / ' + getMasteredPhrases().length;
+      ? slot + ' / ' + (state.ecCycle || []).length
+      : (slot === undefined
+          ? passProgress('hf') + ' / ' + getMasteredPhrases().length
+          : (slot * 2 + (handsfreeExercise === 'main' ? 1 : 2)) + ' / ' + roundSentenceTotal());
     setCounterSize('handsfree-counter', handsfreeCustomPool);
 
     // Reset per-exercise state — boosted phrases start at 6 reads, except in a

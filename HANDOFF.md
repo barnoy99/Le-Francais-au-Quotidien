@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=57`, `style.css?v=49`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v37'`.
+**Current versions:** `app.js?v=58`, `style.css?v=49`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v38'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -88,7 +88,7 @@ state = {
   phrases: { id: { level, lastSeen, timesSeen, hfSeen,
                    boost, hardManual, hardScore, misses } },
   acqCycle: [ids], acqCursor, acqPass: {id:count}, acqSig, acqLast,
-  hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast,
+  hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast, hfBase,
   ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
   rvCycle: ["id:main"|"id:alt"], rvCursor,       // ⚑ Réviser pass, §5a
   acquisAutoPlay: bool                           // "auto" toggle, §5b
@@ -115,14 +115,32 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
 - **Mains Libres cycle:** once per unit of weight — plain 1, ×6 or ⚑ 2, ×6+⚑ 4 —
   with copies placed by **even stride** around the cycle (closest repeat ~100
   cards, median ~200), so you never meet the same phrase twice in a sitting.
-- The cycle persists across sessions via `*Cursor`. A session pre-fetches a
-  batch of `SESSION_BATCH = 60` and **hands back whatever it didn't reach** on
-  exit (`releaseBatch`), so nothing loses its turn.
-- **Pass progress** (`*Pass` map) = distinct phrases covered. The header counter
-  shows `passProgress / masteredCount`, e.g. `45 / 221`, and carries across
-  sessions. Closed in `markPassSeen` at *display* time (not when the pre-fetch
-  crosses the boundary), and a fresh pass avoids opening with the phrase just
-  shown (`avoidEarlyRepeat`).
+- The cycle persists across sessions via `*Cursor`. **Mes Acquis** pre-fetches a
+  batch of `SESSION_BATCH = 60` and hands back whatever it didn't reach on exit
+  (`releaseBatch`). That hand-back is best effort: if the app is force-closed the
+  exit path never runs and the pre-fetched remainder is skipped for that round —
+  which is exactly why Mains Libres stopped batching (next bullet).
+- **Mains Libres pulls one phrase at a time** (like the ⚑ passes) and no longer
+  pre-fetches a batch. That is what makes its counter exact: nothing is consumed
+  until it is played, so quitting can't skip a phrase. Mes Acquis still batches
+  and still uses `releaseBatch`.
+- **The Mains Libres counter is a sentence position through the round**:
+  `slot * 2 + (main ? 1 : 2)` over `roundSentenceTotal()`, e.g. `137 / 762`.
+  Each slot is two sentences (main, alt), and a ×6/⚑ phrase holds several slots
+  per round, so its sentences are counted again each time they come round.
+  The denominator is `(hfBase + hfCycle.length) * 2` — taken from the round
+  actually queued, **not** recomputed from current weights, which drift the
+  moment you toggle ×6 mid-round and would let the position read past the total.
+- `hfBase` = slots of this round served before the current `hfCycle` was laid
+  out. A rebuild re-lays only what is still owed and resets the cursor, so
+  without this the counter would restart mid-round. Set to `passPlayed(key)` on
+  a rebuild, 0 when a round is laid out in full.
+- **Pass progress** (`*Pass` map) = copies played this round. Mes Acquis' counter
+  is still distinct-coverage (`passProgress / masteredCount`) and passes
+  `poolSize` to `markPassSeen` so it wraps at full coverage; Mains Libres does
+  not pass it, because clearing mid-round would let a rebuild re-queue copies
+  already heard. A fresh pass avoids opening with the phrase just shown
+  (`avoidEarlyRepeat`).
 - Pool changes (mastering, deleting, toggling ×6/⚑) call `invalidateCycles()`;
   the rebuild covers **only what's still owed**, so progress isn't lost.
 - **Both ⚑ modes bypass all of the above.** Écouter and Réviser each have their
