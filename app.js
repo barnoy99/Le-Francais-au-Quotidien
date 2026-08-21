@@ -1053,8 +1053,16 @@
   // rotations keep the small italic one. The row is the flex container whose
   // gap has to tighten to make room, so the class goes there.
   function setCounterSize(counterId, large) {
-    var row = $(counterId).parentNode;
-    if (row) row.classList.toggle('handsfree-skip-row--large', !!large);
+    var el = $(counterId), row = el && el.parentNode;
+    if (!row) return;
+    row.classList.toggle('handsfree-skip-row--large', !!large);
+    // Mains Libres counts sentences, so its value is long ("137 / 762") and
+    // would crowd Accueil at 375px. Size off the widest value this round can
+    // reach — twice the total's digits plus the slash — rather than off the
+    // current value, so the size is stable instead of shrinking at 100.
+    var total = String(el.textContent).split('/')[1] || '';
+    var widest = total.replace(/\s/g, '').length * 2 + 1;
+    row.classList.toggle('handsfree-skip-row--long', !!large && widest >= 7);
   }
 
   // ── Lecture automatique (Mes Acquis / ⚑ Réviser) ───────
@@ -1537,7 +1545,7 @@
       : (slot === undefined
           ? passProgress('hf') + ' / ' + getMasteredPhrases().length
           : (slot * 2 + (handsfreeExercise === 'main' ? 1 : 2)) + ' / ' + roundSentenceTotal());
-    setCounterSize('handsfree-counter', handsfreeCustomPool);
+    setCounterSize('handsfree-counter', true);   // large in both Mains Libres modes
 
     // Reset per-exercise state — boosted phrases start at 6 reads, except in a
     // ⚑ Écouter session, where every sentence gets ECOUTER_READS regardless.

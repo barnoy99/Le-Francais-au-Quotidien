@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=58`, `style.css?v=49`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v38'`.
+**Current versions:** `app.js?v=59`, `style.css?v=50`, `data.js?v=27`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v39'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -205,13 +205,21 @@ They are **independent** — listening never consumes your reviewing. Shared rul
   after touching either. Both **clamp the index** to at most one past the array:
   they pull one item per step, and a stray advance after a pass closes would
   otherwise push to the end and leave the current index empty (a crash).
-- **The counter is large only in these two modes** — 1.7rem, accent red, lining
-  + tabular figures, via `handsfree-skip-row--large` on the row (set by
-  `setCounterSize`). The row's gap drops 2.5rem → 1rem to pay for the width:
-  at 375px "13 / 32" is 85px against the small counter's 29px, which otherwise
-  shoves the row into Accueil. The gap rule needs the doubled class
+- **The counter is large in both Mains Libres modes and in ⚑ Réviser** — accent
+  red, upright, lining + tabular figures, via `handsfree-skip-row--large` on the
+  row (set by `setCounterSize`). Plain Mes Acquis keeps the small grey italic
+  one. The row's gap drops 2.5rem → 1rem to pay for the width: at 375px
+  "13 / 32" is 85px against the small counter's 29px, which otherwise shoves the
+  row into Accueil. The gap rule needs the doubled class
   `.handsfree-skip-row.handsfree-skip-row--large` — the base rule is ~1000 lines
   further down style.css and wins at equal specificity.
+- **Long values step down** via `--long`: 1.35rem and a 0.7rem gap. Mains Libres
+  counts sentences ("137 / 762"), which at 1.7rem would crowd Accueil. The class
+  is chosen from the widest value the round can reach (the total's digits × 2 + 1
+  ≥ 7), **not** the current value, so the size doesn't change when the numerator
+  passes 100. Measured at 375px: 94px wide, 43px clear of Accueil, and 19px clear
+  even at a four-digit "1024 / 1180". Tabular figures keep the width fixed as the
+  digits change.
 
 ### 5b. Lecture automatique (`auto`)
 

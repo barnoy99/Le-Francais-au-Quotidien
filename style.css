@@ -1235,6 +1235,19 @@ ul {
   white-space: nowrap;
 }
 
+/* Mains Libres counts sentences through the round, so its value is long
+   ("137 / 762"). Same weight and colour, one step down in size with a tighter
+   row, so the group still clears Accueil. Rules come after the --large block:
+   equal specificity, so source order decides. */
+.handsfree-skip-row.handsfree-skip-row--long {
+  gap: 0.7rem;
+}
+
+.handsfree-skip-row--long .session-counter {
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+}
+
 .btn-skip {
   font-size: 1.25rem;
   color: var(--text-secondary);
