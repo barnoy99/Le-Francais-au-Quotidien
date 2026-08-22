@@ -358,7 +358,14 @@
     $('phrase-french').textContent = phrase.fr;
     $('phrase-english').textContent = phrase.en;
 
-    $('session-counter').textContent = sessionSeen + (sessionSeen === 1 ? ' vue' : ' vues');
+    // Sentences of the Apprentissage pool you have met at least once, out of
+    // the whole pool — replaces the per-session tally, which the summary card
+    // every SUMMARY_INTERVAL phrases already reports.
+    var pool = getLearningPhrases();
+    var met = pool.filter(function (p) {
+      return ((state.phrases[p.id] || {}).timesSeen || 0) > 0;
+    });
+    $('session-counter').textContent = sentenceCount(met) + ' / ' + sentenceCount(pool);
 
     hide($('translation-reveal'));
     hide($('summary-card'));
@@ -912,22 +919,43 @@
       : { en: p.en, fr: p.fr };
   }
 
+  // Every entry is two sentences — the main one and its alt — so all the
+  // user-facing counts are in sentences. Guarded in case an entry ever lacks
+  // an alt, though data.js requires one.
+  function sentenceCount(list) {
+    var n = 0;
+    for (var i = 0; i < list.length; i++) n += list[i].alt_usage ? 2 : 1;
+    return n;
+  }
+
+  // Phrases not yet mastered — the Apprentissage pool.
+  function getLearningPhrases() {
+    var mastered = {}, m = getMasteredPhrases();
+    for (var i = 0; i < m.length; i++) mastered[m[i].id] = true;
+    return activePhrases().filter(function (p) { return !mastered[p.id]; });
+  }
+
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
     var count = mastered.length;
-    var remaining = activePhrases().length - count;
-    $('apprentissage-count').textContent = '(' + remaining + ')';
-    $('acquis-count').textContent = '(' + count + ')';
+    // Counts are sentences out of every sentence in the app, so the total is
+    // visible on each button without costing a line on a screen with no slack.
+    var total = sentenceCount(activePhrases());
+    var masteredSentences = sentenceCount(mastered);
+    var learningSentences = sentenceCount(getLearningPhrases());
+    $('apprentissage-count').textContent = '(' + learningSentences + ' / ' + total + ')';
+    $('acquis-count').textContent = '(' + masteredSentences + ' / ' + total + ')';
     $('btn-acquis').disabled = count === 0;
-    $('handsfree-count').textContent = '(' + count + ')';
+    $('handsfree-count').textContent = '(' + masteredSentences + ' / ' + total + ')';
     $('btn-handsfree').disabled = count === 0;
 
-    var hardCount = getHardPhrases().length;
+    var hard = getHardPhrases();
+    var hardSentences = sentenceCount(hard);
     [['btn-difficiles', '⚑ Écouter'], ['btn-difficiles-acquis', '⚑ Réviser']].forEach(function (pair) {
       var btn = $(pair[0]);
       if (!btn) return;
-      btn.textContent = pair[1] + ' (' + hardCount + ')';
-      if (hardCount === 0) hide(btn); else show(btn);
+      btn.textContent = pair[1] + ' (' + hardSentences + ')';
+      if (hard.length === 0) hide(btn); else show(btn);
     });
   }
 
@@ -1030,7 +1058,7 @@
     // it carries across sessions, so "45 / 221" means 45 covered so far.
     $('acquis-counter').textContent = acquisCustomPool
       ? acquisPositions[acquisIndex] + ' / ' + (state.rvCycle || []).length
-      : passProgress('acq') + ' / ' + getMasteredPhrases().length;
+      : (passProgress('acq') * 2) + ' / ' + sentenceCount(getMasteredPhrases());
     setCounterSize('acquis-counter', acquisCustomPool);
     updateAcquisSixButton();
     updateAutoButton();

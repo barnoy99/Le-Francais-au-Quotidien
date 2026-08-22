@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=59`, `style.css?v=50`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v41'`.
+**Current versions:** `app.js?v=60`, `style.css?v=50`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v42'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -124,6 +124,15 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   pre-fetches a batch. That is what makes its counter exact: nothing is consumed
   until it is played, so quitting can't skip a phrase. Mes Acquis still batches
   and still uses `releaseBatch`.
+- **Every user-facing count is in sentences, not phrases** (`sentenceCount()`),
+  because each entry is a main sentence plus an alt. Home buttons read
+  `sentences / all sentences in the app`, e.g. `(442 / 874)` — which is also
+  where the app-wide total is surfaced, since the home screen has no vertical
+  room for another line. Apprentissage's header shows sentences of its pool ever
+  **rated** over the pool total (`timesSeen > 0`, the same definition the Progrès
+  overlay uses — merely displaying a phrase does not count, and `timesSeen` is
+  only incremented on the rating path). Mes Acquis shows `passProgress * 2` over
+  mastered sentences.
 - **The Mains Libres counter is a sentence position through the round**:
   `slot * 2 + (main ? 1 : 2)` over `roundSentenceTotal()`, e.g. `137 / 762`.
   Each slot is two sentences (main, alt), and a ×6/⚑ phrase holds several slots
