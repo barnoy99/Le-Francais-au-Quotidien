@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=59`, `style.css?v=50`, `data.js?v=28`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v40'`.
+**Current versions:** `app.js?v=59`, `style.css?v=50`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v41'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -292,7 +292,7 @@ mobile preset (375×812).
 
 ## 8. Current numbers (verified at handoff)
 
-- **398** entries in `data.js` = **796** sentences (every entry has an alt).
+- **437** entries in `data.js` = **874** sentences (every entry has an alt).
   After the user's in-app deletions: **~379 active** = ~758 sentences.
 - One round in Mains Libres is ~390 weighted slots ≈ 780 sentence-plays, about
   three weeks at the user's ~40/day pace.
@@ -323,8 +323,12 @@ mobile preset (375×812).
   `tout à fait`, `carrément`, `n'empêche`, `il faut` in four tenses, concordance
   des temps, participial absolutes, conversation-driving questions, home & family
   life, hosting & rapport, `dont`/`lequel`/`se faire`/`si` + plus-que-parfait/
-  reported speech, spoken connectors, and travel `vous`. Check `data.js` before
-  adding — duplicates are easy.
+  reported speech, spoken connectors, travel `vous`, and a B2 domestic/parenting
+  set (laundry, splitting the chores, the children's behaviour, bedtime, agreeing
+  as a couple). Check `data.js` before adding — duplicates are easy.
+- **The user speaks French to his wife, not to his children.** Sentences aimed at
+  a child (*Range ta chambre*, *Mets tes chaussettes…*) are wrong for him; write
+  *about* the kids, addressed to her. He has three, aged 5–10.
 - UI text is French; code comments English.
 
 ## 10. Loose ends / possible next steps
