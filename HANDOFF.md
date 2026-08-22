@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=59`, `style.css?v=50`, `data.js?v=27`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v39'`.
+**Current versions:** `app.js?v=59`, `style.css?v=50`, `data.js?v=28`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v40'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -292,29 +292,40 @@ mobile preset (375×812).
 
 ## 8. Current numbers (verified at handoff)
 
-- **325** entries in `data.js`; **34** deleted → **293 active** phrases
-  = **586 French sentences** (every entry has an alt) / 1,172 with English
-- **223 mastered**, ~25 in progress, ~45 never seen (these drift daily — the
-  user practises most days, so re-count rather than trusting these figures)
-- **16 flagged difficult**; ~151 of the mastered ones are ×6
-- ~3,000 sentences heard in Mains Libres, ~560 sessions, roughly 40/day
-
----
+- **398** entries in `data.js` = **796** sentences (every entry has an alt).
+  After the user's in-app deletions: **~379 active** = ~758 sentences.
+- One round in Mains Libres is ~390 weighted slots ≈ 780 sentence-plays, about
+  three weeks at the user's ~40/day pace.
+- ~221 mastered, ~17 flagged ⚑, ~150 of the mastered ones ×6. These drift daily —
+  re-count rather than trusting the figures. The live state can be read directly
+  with a GET on the Realtime DB (read-only, nothing is written):
+  `curl -s https://francais-quotidien-default-rtdb.firebaseio.com/progress/user1.json`
+  Note Firebase returns `phrases` and `hfPass` as **arrays** (numeric keys), not
+  objects — handle both shapes.
 
 ## 9. Content conventions
 
 - Natural spoken French. Subjunctive conjunctions (`à moins que`, `avant que`,
   `sans que`, `de peur que`) are written **without** the *ne explétif*.
-- `context` is a short English label shown above the card
-  (e.g. "Polite disagreement", "Il faut — imparfait").
-- Recent themes already covered: subjunctive triggers (~34 cards incl.
-  superlatives + `pourvu que` both senses), `à peine`, `s'y prendre`, `là-dedans`,
-  `tout à fait`, `carrément`, `n'empêche`, `il faut` in four tenses,
-  concordance des temps, participial absolutes. Check `data.js` before adding —
-  duplicates are easy.
+- `context` is a short English label shown above the card, and now also names the
+  register — e.g. "Chores — casual", "Ordering — vous".
+- **Three registers coexist deliberately** (ids tell you which): the older
+  entries are careful `tu`; ids 334–413 are casual `tu` with the `ne` dropped
+  (`t'as`, `y a`, `faut que`); ids 414–433 are polite `vous` with the full `ne`,
+  for shops, transport and problems abroad. Drop the `ne`, but **never
+  phonetically respell** (`chuis`, `j'sais`) — the TTS mangles it.
+- **The user's deletion criterion is frequency in real spoken French** — not
+  formality and not function. They keep formal phrases they'd actually say and
+  delete casual ones they wouldn't. When in doubt, ask rather than infer; an
+  earlier inference from their choices ("they dislike discourse management")
+  was wrong and they corrected it.
+- Themes covered: subjunctive triggers, `à peine`, `s'y prendre`, `là-dedans`,
+  `tout à fait`, `carrément`, `n'empêche`, `il faut` in four tenses, concordance
+  des temps, participial absolutes, conversation-driving questions, home & family
+  life, hosting & rapport, `dont`/`lequel`/`se faire`/`si` + plus-que-parfait/
+  reported speech, spoken connectors, and travel `vous`. Check `data.js` before
+  adding — duplicates are easy.
 - UI text is French; code comments English.
-
----
 
 ## 10. Loose ends / possible next steps
 
