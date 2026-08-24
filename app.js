@@ -366,6 +366,7 @@
       return ((state.phrases[p.id] || {}).timesSeen || 0) > 0;
     });
     $('session-counter').textContent = sentenceCount(met) + ' / ' + sentenceCount(pool);
+    setCounterSize('session-counter', true);   // same large red counter as Mains Libres
 
     hide($('translation-reveal'));
     hide($('summary-card'));

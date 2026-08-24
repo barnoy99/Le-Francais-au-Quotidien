@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=60`, `style.css?v=50`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v42'`.
+**Current versions:** `app.js?v=61`, `style.css?v=50`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v43'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
