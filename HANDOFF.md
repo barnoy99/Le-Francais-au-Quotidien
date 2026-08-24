@@ -37,6 +37,19 @@ serving the previous version. `gh run list` showed the real state (`failure`).
 without adding a no-op commit. Always confirm the live URL actually serves the
 new `?v=N` — pushed is not deployed.
 
+### Tests
+
+```
+node test/queue-test.js
+```
+
+Covers the ⚑ flagged-pass queue (`fq*` in `app.js`) for both prefixes: a pass
+covers every sentence once, main and alt are kept apart, quitting resumes on the
+sentence you were on, flagging mid-pass splices into what's left, un-flagging
+drops it, the two passes don't touch each other. It extracts the real functions
+from `app.js` rather than copying them, so it fails loudly if one is renamed.
+Run it after touching anything in the rotation or the ⚑ passes.
+
 **Always `git pull` first** — the user also runs Claude Code sessions from their
 phone against this repo and merges PRs, so master moves independently. Phrase-id
 collisions have happened; check the max id after pulling.

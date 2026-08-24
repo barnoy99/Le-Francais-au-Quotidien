@@ -9,6 +9,19 @@ after it lands on `master`.
 > gotchas (chiefly: the local preview reads and writes the user's LIVE progress
 > data, and the service worker serves cached assets).
 
+## Keeping `HANDOFF.md` current (do not skip)
+
+Nothing enforces this automatically — the handoff is only accurate because each
+session updates it. Before finishing work, update it whenever you have:
+
+- changed the asset versions (§1 **Current versions** — every deploy)
+- added or deleted phrases (§8 counts)
+- changed how a mode, counter, rotation or pass behaves (§2, §4, §5)
+- learned something durable about how the user wants content chosen or written
+  (§9) — their preferences have overturned reasonable-looking inferences twice
+
+A session that leaves it stale costs the next one an hour of rediscovery.
+
 ## Adding phrases (most common request)
 
 - Phrases live in `data.js` as `var PHRASES = [...]`.
