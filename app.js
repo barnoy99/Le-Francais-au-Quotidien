@@ -1060,7 +1060,7 @@
     $('acquis-counter').textContent = acquisCustomPool
       ? acquisPositions[acquisIndex] + ' / ' + (state.rvCycle || []).length
       : (passProgress('acq') * 2) + ' / ' + sentenceCount(getMasteredPhrases());
-    setCounterSize('acquis-counter', acquisCustomPool);
+    setCounterSize('acquis-counter', true);   // large in both Mes Acquis modes
     updateAcquisSixButton();
     updateAutoButton();
     show($('acquis-reveal-area'));

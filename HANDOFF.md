@@ -27,8 +27,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=61`, `style.css?v=50`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v43'`.
+**Current versions:** `app.js?v=62`, `style.css?v=50`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v44'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -214,10 +214,10 @@ They are **independent** — listening never consumes your reviewing. Shared rul
   after touching either. Both **clamp the index** to at most one past the array:
   they pull one item per step, and a stray advance after a pass closes would
   otherwise push to the end and leave the current index empty (a crash).
-- **The counter is large in both Mains Libres modes and in ⚑ Réviser** — accent
-  red, upright, lining + tabular figures, via `handsfree-skip-row--large` on the
-  row (set by `setCounterSize`). Plain Mes Acquis keeps the small grey italic
-  one. The row's gap drops 2.5rem → 1rem to pay for the width: at 375px
+- **Every screen's counter is large** — accent red, upright, lining + tabular
+  figures, via `handsfree-skip-row--large` on the row (set by `setCounterSize`,
+  now called with `true` from all four screens). Nothing uses the small grey
+  italic style any more. The row's gap drops 2.5rem → 1rem to pay for the width: at 375px
   "13 / 32" is 85px against the small counter's 29px, which otherwise shoves the
   row into Accueil. The gap rule needs the doubled class
   `.handsfree-skip-row.handsfree-skip-row--large` — the base rule is ~1000 lines
