@@ -8,6 +8,10 @@ after it lands on `master`.
 > /pass system, difficulty flag, UI layout budgets, current stats, and the
 > gotchas (chiefly: the local preview reads and writes the user's LIVE progress
 > data, and the service worker serves cached assets).
+>
+> **Then read `CORPUS.md`** before touching `data.js`: what the phrases are for,
+> the three registers, and the rules the user applies when judging content — two
+> of which overturned well-evidenced inferences, so don't re-derive them.
 
 ## Keeping `HANDOFF.md` current (do not skip)
 

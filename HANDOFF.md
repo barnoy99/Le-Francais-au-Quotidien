@@ -1,6 +1,8 @@
 # Handoff — Le Français au Quotidien
 
-Everything a fresh session needs. Read this plus `CLAUDE.md` before touching anything.
+Everything a fresh session needs. Read this plus `CLAUDE.md` before touching
+anything — and `CORPUS.md` before touching `data.js`, for what the phrases are
+for and how the user judges them.
 
 ---
 
@@ -326,6 +328,10 @@ mobile preset (375×812).
   objects — handle both shapes.
 
 ## 9. Content conventions
+
+> Fuller treatment in **`CORPUS.md`** — the register split, the deletion
+> criterion, and the two inferences about the user's taste that turned out wrong.
+
 
 - Natural spoken French. Subjunctive conjunctions (`à moins que`, `avant que`,
   `sans que`, `de peur que`) are written **without** the *ne explétif*.
