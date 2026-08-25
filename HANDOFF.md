@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=62`, `style.css?v=50`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v44'`.
+**Current versions:** `app.js?v=63`, `style.css?v=51`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v45'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -62,7 +62,7 @@ collisions have happened; check the max id after pulling.
 
 | Mode | What it is |
 |---|---|
-| **Apprentissage** | Spaced repetition for phrases not yet mastered. Shows French → you rate: **Pas encore** (stays), **×3 — Mes Acquis**, or **×6 — Mes Acquis** (masters it, with/without boost). Then the English is revealed and a sticky **Suivant** appears. |
+| **Apprentissage** | Spaced repetition for phrases not yet mastered. The French card, then three inline choices that are live from the start: **Pas encore** (level 1), **×6 — Mes Acquis** (masters it with boost) and **Supprimer**. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. There is **no ×3** (never used) and no sticky bottom bar on this screen. |
 | **Mes Acquis** | Recall practice over mastered phrases. English prompt → **Révéler** → French + alt + TTS. Keyboard: ← prev, → next, space reveals. |
 | **Mains Libres** | Hands-free audio drill of the mastered pool. Wake-lock, TTS. |
 | **Chercher** | Search all phrases; move between pools (→ Acquis ×3 / ×6 / Apprentissage), toggle **Difficile**, delete. |
@@ -139,6 +139,11 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   pre-fetches a batch. That is what makes its counter exact: nothing is consumed
   until it is played, so quitting can't skip a phrase. Mes Acquis still batches
   and still uses `releaseBatch`.
+- **Apprentissage has no fixed bottom bar.** `#screen-phrase .phrase-content`
+  therefore has only 1rem of bottom padding — the 5.5rem that used to clear the
+  bar made the page scroll, which this app never does. `showSummary()` was dead
+  code (never called) and referenced the removed `btn-next`; it is gone, though
+  the hidden `#summary-card` markup remains unused.
 - **Every user-facing count is in sentences, not phrases** (`sentenceCount()`),
   because each entry is a main sentence plus an alt. Home buttons read
   `sentences / all sentences in the app`, e.g. `(442 / 874)` — which is also

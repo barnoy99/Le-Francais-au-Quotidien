@@ -316,6 +316,41 @@ ul {
 .rating-boost .rating-icon { color: #B23A16; }
 .rating-boost:active { background: rgba(178, 58, 22, 0.10); }
 
+/* Supprimer — same shape as the other two so the row reads as one set of
+   choices, but flat and muted: a destructive action should not compete
+   visually with the two you press all day. */
+.rating-delete {
+  border-left-color: var(--color-accent);
+  background: transparent;
+  box-shadow: none;
+}
+.rating-delete .rating-icon { color: var(--color-accent); }
+.rating-delete .rating-label { color: var(--text-secondary); }
+.rating-delete:active { background: var(--color-accent-light); }
+
+/* The French card is the reveal control on this screen. */
+.phrase-card {
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.phrase-card:active {
+  transform: scale(0.99);
+}
+
+/* Sits where the translation will appear, so revealing swaps the text in
+   without the buttons below jumping. */
+.translation-hint {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
 /* ============================================================
    TRANSLATION REVEAL
    ============================================================ */
@@ -962,9 +997,11 @@ ul {
 }
 
 /* ── Apprentissage: tighter vertical rhythm ── */
+/* No fixed bottom bar on this screen any more — the choices are inline — so the
+   5.5rem that used to clear it would push the page into scrolling. */
 #screen-phrase .phrase-content {
   padding-top: 0.75rem;
-  padding-bottom: 5.5rem;
+  padding-bottom: 1rem;
 }
 
 #screen-phrase .phrase-context {

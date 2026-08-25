@@ -370,7 +370,7 @@
 
     hide($('translation-reveal'));
     hide($('summary-card'));
-    hide($('btn-next'));
+    show($('translation-hint'));
     show($('rating-buttons'));
 
     // re-enable rating buttons
@@ -381,24 +381,13 @@
     }
   }
 
+  // Tapping the French card shows the English. It commits nothing: the three
+  // choices stay live, so you can read the translation and then decide.
   function revealTranslation() {
-    hide($('rating-buttons'));
+    hide($('translation-hint'));
     show($('translation-reveal'));
-    show($('btn-next'));
   }
 
-  function showSummary() {
-    $('summary-seen').textContent = sessionSeen;
-    $('summary-new').textContent = sessionNew;
-    var mastered = countMastered();
-    $('summary-mastered').textContent = mastered + ' / ' + PHRASES.length;
-    $('summary-progress').style.width = Math.round((mastered / PHRASES.length) * 100) + '%';
-
-    hide($('rating-buttons'));
-    hide($('translation-reveal'));
-    hide($('btn-next'));
-    show($('summary-card'));
-  }
 
   function advance() {
     var next = selectNext();
@@ -1839,13 +1828,6 @@
     });
 
     // Delete buttons (appear in every screen header)
-    $('btn-phrase-delete').addEventListener('click', function () {
-      if (!currentPhrase) return;
-      if (!confirm('Supprimer définitivement :\n\n« ' + currentPhrase.fr + ' »')) return;
-      deletePhrase(currentPhrase.id);
-      updateHomeScreen();
-      advance();
-    });
 
     $('btn-acquis-delete').addEventListener('click', function () {
       var p = acquisPhrases[acquisIndex];
@@ -2045,8 +2027,14 @@
       });
     }
 
-    // Next button
-    $('btn-next').addEventListener('click', function () {
+    // The French card is the reveal control
+    $('phrase-card').addEventListener('click', revealTranslation);
+
+    $('btn-rating-delete').addEventListener('click', function () {
+      if (!currentPhrase) return;
+      if (!confirm('Supprimer définitivement :\n\n« ' + currentPhrase.fr + ' »')) return;
+      deletePhrase(currentPhrase.id);
+      updateHomeScreen();
       advance();
     });
 
@@ -2121,7 +2109,9 @@
     sessionSeen++;
     if (wasNew) sessionNew++;
 
-    setTimeout(function () { revealTranslation(); }, 300);
+    // The English was there for the asking, so there is nothing left to show —
+    // go straight on. The short pause is just so the choice registers visually.
+    setTimeout(function () { advance(); }, 220);
   }
 
   // ── Init ──────────────────────────────────────────────
