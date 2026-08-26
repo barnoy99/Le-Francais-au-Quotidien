@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=69`, `style.css?v=53`, `data.js?v=30`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v52'`.
+**Current versions:** `app.js?v=69`, `style.css?v=53`, `data.js?v=31`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v53'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -196,7 +196,7 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   Each falls back to a preview of the next rotation when its cycle is empty
   (`plannedRoundSentences()` for Mains Libres, the flagged pool for the ⚑ links).
 - **The app-wide sentence total lives on the splash subtitle**, `#home-total`,
-  as `· 882 phrases` — *phrase* is French for sentence, so it reads naturally.
+  as `· 922 phrases` — *phrase* is French for sentence, so it reads naturally.
   It moved there when the buttons stopped carrying it; the home screen has no
   vertical room for a line of its own.
 - **The ⚑ links must not break mid-fraction.** `.home-links .btn-text` is

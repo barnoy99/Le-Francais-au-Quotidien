@@ -58,7 +58,17 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-441 entries / 882 sentences. Each entry is a main sentence plus an alt.
+461 entries / 922 sentences. Each entry is a main sentence plus an alt.
+
+**Argument-building entries (480–499) break the alt rule on purpose.** Everywhere
+else `alt_usage` is an independent second use of the phrase. In these twenty the
+alt *continues* the main sentence, so the pair rehearses the join between two
+moves of an argument — which is the actual B2 skill the corpus was missing (it
+could react but not hold the floor: 0 sentences framing a view, 0 structuring
+markers, before this batch). Constraint that makes it safe: the ⚑ passes serve
+main and alt as separate items, so **every alt must still be a complete sentence
+that stands alone** — a continuation, never a dangling clause. The validation
+script checks this.
 
 - **Function-first, not topic-first.** Most entries are a conversational *move* —
   hedging, conceding, softening — rather than a subject. Roughly 300 distinct
