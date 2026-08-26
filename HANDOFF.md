@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=64`, `style.css?v=52`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v47'`.
+**Current versions:** `app.js?v=65`, `style.css?v=52`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v48'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -62,7 +62,7 @@ collisions have happened; check the max id after pulling.
 
 | Mode | What it is |
 |---|---|
-| **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. The French card, then three inline choices that are live from the start: **Pas encore** (level 1), **×6 — Mes Acquis** (masters it with boost) and **Supprimer**. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. There is **no ×3** (never used) and no sticky bottom bar on this screen. |
+| **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. Three inline choices: **Plus tard** (pure navigation — writes nothing), **×6 — Mes Acquis** (the only rating left; there is no ×3 and no *Pas encore*) and **Supprimer**. Only buttons carrying `data-level` reach `handleRating` — the other two share `.rating-btn` for styling only. The French card, then three inline choices that are live from the start: **Pas encore** (level 1), **×6 — Mes Acquis** (masters it with boost) and **Supprimer**. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. There is **no ×3** (never used) and no sticky bottom bar on this screen. |
 | **Mes Acquis** | Recall practice over mastered phrases. English prompt → **Révéler** → French + alt + TTS. Keyboard: ← prev, → next, space reveals. |
 | **Mains Libres** | Hands-free audio drill of the mastered pool. Wake-lock, TTS. |
 | **Chercher** | Search all phrases; move between pools (→ Acquis ×3 / ×6 / Apprentissage), toggle **Difficile**, delete. |

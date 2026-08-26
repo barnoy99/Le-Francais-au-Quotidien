@@ -2008,6 +2008,9 @@
     for (var i = 0; i < ratingBtns.length; i++) {
       ratingBtns[i].addEventListener('click', function () {
         if (this.disabled) return;
+        // Plus tard and Supprimer share the class for styling but are not
+        // ratings; without this they reached handleRating with a NaN level.
+        if (this.getAttribute('data-level') === null) return;
         var level = parseInt(this.getAttribute('data-level'), 10);
         var boostAttr = this.getAttribute('data-boost');
         var boost = boostAttr === null ? undefined : (boostAttr === 'true');
@@ -2017,6 +2020,12 @@
 
     // The French card is the reveal control
     $('phrase-card').addEventListener('click', revealTranslation);
+
+    // Leave it for now: consumes its place in the set so the phrase returns in
+    // the next one, but writes nothing — no level, no timesSeen, no lastSeen.
+    $('btn-rating-skip').addEventListener('click', function () {
+      advance();
+    });
 
     $('btn-rating-delete').addEventListener('click', function () {
       if (!currentPhrase) return;
