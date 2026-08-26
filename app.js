@@ -59,6 +59,7 @@
   var wakeLock = null;
   var audioCtx = null;
   var db = null;
+  var cloudReadOk = false;   // did we successfully read the cloud this session?
   var DB_PATH = 'progress/user1';
 
   // ── Firebase init ─────────────────────────────────────
@@ -93,6 +94,7 @@
 
   function defaults() {
     return { version: VERSION, phrases: {}, sessionCount: 0, deletedIds: [],
+             updatedAt: 0, settingsAt: 0,
              hfCycle: [], hfCursor: 0, hfPass: {},
              acqCycle: [], acqCursor: 0, acqPass: {},
              hfBase: 0,
@@ -119,29 +121,54 @@
     return null;
   }
 
+  // Which of two copies is genuinely the more recent. `updatedAt` is stamped on
+  // every save, so it answers "which device wrote last" — the question that
+  // actually matters. It replaces a comparison on `sessionCount`, which counts
+  // app *opens* on any device: a device sitting on stale data could outrank the
+  // cloud, keep its own copy, and then push it over everything. That is how a
+  // position (and, earlier, two flagged phrases) got lost.
+  // `sessionCount` is the fallback for states written before `updatedAt` existed.
+  function isNewer(a, b) {
+    var at = a.updatedAt || 0, bt = b.updatedAt || 0;
+    if (at !== bt) return at > bt;
+    return (a.sessionCount || 0) > (b.sessionCount || 0);
+  }
+
+  // Settings carry their own stamp: a progress save from one device must not
+  // silently revert a toggle made on the other.
+  function mergeSettings(winner, loser) {
+    if (!loser) return winner;
+    if ((loser.settingsAt || 0) > (winner.settingsAt || 0)) {
+      winner.acquisAutoPlay = loser.acquisAutoPlay;
+      winner.settingsAt = loser.settingsAt;
+    }
+    return winner;
+  }
+
+  function pickFreshest(localState, cloudState) {
+    if (!cloudState || !cloudState.version) return localState || defaults();
+    if (!localState) return cloudState;
+    // ties go to the cloud, as before
+    return isNewer(localState, cloudState)
+      ? mergeSettings(localState, cloudState)
+      : mergeSettings(cloudState, localState);
+  }
+
   function load(callback) {
     var localState = loadLocal();
 
     if (db) {
       db.ref(DB_PATH).once('value').then(function (snapshot) {
-        var cloudState = snapshot.val();
-        if (cloudState && cloudState.version) {
-          // Pick whichever has more progress (higher sessionCount = more usage)
-          if (!localState || cloudState.sessionCount >= localState.sessionCount) {
-            state = cloudState;
-          } else {
-            state = localState;
-          }
-        } else if (localState) {
-          state = localState;
-        } else {
-          state = defaults();
-        }
-        // Save merged result to both
+        state = pickFreshest(localState, snapshot.val());
+        cloudReadOk = true;          // safe to write from here on
         saveLocal();
         saveCloud();
         if (callback) callback();
       }).catch(function () {
+        // The cloud is unknown, so writing could clobber something newer.
+        // Stay local-only this session; `updatedAt` means the work still wins
+        // the merge on the next open that does reach the cloud.
+        cloudReadOk = false;
         state = localState || defaults();
         if (callback) callback();
       });
@@ -158,7 +185,7 @@
   }
 
   function saveCloud() {
-    if (db) {
+    if (db && cloudReadOk) {
       try {
         db.ref(DB_PATH).set(state);
       } catch (e) {}
@@ -166,6 +193,7 @@
   }
 
   function save() {
+    state.updatedAt = Date.now();
     saveLocal();
     saveCloud();
   }
@@ -1075,6 +1103,7 @@
 
   function toggleAutoPlay() {
     state.acquisAutoPlay = !state.acquisAutoPlay;
+    state.settingsAt = Date.now();
     save();
     return state.acquisAutoPlay;
   }

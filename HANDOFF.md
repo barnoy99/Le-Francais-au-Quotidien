@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=65`, `style.css?v=52`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v48'`.
+**Current versions:** `app.js?v=66`, `style.css?v=52`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v49'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -42,7 +42,8 @@ new `?v=N` — pushed is not deployed.
 ### Tests
 
 ```
-node test/queue-test.js
+node test/queue-test.js     # the ⚑ flagged passes
+node test/sync-test.js      # which device's state wins a cross-device merge
 ```
 
 Covers the ⚑ flagged-pass queue (`fq*` in `app.js`) for both prefixes: a pass
@@ -50,7 +51,7 @@ covers every sentence once, main and alt are kept apart, quitting resumes on the
 sentence you were on, flagging mid-pass splices into what's left, un-flagging
 drops it, the two passes don't touch each other. It extracts the real functions
 from `app.js` rather than copying them, so it fails loudly if one is renamed.
-Run it after touching anything in the rotation or the ⚑ passes.
+Run them after touching anything in the rotation, the ⚑ passes, or `load`/`save`.
 
 **Always `git pull` first** — the user also runs Claude Code sessions from their
 phone against this repo and merges PRs, so master moves independently. Phrase-id
@@ -107,7 +108,8 @@ state = {
   ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
   rvCycle: ["id:main"|"id:alt"], rvCursor,       // ⚑ Réviser pass, §5a
   apCycle: ["id:main"], apCursor,                // Apprentissage set, §4
-  acquisAutoPlay: bool                           // "auto" toggle, §5b
+  acquisAutoPlay: bool,                          // "auto" toggle, §5b
+  updatedAt, settingsAt                          // merge stamps, §7.4
 }
 ```
 
@@ -323,8 +325,20 @@ mobile preset (375×812).
    `http://localhost:8099/index.html?bust=<something-new>` to load fresh assets.
    If you edit CSS *after* bumping its version, bump again — the browser already
    cached that version.
-4. **Sync merge is last-write-wins by `sessionCount`.** A write from the phone
-   can overwrite a change made elsewhere; two flagged phrases were lost this way.
+4. **Sync merge is last-write-wins by `updatedAt`** (`pickFreshest` / `isNewer`).
+   Every `save()` stamps `updatedAt`, so the device that wrote most recently
+   wins; `sessionCount` is only the fallback for states written before the stamp
+   existed. It used to compare `sessionCount` — a count of app *opens* on any
+   device — which let a device holding stale data outrank the cloud and then push
+   its copy over everything. That lost two flagged phrases, and later an
+   Apprentissage position. **Settings merge separately** on `settingsAt`, so a
+   progress save cannot silently revert a toggle made on the other device.
+   If the cloud read fails, `cloudReadOk` stays false and the session writes
+   **locally only** — the work still wins the merge on the next open that reaches
+   the cloud, but it cannot clobber something newer in the meantime.
+   The app reads the cloud **only at startup**: a tab left open on one device
+   still holds its old state, so switching devices wants a reload, not a
+   returning tab. (Deliberate — the user chose this over re-reading on focus.)
 5. **Cloud state can differ from the file.** `state.phrases` may contain `null`
    entries and ids no longer in `data.js`; guard for both.
 6. Run the app via `preview_start` with the `quotidien` launch config
