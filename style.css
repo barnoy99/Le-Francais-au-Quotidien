@@ -1184,13 +1184,17 @@ ul {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.9rem;
+  /* the ⚑ labels now carry a fraction, so let the row wrap between links
+     rather than breaking a label across two lines */
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
   margin-top: 0.25rem;
 }
 
 .home-links .btn-text {
   font-size: 0.95rem;
   padding: 0.45rem 0.5rem;
+  white-space: nowrap;      /* never split "⚑ Écouter (12 / 70)" */
   /* the ⚑ falls back to a symbol font with taller metrics, which inflates the
      line box — fix the height and centre so all three links match */
   height: 44px;

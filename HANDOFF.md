@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=68`, `style.css?v=52`, `data.js?v=30`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v51'`.
+**Current versions:** `app.js?v=69`, `style.css?v=53`, `data.js?v=30`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v52'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -177,16 +177,31 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   code (never called) and referenced the removed `btn-next`; it is gone, though
   the hidden `#summary-card` markup remains unused.
 - **Every user-facing count is in sentences, not phrases** (`sentenceCount()`),
-  because each entry is a main sentence plus an alt. Home buttons read
-  `sentences / all sentences in the app`, e.g. `(442 / 882)` — which is also
-  where the app-wide total is surfaced, since the home screen has no vertical
-  room for another line. **Apprentissage is the exception**: both its home
-  button and its own header show position through the current *set*, so the two
-  numbers agree. Home shows the position you will resume on —
-  `min(apCursor + 1, apCycle.length) * 2` — because leaving hands the un-rated
-  card back and leaves the cursor one behind the card you were looking at.
-  Before any set exists it previews `0 / <pool sentences>`. Mes Acquis shows
-  `passProgress * 2` over mastered sentences.
+  because each entry is a main sentence plus an alt.
+- **Every home button shows the figure its own screen shows**, so the number
+  continues rather than changing meaning when you go in. Each is the position
+  *at rest*; entering serves the next item, so the screen reads one item further
+  on. They are therefore all different from each other, which is correct — they
+  count different rotations:
+
+  | Button | Home shows | Denominator |
+  |---|---|---|
+  | Mains Libres | `(passBase('hf') + hfCursor) * 2` | `roundSentenceTotal()` — weighted, a ×6/⚑ phrase holds several slots |
+  | Mes Acquis | `passProgress('acq') * 2` | mastered sentences |
+  | Apprentissage | `min(apCursor + 1, apCycle.length) * 2` | `apCycle.length * 2` |
+  | ⚑ Écouter / ⚑ Réviser | `ecCursor` / `rvCursor` | `ecCycle.length` / `rvCycle.length` |
+
+  Apprentissage is the one that shows `cursor + 1`, because leaving hands the
+  un-rated card back — the others' cursors already sit on what has been served.
+  Each falls back to a preview of the next rotation when its cycle is empty
+  (`plannedRoundSentences()` for Mains Libres, the flagged pool for the ⚑ links).
+- **The app-wide sentence total lives on the splash subtitle**, `#home-total`,
+  as `· 882 phrases` — *phrase* is French for sentence, so it reads naturally.
+  It moved there when the buttons stopped carrying it; the home screen has no
+  vertical room for a line of its own.
+- **The ⚑ links must not break mid-fraction.** `.home-links .btn-text` is
+  `white-space: nowrap` and `.home-links` is `flex-wrap: wrap`, so Progrès drops
+  to a second line at 375px instead of splitting a label.
 - **The Mains Libres counter is a sentence position through the round**:
   `slot * 2 + (main ? 1 : 2)` over `roundSentenceTotal()`, e.g. `137 / 762`.
   Each slot is two sentences (main, alt), and a ×6/⚑ phrase holds several slots

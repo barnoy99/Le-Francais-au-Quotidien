@@ -989,9 +989,11 @@
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
     var count = mastered.length;
-    // Counts are sentences out of every sentence in the app, so the total is
-    // visible on each button without costing a line on a screen with no slack.
+    // Every button now counts progress through its own rotation, so none of
+    // them carries the app-wide total any more. It rides on the subtitle
+    // instead — "phrase" is French for sentence, so the wording is honest.
     var total = sentenceCount(activePhrases());
+    $('home-total').textContent = ' · ' + total + ' phrases';
     var masteredSentences = sentenceCount(mastered);
     var learningSentences = sentenceCount(getLearningPhrases());
     // Same figure as the counter inside Apprentissage: position through the
@@ -1005,17 +1007,33 @@
     $('apprentissage-count').textContent = apSet
       ? '(' + (apResume * 2) + ' / ' + (apSet * 2) + ')'
       : '(0 / ' + learningSentences + ')';
-    $('acquis-count').textContent = '(' + masteredSentences + ' / ' + total + ')';
+    // Each button carries the figure its own screen shows, so the number
+    // continues instead of changing meaning when you go in. Mes Acquis and
+    // Mains Libres therefore disagree by design: Mes Acquis counts coverage of
+    // your collection, Mains Libres a position through a round in which a ×6 or
+    // ⚑ phrase holds several slots.
+    $('acquis-count').textContent =
+      '(' + (passProgress('acq') * 2) + ' / ' + masteredSentences + ')';
     $('btn-acquis').disabled = count === 0;
-    $('handsfree-count').textContent = '(' + masteredSentences + ' / ' + total + ')';
+
+    var hfRound = (state.hfCycle || []).length;
+    $('handsfree-count').textContent = hfRound
+      ? '(' + ((passBase('hf') + Math.min(state.hfCursor || 0, hfRound)) * 2) +
+        ' / ' + roundSentenceTotal() + ')'
+      : '(0 / ' + plannedRoundSentences() + ')';
     $('btn-handsfree').disabled = count === 0;
 
     var hard = getHardPhrases();
     var hardSentences = sentenceCount(hard);
-    [['btn-difficiles', '⚑ Écouter'], ['btn-difficiles-acquis', '⚑ Réviser']].forEach(function (pair) {
+    [['btn-difficiles', '⚑ Écouter', 'ec'],
+     ['btn-difficiles-acquis', '⚑ Réviser', 'rv']].forEach(function (pair) {
       var btn = $(pair[0]);
       if (!btn) return;
-      btn.textContent = pair[1] + ' (' + hardSentences + ')';
+      // Same as inside: position through the pass. Between passes the cycle is
+      // cleared, so fall back to the flagged pool the next one will cover.
+      var cyc = (state[pair[2] + 'Cycle'] || []).length;
+      var done = cyc ? Math.min(state[pair[2] + 'Cursor'] || 0, cyc) : 0;
+      btn.textContent = pair[1] + ' (' + done + ' / ' + (cyc || hardSentences) + ')';
       if (hard.length === 0) hide(btn); else show(btn);
     });
   }
@@ -1136,6 +1154,14 @@
   // counted again each time they come round.
   function roundSentenceTotal() {
     return (passBase('hf') + ((state.hfCycle || []).length)) * 2;
+  }
+
+  // What the next round will hold, for the home button before one is laid out.
+  // Weighted like the real cycle, so a ×6 or ⚑ phrase counts its extra copies.
+  function plannedRoundSentences() {
+    var pool = getMasteredPhrases(), n = 0;
+    for (var i = 0; i < pool.length; i++) n += cycleCopies(pool[i].id);
+    return n * 2;
   }
 
   // The ⚑ passes show their counter large and in the accent colour; the normal
