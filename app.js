@@ -4,10 +4,6 @@
   var STORAGE_KEY = 'frenchSR_state';
   var VERSION = 1;
   var SUMMARY_INTERVAL = 10;
-  // level → minimum cooldown in ms
-  var INTERVALS = [0, 120000, 86400000, 604800000, Infinity];
-  // level → selection weight (0=unseen, 1=hard, 2=learning, 3=familiar)
-  var WEIGHTS = [2, 4, 3, 1];
   // ⚑ Écouter reads every sentence this many times, ×6 flag or not
   var ECOUTER_READS = 2;
   var ECOUTER_DONE_SPEECH = 'Félicitations ! Vous avez écouté toutes vos expressions difficiles.';
@@ -102,6 +98,7 @@
              hfBase: 0,
              ecCycle: [], ecCursor: 0,
              rvCycle: [], rvCursor: 0,
+             apCycle: [], apCursor: 0,
              acquisAutoPlay: false };
   }
 
@@ -301,71 +298,39 @@
     return n;
   }
 
+  // Apprentissage walks a persistent shuffled set: every unmastered phrase once,
+  // in a fixed order that survives across sessions, then a brand new shuffle.
+  // Replaces the old weighted-random draw, which had no order and could show
+  // the same phrase several times in one sitting.
+  var currentPassPos = 0;   // position of the card being served
+  var renderedPassPos = 0;  // position of the card currently on screen
+
   function selectNext() {
-    var now = Date.now();
-    var eligible = [];
-    var weights = [];
-    var active = activePhrases();
-
-    for (var i = 0; i < active.length; i++) {
-      var p = active[i];
-      var d = getPhraseData(p.id);
-      if (d.level === 4) continue;
-      if (p.id === lastShownId) continue;
-
-      var interval = INTERVALS[d.level];
-      if (d.lastSeen && (now - d.lastSeen < interval)) continue;
-
-      eligible.push(p);
-      weights.push(WEIGHTS[d.level]);
+    var item = fqTakeNext('ap');
+    if (!item) {                 // set finished — lay out a fresh one
+      fqResetPass('ap');
+      item = fqTakeNext('ap');   // null only if there is nothing left to learn
     }
-
-    if (eligible.length === 0) {
-      // all non-mastered are cooling — pick the one closest to eligible
-      var best = null;
-      var bestDelta = Infinity;
-      for (var i = 0; i < active.length; i++) {
-        var p = active[i];
-        var d = getPhraseData(p.id);
-        if (d.level === 4) continue;
-        if (p.id === lastShownId && countMastered() < active.length - 1) continue;
-        var delta = (d.lastSeen + INTERVALS[d.level]) - now;
-        if (delta < bestDelta) { bestDelta = delta; best = p; }
-      }
-      return best; // null if ALL mastered
-    }
-
-    return weightedPick(eligible, weights);
+    if (!item) return null;
+    currentPassPos = item.position;
+    return item.p;
   }
 
-  function weightedPick(items, weights) {
-    var total = 0;
-    for (var i = 0; i < weights.length; i++) total += weights[i];
-    var r = Math.random() * total;
-    var acc = 0;
-    for (var i = 0; i < items.length; i++) {
-      acc += weights[i];
-      if (r < acc) return items[i];
-    }
-    return items[items.length - 1];
-  }
 
   // ── Rendering ──────────────────────────────────────────
 
   function renderPhrase(phrase) {
     currentPhrase = phrase;
+    renderedPassPos = currentPassPos;
     $('phrase-context').textContent = phrase.context;
     $('phrase-french').textContent = phrase.fr;
     $('phrase-english').textContent = phrase.en;
 
-    // Sentences of the Apprentissage pool you have met at least once, out of
-    // the whole pool — replaces the per-session tally, which the summary card
-    // every SUMMARY_INTERVAL phrases already reports.
-    var pool = getLearningPhrases();
-    var met = pool.filter(function (p) {
-      return ((state.phrases[p.id] || {}).timesSeen || 0) > 0;
-    });
-    $('session-counter').textContent = sentenceCount(met) + ' / ' + sentenceCount(pool);
+    // Position through the current set, counted in sentences: one card is one
+    // phrase, and a phrase is two sentences, so this climbs 2 at a time to the
+    // set total and then starts over with a fresh shuffle.
+    var setLength = (state.apCycle || []).length;
+    $('session-counter').textContent = (currentPassPos * 2) + ' / ' + (setLength * 2);
     setCounterSize('session-counter', true);   // same large red counter as Mains Libres
 
     hide($('translation-reveal'));
@@ -396,7 +361,7 @@
       return;
     }
     if (currentPhrase) {
-      phraseHistory.push(currentPhrase.id);
+      phraseHistory.push({ id: currentPhrase.id, pos: renderedPassPos });
       if (phraseHistory.length > 30) phraseHistory.shift();
     }
     lastShownId = next.id;
@@ -404,12 +369,23 @@
     renderPhrase(next);
   }
 
+  // The card on screen has not been rated — rating advances immediately — so
+  // leaving Apprentissage hands it back to the set. Without this, quitting
+  // mid-card would silently drop that phrase for the whole set.
+  function releaseCurrentCard() {
+    if (renderedPassPos && renderedPassPos === state.apCursor) {
+      state.apCursor = renderedPassPos - 1;
+      save();
+    }
+  }
+
   function phrasePrev() {
     if (phraseHistory.length === 0) return; // nothing to go back to
-    var id = phraseHistory.pop();
-    var p = findPhraseById(id);
+    var prev = phraseHistory.pop();
+    var p = findPhraseById(prev.id);
     if (!p) return;
     lastShownId = p.id;
+    currentPassPos = prev.pos;   // the counter follows you back
     renderPhrase(p);
   }
 
@@ -762,6 +738,7 @@
     state.acqSig = null;
     syncFlagQueue('ec');
     syncFlagQueue('rv');
+    syncFlagQueue('ap');
   }
 
   // ── ⚑ flagged-pass queues ──────────────────────────────
@@ -782,10 +759,19 @@
     return { id: parseInt(bits[0], 10), exercise: bits[1] === 'alt' ? 'alt' : 'main' };
   }
 
-  // Every sentence that belongs in a pass right now, phrase order.
-  function fqEligibleKeys() {
-    var keys = [], hard = getHardPhrases();
-    for (var i = 0; i < hard.length; i++) {
+  // Everything that belongs in a pass right now.
+  //   'ap' — Apprentissage: one card per unmastered phrase (the alt is never
+  //          shown on that screen), so one key each.
+  //   'ec'/'rv' — the ⚑ passes: main and alt are separate items.
+  function fqEligibleKeys(prefix) {
+    var keys = [], i;
+    if (prefix === 'ap') {
+      var pool = getLearningPhrases();
+      for (i = 0; i < pool.length; i++) keys.push(fqKey(pool[i].id, 'main'));
+      return keys;
+    }
+    var hard = getHardPhrases();
+    for (i = 0; i < hard.length; i++) {
       keys.push(fqKey(hard[i].id, 'main'));
       if (hard[i].alt_usage) keys.push(fqKey(hard[i].id, 'alt'));
     }
@@ -793,12 +779,13 @@
   }
 
   // Guards a queued item at play time against changes the queue never saw
-  // (phrase deleted from data.js, un-mastered, un-flagged on another device).
-  function fqPlayable(id) {
-    if (!isHard(id)) return false;
+  // (phrase deleted from data.js, mastered or un-flagged on another device).
+  function fqPlayable(prefix, id) {
     if ((state.deletedIds || []).indexOf(id) !== -1) return false;
-    if (getPhraseData(id).level !== 4) return false;
-    return !!findPhraseById(id);
+    if (!findPhraseById(id)) return false;
+    var level = getPhraseData(id).level;
+    if (prefix === 'ap') return level !== 4;      // still to learn
+    return isHard(id) && level === 4;             // flagged and mastered
   }
 
   function fqTooClose(list, pos, key, minGap) {
@@ -839,7 +826,7 @@
   function fqCursorKey(prefix) { return prefix + 'Cursor'; }
 
   function fqBuildPass(prefix) {
-    state[fqCycleKey(prefix)] = fqSpread(fqEligibleKeys());
+    state[fqCycleKey(prefix)] = fqSpread(fqEligibleKeys(prefix));
     state[fqCursorKey(prefix)] = 0;
   }
 
@@ -854,7 +841,7 @@
     var cursor = Math.min(state[cursorKey] || 0, cycle.length);
     if (cursor >= cycle.length) return;            // finished; rebuilt on next start
 
-    var eligible = {}, order = fqEligibleKeys();
+    var eligible = {}, order = fqEligibleKeys(prefix);
     for (var i = 0; i < order.length; i++) eligible[order[i]] = true;
 
     var seen = {}, head = [], tail = [];
@@ -884,7 +871,7 @@
     while ((state[cursorKey] || 0) < cycle.length) {
       var item = fqParse(cycle[state[cursorKey]]);
       state[cursorKey]++;
-      var p = fqPlayable(item.id) ? findPhraseById(item.id) : null;
+      var p = fqPlayable(prefix, item.id) ? findPhraseById(item.id) : null;
       var text = p && (item.exercise === 'alt' ? p.alt_usage : p.fr);
       if (text) {
         save();
@@ -1823,6 +1810,7 @@
 
     // Apprentissage back to home
     $('btn-phrase-home').addEventListener('click', function () {
+      releaseCurrentCard();
       updateHomeScreen();
       showScreen('screen-home');
     });

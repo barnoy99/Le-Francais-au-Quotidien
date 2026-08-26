@@ -40,6 +40,8 @@ function findPhraseById(id) {
 function getPhraseData(id) { return { level: 4 }; }
 function isHard(id) { return !!flagged[id]; }
 function getHardPhrases() { return PHRASES.filter(function (p) { return flagged[p.id]; }); }
+// only reached on the 'ap' branch, which these tests do not exercise
+function getLearningPhrases() { return []; }
 function save() { saves++; }
 
 var raw = eval('(function () {' + code + '\nreturn {fqTakeNext:fqTakeNext, syncFlagQueue:syncFlagQueue,' +
@@ -53,7 +55,7 @@ var api = {
   ecResetPass:      function () { return raw.fqResetPass(PREFIX); },
   ecBuildPass:      function () { return raw.fqBuildPass(PREFIX); },
   ecParse:          raw.fqParse,
-  ecEligibleKeys:   raw.fqEligibleKeys,
+  ecEligibleKeys:   function () { return raw.fqEligibleKeys(PREFIX); },
   fqTexts:          raw.fqTexts
 };
 

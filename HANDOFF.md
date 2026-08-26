@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=63`, `style.css?v=52`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v46'`.
+**Current versions:** `app.js?v=64`, `style.css?v=52`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v47'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -62,7 +62,7 @@ collisions have happened; check the max id after pulling.
 
 | Mode | What it is |
 |---|---|
-| **Apprentissage** | Spaced repetition for phrases not yet mastered. The French card, then three inline choices that are live from the start: **Pas encore** (level 1), **×6 — Mes Acquis** (masters it with boost) and **Supprimer**. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. There is **no ×3** (never used) and no sticky bottom bar on this screen. |
+| **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. The French card, then three inline choices that are live from the start: **Pas encore** (level 1), **×6 — Mes Acquis** (masters it with boost) and **Supprimer**. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. There is **no ×3** (never used) and no sticky bottom bar on this screen. |
 | **Mes Acquis** | Recall practice over mastered phrases. English prompt → **Révéler** → French + alt + TTS. Keyboard: ← prev, → next, space reveals. |
 | **Mains Libres** | Hands-free audio drill of the mastered pool. Wake-lock, TTS. |
 | **Chercher** | Search all phrases; move between pools (→ Acquis ×3 / ×6 / Apprentissage), toggle **Difficile**, delete. |
@@ -106,6 +106,7 @@ state = {
   hfCycle:  [ids], hfCursor,  hfPass:  {id:count}, hfSig,  hfLast, hfBase,
   ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
   rvCycle: ["id:main"|"id:alt"], rvCursor,       // ⚑ Réviser pass, §5a
+  apCycle: ["id:main"], apCursor,                // Apprentissage set, §4
   acquisAutoPlay: bool                           // "auto" toggle, §5b
 }
 ```
@@ -139,6 +140,18 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   pre-fetches a batch. That is what makes its counter exact: nothing is consumed
   until it is played, so quitting can't skip a phrase. Mes Acquis still batches
   and still uses `releaseBatch`.
+- **Apprentissage uses the same `fq*` queue as the ⚑ passes**, prefix `'ap'`,
+  state `apCycle`/`apCursor`. One key per unmastered phrase (`id:main` — the alt
+  is never shown on that screen), so a set is every phrase once. `fqEligibleKeys`
+  and `fqPlayable` take the prefix: `'ap'` means *not* mastered, `'ec'`/`'rv'`
+  mean flagged *and* mastered.
+  This replaced weighted-random selection (`WEIGHTS`, `INTERVALS`, `weightedPick`
+  — all now deleted), which had no order and drew with replacement, so a phrase
+  rated *Pas encore* (weight 4, 2-minute cooldown) could reappear several times
+  in one sitting. The counter is the position through the set in sentences,
+  `apCursor * 2` over `apCycle.length * 2`, climbing 2 per card.
+  Leaving the screen calls `releaseCurrentCard()` to hand the un-rated card
+  back, so quitting mid-card cannot silently skip a phrase.
 - **Apprentissage has no fixed bottom bar.** `#screen-phrase .phrase-content`
   therefore has only 1rem of bottom padding — the 5.5rem that used to clear the
   bar made the page scroll, which this app never does. `showSummary()` was dead
