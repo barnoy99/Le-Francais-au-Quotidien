@@ -14,7 +14,6 @@
   var lastShownId = null;
   var currentPhrase = null;
   var expandedProgressId = null;
-  var phraseHistory = []; // apprentissage back-navigation stack
   var acquisPhrases = [];
   // ⚑ Réviser only: like Écouter, each card is a single sentence pulled from
   // the persistent queue, so every index carries its own exercise and position.
@@ -330,8 +329,7 @@
   // in a fixed order that survives across sessions, then a brand new shuffle.
   // Replaces the old weighted-random draw, which had no order and could show
   // the same phrase several times in one sitting.
-  var currentPassPos = 0;   // position of the card being served
-  var renderedPassPos = 0;  // position of the card currently on screen
+  var currentPassPos = 0;   // position in the set of the card on screen
 
   function selectNext() {
     var item = fqTakeNext('ap');
@@ -349,7 +347,6 @@
 
   function renderPhrase(phrase) {
     currentPhrase = phrase;
-    renderedPassPos = currentPassPos;
     $('phrase-context').textContent = phrase.context;
     $('phrase-french').textContent = phrase.fr;
     $('phrase-english').textContent = phrase.en;
@@ -382,39 +379,64 @@
   }
 
 
+  // Both directions walk the persistent set itself rather than a session-only
+  // history, so ⏮ reaches the cards served last time you were here — the set
+  // behind the cursor survives reloads and devices.
+  function phraseAt(pos) {
+    var cyc = state.apCycle || [];
+    if (pos < 1 || pos > cyc.length) return null;
+    var item = fqParse(cyc[pos - 1]);
+    if (!fqPlayable('ap', item.id)) return null;   // mastered or deleted since
+    return findPhraseById(item.id);
+  }
+
+  // First still-learnable card from `pos`, walking in `step` direction.
+  function seekPlayable(pos, step, limit) {
+    for (var i = pos; i >= 1 && i <= limit; i += step) {
+      var p = phraseAt(i);
+      if (p) return { p: p, pos: i };
+    }
+    return null;
+  }
+
+  function showAt(found) {
+    currentPassPos = found.pos;
+    lastShownId = found.p.id;
+    showScreen('screen-phrase');
+    renderPhrase(found.p);
+  }
+
   function advance() {
+    // browsing behind the cursor → step forward through what was already served
+    if (currentPassPos && currentPassPos < (state.apCursor || 0)) {
+      var seen = seekPlayable(currentPassPos + 1, 1, state.apCursor);
+      if (seen) { showAt(seen); return; }
+    }
     var next = selectNext();
     if (!next) {
       showComplete();
       return;
-    }
-    if (currentPhrase) {
-      phraseHistory.push({ id: currentPhrase.id, pos: renderedPassPos });
-      if (phraseHistory.length > 30) phraseHistory.shift();
     }
     lastShownId = next.id;
     showScreen('screen-phrase');
     renderPhrase(next);
   }
 
-  // The card on screen has not been rated — rating advances immediately — so
+  // The newest card has not been rated — rating advances immediately — so
   // leaving Apprentissage hands it back to the set. Without this, quitting
-  // mid-card would silently drop that phrase for the whole set.
+  // mid-card would silently drop that phrase for the whole set. Browsing an
+  // earlier card is not the newest, so nothing is handed back then.
   function releaseCurrentCard() {
-    if (renderedPassPos && renderedPassPos === state.apCursor) {
-      state.apCursor = renderedPassPos - 1;
+    if (currentPassPos && currentPassPos === state.apCursor) {
+      state.apCursor = currentPassPos - 1;
       save();
     }
   }
 
   function phrasePrev() {
-    if (phraseHistory.length === 0) return; // nothing to go back to
-    var prev = phraseHistory.pop();
-    var p = findPhraseById(prev.id);
-    if (!p) return;
-    lastShownId = p.id;
-    currentPassPos = prev.pos;   // the counter follows you back
-    renderPhrase(p);
+    var back = seekPlayable((currentPassPos || 1) - 1, -1, (state.apCycle || []).length);
+    if (!back) return;            // already at the start of the set
+    showAt(back);
   }
 
   function showComplete() {
@@ -948,7 +970,17 @@
     var total = sentenceCount(activePhrases());
     var masteredSentences = sentenceCount(mastered);
     var learningSentences = sentenceCount(getLearningPhrases());
-    $('apprentissage-count').textContent = '(' + learningSentences + ' / ' + total + ')';
+    // Same figure as the counter inside Apprentissage: position through the
+    // current set, not the size of the pool. Before a set exists, preview what
+    // the first one will hold.
+    // Leaving hands the un-rated card back, so the cursor sits one behind the
+    // card you were looking at. Show the position you will resume on, which is
+    // the number the screen itself displays.
+    var apSet = (state.apCycle || []).length;
+    var apResume = Math.min((state.apCursor || 0) + 1, apSet);
+    $('apprentissage-count').textContent = apSet
+      ? '(' + (apResume * 2) + ' / ' + (apSet * 2) + ')'
+      : '(0 / ' + learningSentences + ')';
     $('acquis-count').textContent = '(' + masteredSentences + ' / ' + total + ')';
     $('btn-acquis').disabled = count === 0;
     $('handsfree-count').textContent = '(' + masteredSentences + ' / ' + total + ')';
@@ -1801,6 +1833,7 @@
     });
 
     $('btn-apprentissage').addEventListener('click', function () {
+      currentPassPos = state.apCursor || 0;   // resume at the set's cursor
       advance();
     });
 

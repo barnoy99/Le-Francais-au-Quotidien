@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=66`, `style.css?v=52`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v49'`.
+**Current versions:** `app.js?v=67`, `style.css?v=52`, `data.js?v=29`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v50'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -63,7 +63,7 @@ collisions have happened; check the max id after pulling.
 
 | Mode | What it is |
 |---|---|
-| **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. Three inline choices: **Plus tard** (pure navigation — writes nothing), **×6 — Mes Acquis** (the only rating left; there is no ×3 and no *Pas encore*) and **Supprimer**. Only buttons carrying `data-level` reach `handleRating` — the other two share `.rating-btn` for styling only. The French card, then three inline choices that are live from the start: **Pas encore** (level 1), **×6 — Mes Acquis** (masters it with boost) and **Supprimer**. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. There is **no ×3** (never used) and no sticky bottom bar on this screen. |
+| **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. Three inline choices: **Plus tard** (pure navigation — writes nothing), **×6 — Mes Acquis** (the only rating left; there is no ×3 and no *Pas encore*) and **Supprimer**. Only buttons carrying `data-level` reach `handleRating` — the other two share `.rating-btn` for styling only. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. **⏮ / ⏭ walk the set itself**, so ⏮ reaches cards served on an earlier visit or another device. No sticky bottom bar on this screen. |
 | **Mes Acquis** | Recall practice over mastered phrases. English prompt → **Révéler** → French + alt + TTS. Keyboard: ← prev, → next, space reveals. |
 | **Mains Libres** | Hands-free audio drill of the mastered pool. Wake-lock, TTS. |
 | **Chercher** | Search all phrases; move between pools (→ Acquis ×3 / ×6 / Apprentissage), toggle **Difficile**, delete. |
@@ -151,9 +151,19 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   — all now deleted), which had no order and drew with replacement, so a phrase
   rated *Pas encore* (weight 4, 2-minute cooldown) could reappear several times
   in one sitting. The counter is the position through the set in sentences,
-  `apCursor * 2` over `apCycle.length * 2`, climbing 2 per card.
+  `currentPassPos * 2` over `apCycle.length * 2`, climbing 2 per card.
   Leaving the screen calls `releaseCurrentCard()` to hand the un-rated card
-  back, so quitting mid-card cannot silently skip a phrase.
+  back, so quitting mid-card cannot silently skip a phrase — but only when you
+  are on the newest card, since a card you browsed back to was never yours to
+  hand back.
+- **Apprentissage navigates the set, not a session history.** `phraseAt(pos)`
+  reads `apCycle` and `seekPlayable(pos, step, limit)` walks it in either
+  direction, skipping positions whose phrase has since been mastered or deleted.
+  There is no in-memory `phraseHistory` any more, which is what makes ⏮ work on
+  a fresh visit: the cards behind the cursor persist and sync. Entering the
+  screen sets `currentPassPos = apCursor` so the first ⏭ serves a *new* card
+  rather than replaying position 1; ⏭ only takes a new item once you have caught
+  up with the cursor.
 - **Apprentissage has no fixed bottom bar.** `#screen-phrase .phrase-content`
   therefore has only 1rem of bottom padding — the 5.5rem that used to clear the
   bar made the page scroll, which this app never does. `showSummary()` was dead
@@ -163,11 +173,13 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   because each entry is a main sentence plus an alt. Home buttons read
   `sentences / all sentences in the app`, e.g. `(442 / 874)` — which is also
   where the app-wide total is surfaced, since the home screen has no vertical
-  room for another line. Apprentissage's header shows sentences of its pool ever
-  **rated** over the pool total (`timesSeen > 0`, the same definition the Progrès
-  overlay uses — merely displaying a phrase does not count, and `timesSeen` is
-  only incremented on the rating path). Mes Acquis shows `passProgress * 2` over
-  mastered sentences.
+  room for another line. **Apprentissage is the exception**: both its home
+  button and its own header show position through the current *set*, so the two
+  numbers agree. Home shows the position you will resume on —
+  `min(apCursor + 1, apCycle.length) * 2` — because leaving hands the un-rated
+  card back and leaves the cursor one behind the card you were looking at.
+  Before any set exists it previews `0 / <pool sentences>`. Mes Acquis shows
+  `passProgress * 2` over mastered sentences.
 - **The Mains Libres counter is a sentence position through the round**:
   `slot * 2 + (main ? 1 : 2)` over `roundSentenceTotal()`, e.g. `137 / 762`.
   Each slot is two sentences (main, alt), and a ×6/⚑ phrase holds several slots
