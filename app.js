@@ -956,6 +956,26 @@
     if (added) { state.apCycle = cycle; save(); }
   }
 
+  // One-off, by request: flag the argument-building batch (480-499) ⚑ difficile.
+  // Note this has no effect until each one is mastered — getHardPhrases() is
+  // mastered ∩ flagged and fqPlayable('ec'/'rv') needs level 4 — so it acts as a
+  // pre-flag: the moment one reaches Mes Acquis it joins the ⚑ passes. The
+  // marker makes it run once, so unflagging one later sticks.
+  var ARG_BATCH_MARKER = 'flaggedArgBatch480';
+  function flagArgumentBatch() {
+    if (state[ARG_BATCH_MARKER]) return;
+    var deleted = state.deletedIds || [], n = 0;
+    for (var id = 480; id <= 499; id++) {
+      if (deleted.indexOf(id) !== -1) continue;      // he threw it out already
+      if (!findPhraseById(id)) continue;             // not in this data.js yet
+      writePhrase(id, { hardManual: true });
+      n++;
+    }
+    state[ARG_BATCH_MARKER] = true;
+    if (n) invalidateCycles();                       // let the ⚑ queues reconcile
+    save();
+  }
+
   // The pass is over — clear it so the next session shuffles a new order.
   function fqResetPass(prefix) {
     state[fqCycleKey(prefix)] = [];
@@ -1879,6 +1899,7 @@
     load(function () {
       state.sessionCount++;
       absorbNewPhrases();
+      flagArgumentBatch();
       save();
       updateHomeScreen();
     });

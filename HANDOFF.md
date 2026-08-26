@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=69`, `style.css?v=53`, `data.js?v=31`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v53'`.
+**Current versions:** `app.js?v=70`, `style.css?v=53`, `data.js?v=31`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v54'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,12 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **⚑ difficile only bites once a phrase is mastered.** `getHardPhrases()` is
+  *mastered ∩ flagged* and `fqPlayable('ec'/'rv')` requires `level === 4`, so
+  flagging something still in Apprentissage changes nothing until it reaches Mes
+  Acquis — at which point it joins both ⚑ passes immediately. `flagArgumentBatch()`
+  uses this as a *pre*-flag for ids 480–499; it runs once, guarded by
+  `state.flaggedArgBatch480`, so unflagging one afterwards sticks.
 - **New phrases join the set already in progress.** `absorbNewPhrases()` runs
   once on load and appends any eligible key missing from `apCycle` at a random
   point *after* the cursor. Append-only on purpose: `syncFlagQueue('ap')` would
