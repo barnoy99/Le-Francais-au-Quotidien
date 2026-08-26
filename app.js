@@ -932,6 +932,30 @@
     return null;
   }
 
+  // Phrases shipped in a new data.js should join the Apprentissage set already
+  // in progress instead of waiting out the current one — at 82/386 that is
+  // weeks away. Append only: the cursor and everything already served are left
+  // exactly as they are, so the counter never jumps backwards. (syncFlagQueue
+  // would also prune and recompute the cursor, which is right for the ⚑ passes
+  // but would make this counter fall as you master phrases.)
+  function absorbNewPhrases() {
+    var cycle = state.apCycle || [];
+    if (!cycle.length) return;                        // no set yet — built on demand
+    var cursor = Math.min(state.apCursor || 0, cycle.length);
+    if (cursor >= cycle.length) return;               // finished; reshuffled next start
+    var seen = {}, i;
+    for (i = 0; i < cycle.length; i++) seen[cycle[i]] = true;
+    var order = fqEligibleKeys('ap'), added = 0;
+    for (i = 0; i < order.length; i++) {
+      if (seen[order[i]]) continue;
+      seen[order[i]] = true;
+      var at = cursor + Math.floor(Math.random() * (cycle.length - cursor + 1));
+      cycle.splice(at, 0, order[i]);                  // somewhere still to come
+      added++;
+    }
+    if (added) { state.apCycle = cycle; save(); }
+  }
+
   // The pass is over — clear it so the next session shuffles a new order.
   function fqResetPass(prefix) {
     state[fqCycleKey(prefix)] = [];
@@ -1828,6 +1852,7 @@
 
     load(function () {
       state.sessionCount++;
+      absorbNewPhrases();
       save();
       updateHomeScreen();
     });

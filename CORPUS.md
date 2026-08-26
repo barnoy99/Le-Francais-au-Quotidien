@@ -58,7 +58,7 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-437 entries / 874 sentences. Each entry is a main sentence plus an alt.
+441 entries / 882 sentences. Each entry is a main sentence plus an alt.
 
 - **Function-first, not topic-first.** Most entries are a conversational *move* —
   hedging, conceding, softening — rather than a subject. Roughly 300 distinct

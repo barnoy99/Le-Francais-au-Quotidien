@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=67`, `style.css?v=52`, `data.js?v=29`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v50'`.
+**Current versions:** `app.js?v=68`, `style.css?v=52`, `data.js?v=30`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v51'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,13 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **New phrases join the set already in progress.** `absorbNewPhrases()` runs
+  once on load and appends any eligible key missing from `apCycle` at a random
+  point *after* the cursor. Append-only on purpose: `syncFlagQueue('ap')` would
+  also prune and recompute the cursor from `head.length`, which is right for the
+  ⚑ passes but would make this counter fall as phrases are mastered. Without
+  this hook a new `data.js` is invisible until the current set runs out — weeks,
+  at a few cards a day.
 - **Apprentissage navigates the set, not a session history.** `phraseAt(pos)`
   reads `apCycle` and `seekPlayable(pos, step, limit)` walks it in either
   direction, skipping positions whose phrase has since been mastered or deleted.
@@ -171,7 +178,7 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   the hidden `#summary-card` markup remains unused.
 - **Every user-facing count is in sentences, not phrases** (`sentenceCount()`),
   because each entry is a main sentence plus an alt. Home buttons read
-  `sentences / all sentences in the app`, e.g. `(442 / 874)` — which is also
+  `sentences / all sentences in the app`, e.g. `(442 / 882)` — which is also
   where the app-wide total is surfaced, since the home screen has no vertical
   room for another line. **Apprentissage is the exception**: both its home
   button and its own header show position through the current *set*, so the two

@@ -490,5 +490,11 @@ var PHRASES = [
   { id: 472, fr: "Je me demande si on en fait pas trop pour lui.", en: "I wonder whether we don't do too much for him.", context: "Second-guessing ourselves — casual", alt_usage: "On devrait peut-être le laisser se débrouiller.", alt_usage_en: "Maybe we should let him work it out himself." },
   { id: 473, fr: "Faut qu'on trouve un moment rien qu'avec elle.", en: "We need to find some time just with her.", context: "Giving them attention — casual (subjonctif)", alt_usage: "Elle réclame de l'attention, ça se voit.", alt_usage_en: "She's crying out for attention, you can see it." },
   { id: 474, fr: "Il a besoin qu'on le rassure en ce moment.", en: "He needs us to reassure him at the moment.", context: "avoir besoin que + subjonctif — casual", alt_usage: "Elle est plus fragile qu'elle en a l'air.", alt_usage_en: "She's more fragile than she looks." },
-  { id: 475, fr: "On leur laisse trop d'écrans en ce moment.", en: "We're letting them have too much screen time at the moment.", context: "Rules and limits — casual", alt_usage: "Il négocie tout, c'est épuisant.", alt_usage_en: "He negotiates everything, it's exhausting." }
+  { id: 475, fr: "On leur laisse trop d'écrans en ce moment.", en: "We're letting them have too much screen time at the moment.", context: "Rules and limits — casual", alt_usage: "Il négocie tout, c'est épuisant.", alt_usage_en: "He negotiates everything, it's exhausting." },
+
+  // ── « comme + nom » — naming the category (no article!) ───
+  { id: 476, fr: "C'est pas mal comme idée, franchement.", en: "That's not a bad idea, honestly.", context: "Judging by category — casual", alt_usage: "C'est bizarre comme réponse, non ?", alt_usage_en: "That's a strange answer, isn't it?" },
+  { id: 477, fr: "Tu veux quoi comme dessert ?", en: "What do you want for dessert?", context: "quoi comme + nom — casual", alt_usage: "On a quoi comme options, du coup ?", alt_usage_en: "So what options have we got?" },
+  { id: 478, fr: "Il a eu quoi comme note en maths ?", en: "What did he get in maths?", context: "About the kids — casual", alt_usage: "Elle a quoi comme devoirs ce soir ?", alt_usage_en: "What homework has she got tonight?" },
+  { id: 479, fr: "Qu'est-ce que vous avez comme plat du jour ?", en: "What's the dish of the day?", context: "Asking what kind — vous", alt_usage: "Vous avez quoi comme sandwichs ?", alt_usage_en: "What sandwiches do you have?" }
 ];
