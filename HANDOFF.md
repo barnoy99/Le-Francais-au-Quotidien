@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=70`, `style.css?v=53`, `data.js?v=31`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v54'`.
+**Current versions:** `app.js?v=71`, `style.css?v=53`, `data.js?v=31`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v55'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,15 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **Deleting must purge every copy from the in-flight batch.** A session batch
+  is laid out from a cycle that may be shorter than the batch — Mes Acquis takes
+  `min(60, pool × 4)` — and the Mains Libres cycle deliberately repeats ×6/⚑
+  phrases, so one phrase can sit in a batch several times. Delete used to splice
+  only the copy on screen and the phrase returned later in the same session;
+  `dropAllCopies()` removes them all and keeps the index and the parallel
+  `Exercises`/`Positions` arrays aligned. It also removed the `index = 0` reset
+  that ran on deleting the last card of a batch, which replayed the whole
+  session from the top. Covered by `test/delete-test.js`.
 - **⚑ difficile only bites once a phrase is mastered.** `getHardPhrases()` is
   *mastered ∩ flagged* and `fqPlayable('ec'/'rv')` requires `level === 4`, so
   flagging something still in Apprentissage changes nothing until it reaches Mes

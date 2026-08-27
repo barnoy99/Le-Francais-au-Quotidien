@@ -1058,6 +1058,24 @@
     });
   }
 
+  // A session's batch can hold several copies of one phrase — it is laid out
+  // from a cycle that may be shorter than the batch, and the Mains Libres cycle
+  // deliberately repeats ×6/⚑ phrases. Deleting spliced only the copy on
+  // screen, so the phrase came back later in the same session. Remove every
+  // copy, and keep the index pointing at the same place in the shortened list.
+  function dropAllCopies(id, phrases, index, parallels) {
+    var removedBefore = 0;
+    for (var i = phrases.length - 1; i >= 0; i--) {
+      if (phrases[i].id !== id) continue;
+      phrases.splice(i, 1);
+      for (var k = 0; k < parallels.length; k++) {
+        if (parallels[k].length) parallels[k].splice(i, 1);
+      }
+      if (i < index) removedBefore++;
+    }
+    return index - removedBefore;
+  }
+
   // A session pulls a batch from the cycle; whatever it doesn't reach is handed
   // back on exit so no phrase loses its turn.
   var SESSION_BATCH = 60;
@@ -1964,9 +1982,13 @@
         showAcquisPhrase();
         return;
       }
-      acquisPhrases.splice(acquisIndex, 1);
-      if (acquisIndex >= acquisPhrases.length) acquisIndex = 0;
+      acquisIndex = dropAllCopies(p.id, acquisPhrases, acquisIndex,
+                                  [acquisExercises, acquisPositions]);
+      acquisBatchLen = acquisPhrases.length;
+      acquisMaxSeen = Math.min(acquisMaxSeen, acquisPhrases.length);
       if (acquisPhrases.length === 0) { showScreen('screen-acquis-done'); return; }
+      // No index reset: showAcquisPhrase pulls the next slice when the batch is
+      // spent. Sending it back to 0 replayed the whole session from the top.
       showAcquisPhrase();
     });
 
@@ -1984,9 +2006,11 @@
         handsfreeStep();
         return;
       }
-      handsfreePhrases.splice(handsfreeIndex, 1);
+      handsfreeIndex = dropAllCopies(p.id, handsfreePhrases, handsfreeIndex,
+                                     [handsfreeExercises, handsfreePositions]);
       if (handsfreePhrases.length === 0) { stopHandsfree(); return; }
-      if (handsfreeIndex >= handsfreePhrases.length) handsfreeIndex = 0;
+      // As above: handsfreeStep pulls the next phrase when the index runs past
+      // the end, so resetting to 0 would replay the round.
       handsfreeExercise = 'main';
       handsfreeStep();
     });
