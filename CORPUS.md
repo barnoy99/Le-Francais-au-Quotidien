@@ -150,3 +150,19 @@ It won't broaden vocabulary, train listening to fast speech in noise, or teach
 reading, writing, or building novel sentences beyond the patterns drilled. It is
 a fluency engine for the recurring 80% of daily talk — deliberately, and that is
 why it works.
+
+## Dropping `ne` — where it stops
+
+Casual entries (334+, except the `vous` block) drop `ne`. Three limits found in a
+full read of all 922 sentences:
+
+- **`personne` as subject keeps its `ne`** — *personne n'en parle*, not *personne
+  en parle*. Dropping it is far more marked than with `pas`, and before a vowel
+  it barely survives.
+- **Never mix a subjunctive with a dropped `ne`.** *c'est qu'il ait rien dit*
+  clashes: the subjunctive is careful register, the missing `ne` is casual. Pick
+  one — in speech that means the indicative.
+- **Watch `plus`.** Without `ne`, *j'ai plus de batterie* reads as "I have MORE
+  battery" — its own opposite. In speech /ply/ vs /plys/ disambiguates, but this
+  app reads sentences aloud and the synthesiser may not honour it. Either keep
+  a disambiguating word (*y a plus rien*) or use another phrasing.
