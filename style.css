@@ -690,7 +690,7 @@ ul {
 
 .progress-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;   /* phrases wrap now — keep the dot on line one */
   gap: 0.6rem;
   padding: 0.5rem 0.75rem;
   background: var(--bg-card);
@@ -709,6 +709,7 @@ ul {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 0.55em;        /* optically centred on the first line of text */
 }
 
 .progress-dot.level-mastered { background: var(--color-gold); }
@@ -719,11 +720,12 @@ ul {
 
 .progress-phrase {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
+  line-height: 1.35;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* was nowrap + ellipsis, which cut 122 of 461 phrases off mid-sentence — and
+     expanding a row only reveals the English, so the French was unreadable */
+  overflow-wrap: anywhere;
   font-family: var(--font-heading);
   font-style: italic;
 }
@@ -1450,12 +1452,12 @@ ul {
 .chercher-fr {
   font-family: var(--font-heading);
   font-style: italic;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   color: var(--text-primary);
 }
 
 .chercher-en {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: var(--text-secondary);
   margin-top: 0.2rem;
 }
@@ -1469,12 +1471,12 @@ ul {
 .chercher-alt-fr {
   font-family: var(--font-heading);
   font-style: italic;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   color: var(--text-primary);
 }
 
 .chercher-alt-en {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--text-secondary);
   margin-top: 0.15rem;
 }

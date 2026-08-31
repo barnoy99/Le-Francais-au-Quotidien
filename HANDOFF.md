@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=71`, `style.css?v=53`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v56'`.
+**Current versions:** `app.js?v=72`, `style.css?v=54`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v57'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,16 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **Mes Acquis auto-play reads the main sentence only.** It used to chain into
+  the alt via `speakFrenchCb`; the alt is there to be read, not recited. Both
+  callers of `playRevealed()` are the auto-play path (reveal, and switching the
+  toggle on mid-card) — the manual `#btn-tts` button is separate and untouched.
+- **The Progrès list is the one that truncates, not Chercher.** `.progress-phrase`
+  carried `nowrap` + `text-overflow: ellipsis`, cutting **122 of 461** phrases
+  off mid-sentence — and expanding a row only reveals the English, so the French
+  was unreadable. It now wraps; `.progress-item` is `align-items: flex-start`
+  with the dot nudged down `0.55em` so it sits on the first line. Chercher never
+  truncated: no clamp in its CSS and nothing clipped at 375px, measured.
 - **Deleting must purge every copy from the in-flight batch.** A session batch
   is laid out from a cycle that may be shorter than the batch — Mes Acquis takes
   `min(60, pool × 4)` — and the Mains Libres cycle deliberately repeats ×6/⚑

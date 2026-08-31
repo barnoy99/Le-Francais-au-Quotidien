@@ -1233,9 +1233,9 @@
     if (btn) btn.classList.toggle('activated', isAutoPlay());
   }
 
-  // Speaks the revealed sentence(s). The normal rotation reveals the main
-  // sentence and its alt, so it reads both in turn; a ⚑ Réviser card only ever
-  // holds one sentence.
+  // Speaks the revealed sentence. The card shows the main sentence and its alt,
+  // but auto-play reads the main one only — the alt is there to be read, not
+  // recited. A ⚑ Réviser card holds one sentence anyway.
   function playRevealed() {
     var p = acquisPhrases[acquisIndex];
     if (!p) return;
@@ -1244,15 +1244,7 @@
       speakFrench(fqTexts(p, acquisExercises[acquisIndex]).fr);
       return;
     }
-    // Normal rotation: the card carries the main sentence and its alt, so read
-    // both — unless you've moved on or left before the first one finishes.
-    var atIndex = acquisIndex;
-    speakFrenchCb(p.fr, function () {
-      if (acquisIndex === atIndex && p.alt_usage &&
-          $('screen-acquis').classList.contains('screen--active')) {
-        speakFrench(p.alt_usage);
-      }
-    });
+    speakFrench(p.fr);
   }
 
   // Whole ⚑ Réviser pass done — clear it so the next session shuffles a new one.
