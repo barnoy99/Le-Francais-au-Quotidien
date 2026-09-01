@@ -19,6 +19,7 @@
   // the persistent queue, so every index carries its own exercise and position.
   var acquisExercises = [];
   var acquisPositions = [];
+  var acquisLookback = 0;    // preloaded items sitting behind the resume point
   var acquisIndex = 0;
   var acquisBatchLen = 0;
   var acquisMaxSeen = 0;
@@ -36,6 +37,7 @@
   // position in the pass (kept here so ⏮ still shows the right counter).
   var handsfreeExercises = [];
   var handsfreePositions = [];
+  var handsfreeLookback = 0; // preloaded items sitting behind the resume point
   var handsfreeHistory = []; // stack of {index, exercise} for multi-step skip-back
   var handsfreeReadTarget = 3;          // 3 or 6, reset per exercise
   var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
@@ -1116,6 +1118,14 @@
   // deliberately repeats ×6/⚑ phrases. Deleting spliced only the copy on
   // screen, so the phrase came back later in the same session. Remove every
   // copy, and keep the index pointing at the same place in the shortened list.
+  // How many copies of `id` sit before `limit` — used to move the preloaded
+  // boundary when a delete removes cards from behind you.
+  function copiesBefore(id, phrases, limit) {
+    var n = 0, stop = Math.min(limit, phrases.length);
+    for (var i = 0; i < stop; i++) if (phrases[i].id === id) n++;
+    return n;
+  }
+
   function dropAllCopies(id, phrases, index, parallels) {
     var removedBefore = 0;
     for (var i = phrases.length - 1; i >= 0; i--) {
@@ -1141,6 +1151,47 @@
     }
   }
 
+  // ── Looking back into the last visit ───────────────────
+  // Every rotation resumes mid-cycle, and its "back" button used to walk an
+  // in-memory list that was rebuilt on entry — so just after opening a section
+  // there was nothing behind you. These preload the last few already-served
+  // items so ⏮ reaches the end of your previous visit. They are marked as
+  // preloaded (`*Lookback` counts them at the head of the arrays) because they
+  // must not be counted again in the pass, nor treated as part of the batch.
+  var LOOKBACK = 5;
+
+  // Last few sentences of a persistent fq queue ('ec' / 'rv'), oldest first.
+  function fqLookback(prefix) {
+    var cycle = state[fqCycleKey(prefix)] || [];
+    var cursor = Math.min(state[fqCursorKey(prefix)] || 0, cycle.length);
+    var out = [];
+    for (var i = Math.max(0, cursor - LOOKBACK); i < cursor; i++) {
+      var item = fqParse(cycle[i]);
+      if (!fqPlayable(prefix, item.id)) continue;      // mastered or deleted since
+      var ph = findPhraseById(item.id);
+      if (!ph) continue;
+      var text = item.exercise === 'alt' ? ph.alt_usage : ph.fr;
+      if (!text) continue;
+      out.push({ p: ph, exercise: item.exercise, position: i + 1 });
+    }
+    return out;
+  }
+
+  // Last few phrases already served from a weighted cycle ('hf' / 'acq').
+  // Slot numbers match what takeFromCycle would have handed out: base + index.
+  function cycleLookback(key, pool) {
+    var cycle = state[key + 'Cycle'] || [];
+    var cursor = Math.min(state[key + 'Cursor'] || 0, cycle.length);
+    var byId = {}, i;
+    for (i = 0; i < pool.length; i++) byId[pool[i].id] = pool[i];
+    var out = [];
+    for (i = Math.max(0, cursor - LOOKBACK); i < cursor; i++) {
+      var ph = byId[cycle[i]];
+      if (ph) out.push({ p: ph, position: passBase(key) + i });
+    }
+    return out;
+  }
+
   // pool omitted → the full mastered rotation; pool given → the ⚑ Réviser
   // session, which walks its own persistent queue one sentence at a time.
   function startAcquis(pool) {
@@ -1149,17 +1200,25 @@
     if (source.length === 0) return;
     acquisExercises = [];
     acquisPositions = [];
+    var back;
     if (acquisCustomPool) {
       syncFlagQueue('rv');    // pick up flags added since the pass was built
-      acquisPhrases = [];     // filled from the queue as the session goes
-      acquisBatchLen = 0;
+      back = fqLookback('rv');
+      acquisPhrases = back.map(function (x) { return x.p; });
+      acquisExercises = back.map(function (x) { return x.exercise; });
+      acquisPositions = back.map(function (x) { return x.position; });
+      acquisBatchLen = 0;     // the rest is filled from the queue as you go
     } else {
-      acquisPhrases = takeFromCycle('acq', source, Math.min(SESSION_BATCH, source.length * 4));
-      acquisBatchLen = acquisPhrases.length;
-      if (acquisPhrases.length === 0) return;
+      back = cycleLookback('acq', source);
+      acquisPhrases = back.map(function (x) { return x.p; });
+      var fresh = takeFromCycle('acq', source, Math.min(SESSION_BATCH, source.length * 4));
+      if (fresh.length === 0) return;
+      acquisPhrases = acquisPhrases.concat(fresh);
+      acquisBatchLen = fresh.length;
     }
+    acquisLookback = back.length;
     acquisMaxSeen = 0;
-    acquisIndex = 0;
+    acquisIndex = acquisLookback;   // resume where you were, with the past behind you
     showAcquisPhrase();
   }
 
@@ -1171,7 +1230,7 @@
       if (pos && pos === state.rvCursor) { state.rvCursor = pos - 1; save(); }
       return;
     }
-    releaseBatch('acq', acquisBatchLen, acquisMaxSeen);
+    releaseBatch('acq', acquisBatchLen, Math.max(0, acquisMaxSeen - acquisLookback));
     acquisBatchLen = 0;
   }
 
@@ -1205,7 +1264,9 @@
     }
     acquisMaxSeen = Math.max(acquisMaxSeen, acquisIndex + 1);
     var p = acquisPhrases[acquisIndex];
-    if (!acquisCustomPool) markPassSeen('acq', p.id, getMasteredPhrases().length);
+    if (!acquisCustomPool && acquisIndex >= acquisLookback) {
+      markPassSeen('acq', p.id, getMasteredPhrases().length);
+    }
     // a new card, so nothing from the previous one should still be talking
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     showScreen('screen-acquis');
@@ -1552,12 +1613,22 @@
     handsfreeLastPrevTime = now;
     // Drop the current entry (handsfreeStep re-pushes it).
     if (handsfreeHistory.length > 0) handsfreeHistory.pop();
-    if (doublePress && handsfreeHistory.length > 0) {
-      // Go to the actual previous item.
-      var prev = handsfreeHistory.pop();
-      handsfreeIndex = prev.index;
-      handsfreeExercise = prev.exercise;
-      handsfreeLastPrevTime = 0; // a further back restarts that item first
+    if (doublePress) {
+      if (handsfreeHistory.length > 0) {
+        // Go to the actual previous item.
+        var prev = handsfreeHistory.pop();
+        handsfreeIndex = prev.index;
+        handsfreeExercise = prev.exercise;
+        handsfreeLastPrevTime = 0; // a further back restarts that item first
+      } else if (handsfreeIndex > 0) {
+        // This session's history is spent — keep walking back through the
+        // preloaded tail of the last visit.
+        handsfreeIndex--;
+        handsfreeExercise = handsfreeCustomPool
+          ? (handsfreeExercises[handsfreeIndex] || 'main')
+          : 'main';
+        handsfreeLastPrevTime = 0;
+      }
     }
     // else: first press → restart current item (index/exercise unchanged)
     handsfreeStep();
@@ -1569,21 +1640,25 @@
     handsfreeCustomPool = !!pool;
     handsfreeExercises = [];
     handsfreePositions = [];
+    var back;
     if (handsfreeCustomPool) {
       if (pool.length === 0) return;
       syncFlagQueue('ec');     // pick up flags added since the pass was built
-      handsfreePhrases = [];  // filled from the queue as the session goes
-      handsfreeBatchLen = 0;
+      back = fqLookback('ec');
+      handsfreeExercises = back.map(function (x) { return x.exercise; });
     } else {
       // Pulled one at a time in handsfreeStep, like the ⚑ passes: nothing is
       // consumed until it is actually played, so quitting can't skip a phrase
       // and the counter is an exact position rather than a fetch position.
       if (getMasteredPhrases().length === 0) return;
-      handsfreePhrases = [];
-      handsfreeBatchLen = 0;
+      back = cycleLookback('hf', getMasteredPhrases());
     }
+    handsfreePhrases = back.map(function (x) { return x.p; });
+    handsfreePositions = back.map(function (x) { return x.position; });
+    handsfreeBatchLen = 0;
+    handsfreeLookback = back.length;
     handsfreeMaxSeen = 0;
-    handsfreeIndex = 0;
+    handsfreeIndex = handsfreeLookback;   // resume, with the past behind you
     handsfreeExercise = 'main';
     handsfreePaused = false;
     handsfreeHistory = [];
@@ -1733,7 +1808,8 @@
 
     var p = handsfreePhrases[handsfreeIndex];
     // count the phrase once per visit, not once per exercise (main + alt)
-    if (!handsfreeCustomPool && handsfreeExercise === 'main') markPassSeen('hf', p.id);
+    if (!handsfreeCustomPool && handsfreeExercise === 'main' &&
+        handsfreeIndex >= handsfreeLookback) markPassSeen('hf', p.id);
     // ⚑ Écouter counts sentences through its pass; the full rotation now does
     // the same — each slot is two sentences (main, alt), and a ×6/⚑ phrase
     // holds several slots per round, so its sentences are counted each time
@@ -2028,6 +2104,7 @@
         showAcquisPhrase();
         return;
       }
+      acquisLookback -= copiesBefore(p.id, acquisPhrases, acquisLookback);
       acquisIndex = dropAllCopies(p.id, acquisPhrases, acquisIndex,
                                   [acquisExercises, acquisPositions]);
       acquisBatchLen = acquisPhrases.length;
@@ -2052,6 +2129,7 @@
         handsfreeStep();
         return;
       }
+      handsfreeLookback -= copiesBefore(p.id, handsfreePhrases, handsfreeLookback);
       handsfreeIndex = dropAllCopies(p.id, handsfreePhrases, handsfreeIndex,
                                      [handsfreeExercises, handsfreePositions]);
       if (handsfreePhrases.length === 0) { stopHandsfree(); return; }

@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=75`, `style.css?v=56`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v61'`.
+**Current versions:** `app.js?v=76`, `style.css?v=56`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v62'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -220,6 +220,19 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   ⚑ passes but would make this counter fall as phrases are mastered. Without
   this hook a new `data.js` is invisible until the current set runs out — weeks,
   at a few cards a day.
+- **Every section can look back into your last visit.** All of them resume
+  mid-cycle, and their ⏮ used to walk a list rebuilt on entry, so just after
+  opening a section there was nothing behind you. `fqLookback(prefix)` (ec/rv)
+  and `cycleLookback(key, pool)` (hf/acq) preload the last `LOOKBACK` (5)
+  already-served items at the head of the in-memory arrays, and the index starts
+  past them (`acquisLookback` / `handsfreeLookback` count them). Three things
+  hang off that boundary: re-reading a preloaded card must NOT call
+  `markPassSeen` (it would inflate the pass counter), `releaseBatch` takes
+  `maxSeen - lookback` because preloaded cards were never part of the batch, and
+  deleting one moves the boundary via `copiesBefore()`. Mains Libres' ⏮ also
+  falls through to the preloaded tail once its in-session history is spent.
+  Browsing back and then leaving does not rewind the saved cursor — only the
+  newest card is ever handed back.
 - **Apprentissage navigates the set, not a session history.** `phraseAt(pos)`
   reads `apCycle` and `seekPlayable(pos, step, limit)` walks it in either
   direction, skipping positions whose phrase has since been mastered or deleted.
