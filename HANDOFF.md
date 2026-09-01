@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=73`, `style.css?v=55`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v58'`.
+**Current versions:** `app.js?v=74`, `style.css?v=56`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v59'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,25 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **The home screen is six equal rows, one per mode**, each with its own colour
+  and icon: Mains Libres (blue), Mes Acquis (teal), Apprentissage (gold),
+  ⚑ Écouter (amber), ⚑ Réviser (sage), Chercher (slate). Progrès moved to a
+  fixed corner control (`.btn-home-progress`). Rows were chosen over a 3×2 grid
+  because a 2-column tile gives 126px of inner width and "Apprentissage" needs
+  141px at the 25px label size — the grid would have forced labels down to ~17px.
+  The whole screen now fits 812px without scrolling; it scrolled even with four
+  buttons, so the title and row padding were tightened to buy the space back.
+- **⚑ rows dim in place rather than disappearing.** They are `disabled` when
+  nothing is flagged *and mastered*, so the list never changes shape.
+- **Every rotation has a cycle clock.** `startCycleClock(key)` /
+  `cycleDay(key)` back the "Jour N" line, stamped in `fqBuildPass` (ec/rv/ap)
+  and in `takeFromCycle` (hf/acq). In `takeFromCycle` the stamp is guarded by
+  `!state[baseKey]` — that branch serves both a mid-round rebuild, which must
+  KEEP its clock, and a round starting from nothing, which needs a new one;
+  `baseKey` is `passPlayed()` and is 0 only in the second case. Days are
+  calendar days, so "Jour 2" arrives the next morning, not 24h later.
+  `backfillCycleClocks()` stamps already-running cycles once, so counters start
+  immediately instead of waiting for each cycle to end.
 - **French display text goes through `frDisplay()`.** French sets a space before
   `? ! ; :` and before/after guillemets; with a breakable space the mark drops
   onto its own line, which the enlarged Chercher type made obvious — 196 of 922

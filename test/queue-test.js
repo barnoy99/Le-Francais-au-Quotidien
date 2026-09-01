@@ -24,7 +24,8 @@ function extract(name) {
 
 var NAMES = ['shuffleIds', 'fqKey', 'fqParse', 'fqEligibleKeys', 'fqPlayable',
              'fqTooClose', 'fqSpread', 'fqCycleKey', 'fqCursorKey', 'fqBuildPass',
-             'syncFlagQueue', 'fqTakeNext', 'fqResetPass', 'fqTexts'];
+             'syncFlagQueue', 'fqTakeNext', 'fqResetPass', 'fqTexts',
+             'startCycleClock', 'cycleDay'];
 var code = NAMES.map(extract).join('\n\n');
 
 // ── simulated world ────────────────────────────────────
@@ -46,7 +47,7 @@ function save() { saves++; }
 
 var raw = eval('(function () {' + code + '\nreturn {fqTakeNext:fqTakeNext, syncFlagQueue:syncFlagQueue,' +
                ' fqResetPass:fqResetPass, fqParse:fqParse, fqEligibleKeys:fqEligibleKeys,' +
-               ' fqBuildPass:fqBuildPass, fqTexts:fqTexts};})()');
+               ' fqBuildPass:fqBuildPass, fqTexts:fqTexts, cycleDay:cycleDay};})()');
 // the suite below runs once per pass prefix ('ec' = Écouter, 'rv' = Réviser)
 var PREFIX = 'ec';
 var api = {
@@ -220,6 +221,30 @@ if (m.en !== 'EN-main' || m.fr !== 'FR-main') failures.push('[texts] main senten
 if (a.en !== 'EN-alt'  || a.fr !== 'FR-alt')  failures.push('[texts] alt sentence wrong');
 var noEn = api.fqTexts({ id:1, fr:'f', en:'e', alt_usage:'ALT' }, 'alt');
 if (noEn.en !== 'ALT') failures.push('[texts] alt without alt_usage_en should fall back to the French');
+
+// ── cycle clock ────────────────────────────────────────
+function check(label, cond, detail) {          // runSuite's `check` is scoped to it
+  if (!cond) failures.push('[clock] ' + label + (detail ? ' — ' + detail : ''));
+}
+// Laying out a pass must start its clock, and the day count is calendar-based:
+// "Jour 2" arrives the next morning, not 24 hours later.
+state = { ecCycle: [], ecCursor: 0 };
+flagged = { 1: true, 2: true };
+raw.fqBuildPass('ec');
+check('laying out a pass starts its clock', !!state.ecStartedAt);
+check('the day a cycle starts is Jour 1', raw.cycleDay('ec') === 1);
+
+state.ecStartedAt = Date.now() - 36 * 3600 * 1000;   // 36h ago
+var d = raw.cycleDay('ec');
+check('a cycle started yesterday reads Jour 2 or 3, never 1',
+      d === 2 || d === 3, 'got ' + d);
+
+state.ecStartedAt = new Date().setHours(0, 0, 0, 0) - 9 * 86400000;
+check('nine calendar days back reads Jour 10', raw.cycleDay('ec') === 10,
+      'got ' + raw.cycleDay('ec'));
+
+state.ecStartedAt = 0;
+check('no clock yet reads 0, so the row shows nothing', raw.cycleDay('ec') === 0);
 
 console.log('');
 if (failures.length === 0) console.log('ALL CHECKS PASSED (' + saves + ' saves)');

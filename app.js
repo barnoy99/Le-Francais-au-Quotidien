@@ -317,6 +317,39 @@
       .replace(/(«) /g, '$1 ');
   }
 
+  // ── Cycle clocks ───────────────────────────────────────
+  // Each rotation is a loop that ends and starts again; these stamp when the
+  // current loop began so the home screen can say which day of it you are on.
+  // Counted in calendar days, so "Jour 2" arrives the next morning rather than
+  // 24 hours later — that is what a person means by "days".
+  function startCycleClock(key) {
+    state[key + 'StartedAt'] = Date.now();
+  }
+
+  function cycleDay(key) {
+    var t = state[key + 'StartedAt'];
+    if (!t) return 0;                       // no cycle laid out yet
+    var a = new Date(t); a.setHours(0, 0, 0, 0);
+    var b = new Date();  b.setHours(0, 0, 0, 0);
+    return Math.round((b - a) / 86400000) + 1;   // the day you start is Jour 1
+  }
+
+  // Cycles already in progress predate the clock, so start them today rather
+  // than leaving them blank until they happen to end. Runs once per key.
+  function backfillCycleClocks() {
+    var pairs = [['hf', 'hfCycle'], ['acq', 'acqCycle'], ['ap', 'apCycle'],
+                 ['ec', 'ecCycle'], ['rv', 'rvCycle']];
+    var changed = false;
+    for (var i = 0; i < pairs.length; i++) {
+      var key = pairs[i][0];
+      if (state[key + 'StartedAt']) continue;
+      if (!(state[pairs[i][1]] || []).length) continue;   // nothing running
+      startCycleClock(key);
+      changed = true;
+    }
+    if (changed) save();
+  }
+
   function findPhraseById(id) {
     for (var i = 0; i < PHRASES.length; i++) {
       if (PHRASES[i].id === id) return PHRASES[i];
@@ -706,10 +739,16 @@
       state[cycleKey] = buildCycle(pool, weighted, state[passKey]);
       state[cursorKey] = 0;
       state[sigKey] = sig;
+      // This branch covers two cases: a rebuild part-way through a round (the
+      // pool changed), which must keep its clock, and a round starting from
+      // nothing, which needs a new one. baseKey is passPlayed(), so it is 0
+      // exactly when no copy has been played yet — that is the new round.
+      if (!state[baseKey] || !state[key + 'StartedAt']) startCycleClock(key);
       if (!state[cycleKey].length) {          // nothing owed → begin a new round
         state[passKey] = {};
         state[baseKey] = 0;
         state[cycleKey] = buildCycle(pool, weighted);
+        startCycleClock(key);
       }
     }
 
@@ -726,6 +765,7 @@
         state[cursorKey] = 0;
         state[passKey] = {};                  // a full new round starts here
         state[baseKey] = 0;
+        startCycleClock(key);
         if (!state[cycleKey].length) break;
       }
       var abs = passBase(key) + state[cursorKey];
@@ -886,6 +926,7 @@
   function fqCursorKey(prefix) { return prefix + 'Cursor'; }
 
   function fqBuildPass(prefix) {
+    startCycleClock(prefix);   // a fresh pass starts its clock
     state[fqCycleKey(prefix)] = fqSpread(fqEligibleKeys(prefix));
     state[fqCursorKey(prefix)] = 0;
   }
@@ -1020,51 +1061,53 @@
     var mastered = getMasteredPhrases();
     var count = mastered.length;
     // Every button now counts progress through its own rotation, so none of
-    // them carries the app-wide total any more. It rides on the subtitle
-    // instead — "phrase" is French for sentence, so the wording is honest.
+    // them carries the app-wide total. It rides on the subtitle instead —
+    // "phrase" is French for sentence, so the wording is honest.
     var total = sentenceCount(activePhrases());
     $('home-total').textContent = ' · ' + total + ' phrases';
     var masteredSentences = sentenceCount(mastered);
     var learningSentences = sentenceCount(getLearningPhrases());
-    // Same figure as the counter inside Apprentissage: position through the
-    // current set, not the size of the pool. Before a set exists, preview what
-    // the first one will hold.
-    // Leaving hands the un-rated card back, so the cursor sits one behind the
-    // card you were looking at. Show the position you will resume on, which is
-    // the number the screen itself displays.
-    var apSet = (state.apCycle || []).length;
-    var apResume = Math.min((state.apCursor || 0) + 1, apSet);
-    $('apprentissage-count').textContent = apSet
-      ? '(' + (apResume * 2) + ' / ' + (apSet * 2) + ')'
-      : '(0 / ' + learningSentences + ')';
-    // Each button carries the figure its own screen shows, so the number
-    // continues instead of changing meaning when you go in. Mes Acquis and
-    // Mains Libres therefore disagree by design: Mes Acquis counts coverage of
-    // your collection, Mains Libres a position through a round in which a ×6 or
-    // ⚑ phrase holds several slots.
-    $('acquis-count').textContent =
-      '(' + (passProgress('acq') * 2) + ' / ' + masteredSentences + ')';
-    $('btn-acquis').disabled = count === 0;
+
+    // Each row shows the figure its own screen shows, so the number continues
+    // instead of changing meaning when you go in, plus which day of the current
+    // loop you are on. They disagree with each other by design: Mes Acquis
+    // counts coverage of your collection, Mains Libres a position through a
+    // round in which a ×6 or ⚑ phrase holds several slots.
+    function setRow(countId, dayId, text, key, disabled, btnId) {
+      $(countId).textContent = '(' + text + ')';
+      var day = cycleDay(key);
+      $(dayId).textContent = day ? ('Jour ' + day) : '';
+      $(btnId).disabled = !!disabled;
+    }
 
     var hfRound = (state.hfCycle || []).length;
-    $('handsfree-count').textContent = hfRound
-      ? '(' + ((passBase('hf') + Math.min(state.hfCursor || 0, hfRound)) * 2) +
-        ' / ' + roundSentenceTotal() + ')'
-      : '(0 / ' + plannedRoundSentences() + ')';
-    $('btn-handsfree').disabled = count === 0;
+    setRow('handsfree-count', 'handsfree-day',
+      hfRound
+        ? ((passBase('hf') + Math.min(state.hfCursor || 0, hfRound)) * 2) + ' / ' + roundSentenceTotal()
+        : '0 / ' + plannedRoundSentences(),
+      'hf', count === 0, 'btn-handsfree');
 
-    var hard = getHardPhrases();
-    var hardSentences = sentenceCount(hard);
-    [['btn-difficiles', '⚑ Écouter', 'ec'],
-     ['btn-difficiles-acquis', '⚑ Réviser', 'rv']].forEach(function (pair) {
-      var btn = $(pair[0]);
-      if (!btn) return;
-      // Same as inside: position through the pass. Between passes the cycle is
-      // cleared, so fall back to the flagged pool the next one will cover.
-      var cyc = (state[pair[2] + 'Cycle'] || []).length;
-      var done = cyc ? Math.min(state[pair[2] + 'Cursor'] || 0, cyc) : 0;
-      btn.textContent = pair[1] + ' (' + done + ' / ' + (cyc || hardSentences) + ')';
-      if (hard.length === 0) hide(btn); else show(btn);
+    setRow('acquis-count', 'acquis-day',
+      (passProgress('acq') * 2) + ' / ' + masteredSentences,
+      'acq', count === 0, 'btn-acquis');
+
+    // Apprentissage: leaving hands the un-rated card back, so the cursor sits
+    // one behind the card you were looking at — show where you will resume.
+    var apSet = (state.apCycle || []).length;
+    var apResume = Math.min((state.apCursor || 0) + 1, apSet);
+    setRow('apprentissage-count', 'apprentissage-day',
+      apSet ? (apResume * 2) + ' / ' + (apSet * 2) : '0 / ' + learningSentences,
+      'ap', false, 'btn-apprentissage');
+
+    // ⚑ rows stay in place when nothing is flagged — dimmed and unclickable —
+    // so the list never changes shape as you flag and unflag.
+    var hardSentences = sentenceCount(getHardPhrases());
+    [['ecouter-count', 'ecouter-day', 'ec', 'btn-difficiles'],
+     ['reviser-count', 'reviser-day', 'rv', 'btn-difficiles-acquis']].forEach(function (r) {
+      var cyc = (state[r[2] + 'Cycle'] || []).length;
+      var done = cyc ? Math.min(state[r[2] + 'Cursor'] || 0, cyc) : 0;
+      setRow(r[0], r[1], done + ' / ' + (cyc || hardSentences), r[2],
+             hardSentences === 0, r[3]);
     });
   }
 
@@ -1920,6 +1963,7 @@
       state.sessionCount++;
       absorbNewPhrases();
       flagArgumentBatch();
+      backfillCycleClocks();
       save();
       updateHomeScreen();
     });

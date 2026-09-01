@@ -124,14 +124,14 @@ ul {
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
 .splash-title {
   font-family: var(--font-heading);
-  font-size: 2.6rem;
+  font-size: 2.15rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
   color: var(--text-heading);
   letter-spacing: 0.01em;
 }
@@ -144,7 +144,7 @@ ul {
   font-size: 1.4rem;
   color: var(--color-gold);
   letter-spacing: 0.5em;
-  margin: 0.25rem 0;
+  margin: 0;
 }
 
 .splash-subtitle {
@@ -777,10 +777,10 @@ ul {
 .home-buttons {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
   width: 100%;
-  max-width: 320px;
-  margin-top: 2rem;
+  max-width: 340px;
+  margin-top: 0.9rem;
 }
 
 .btn-home {
@@ -792,7 +792,7 @@ ul {
   border: var(--border-subtle);
   border-left: 4px solid transparent;
   border-radius: var(--radius-md);
-  padding: 1.1rem 1.4rem;
+  padding: 0.65rem 1.1rem;
   width: 100%;
   text-align: left;
   box-shadow: var(--shadow-card);
@@ -815,26 +815,29 @@ ul {
   opacity: 0.65;
 }
 
-.btn-home--primary   { border-left-color: var(--color-blue); }
-.btn-home--secondary { border-left-color: var(--color-teal); }
-.btn-home--tertiary  { border-left-color: var(--color-gold); }
+/* One colour per mode, so the six rows are told apart at a glance. */
+.btn-home--mains    { border-left-color: var(--color-blue); }
+.btn-home--acquis   { border-left-color: var(--color-teal); }
+.btn-home--appr     { border-left-color: var(--color-gold); }
+.btn-home--ecouter  { border-left-color: var(--color-amber); }
+.btn-home--reviser  { border-left-color: var(--color-sage); }
 
-.btn-home--primary   .btn-home-icon { color: var(--color-blue); }
-.btn-home--secondary .btn-home-icon { color: var(--color-teal); }
-.btn-home--tertiary  .btn-home-icon { color: var(--color-gold); }
+.btn-home--mains    .btn-home-icon { color: var(--color-blue); }
+.btn-home--acquis   .btn-home-icon { color: var(--color-teal); }
+.btn-home--appr     .btn-home-icon { color: var(--color-gold); }
+.btn-home--ecouter  .btn-home-icon { color: var(--color-amber); }
+.btn-home--reviser  .btn-home-icon { color: var(--color-sage); }
 
-/* Chercher — secondary/utility style */
-.btn-home--quaternary {
+/* Chercher isn't a practice mode — quieter, and it keeps its subtitle. */
+.btn-home--chercher {
   border-left-color: var(--color-slate);
   border-left-width: 2px;
-  padding: 0.75rem 1.1rem;
   background: var(--bg-secondary);
   box-shadow: none;
-  margin-top: 0.5rem;
 }
-.btn-home--quaternary .btn-home-icon { color: var(--color-slate); opacity: 0.45; }
-.btn-home--quaternary .btn-home-label { font-size: 1.2rem; }
-.btn-home--quaternary .btn-home-sub { opacity: 0.7; }
+.btn-home--chercher .btn-home-icon { color: var(--color-slate); opacity: 0.45; }
+.btn-home--chercher .btn-home-label { font-size: 1.2rem; }
+.btn-home--chercher .btn-home-day { opacity: 0.7; }
 
 .btn-home:disabled {
   opacity: 0.4;
@@ -854,10 +857,12 @@ ul {
   font-weight: 500;
 }
 
-.btn-home-sub {
+/* Replaces the old descriptive subtitle: which day of this cycle you're on. */
+.btn-home-day {
   font-size: 0.9rem;
   color: var(--text-secondary);
   margin-top: 0.2rem;
+  min-height: 1.1em;      /* rows stay the same height before a cycle starts */
 }
 
 /* ============================================================
@@ -1550,3 +1555,26 @@ ul {
   text-align: center;
   padding: 2rem 0;
 }
+
+/* Progrès moved out of the button list into a corner control — it is a thing
+   you glance at, not a mode you practise. */
+.btn-home-progress {
+  position: fixed;      /* stays put even if the screen ever does scroll */
+  z-index: 5;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  opacity: 0.7;
+}
+
+.btn-home-progress svg { width: 22px; height: 22px; }
+.btn-home-progress:active { opacity: 1; }
+
+#screen-home { position: relative; }
