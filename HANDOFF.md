@@ -30,7 +30,7 @@ then the user hard-refreshes. On **every** asset change:
 Skip any of these and devices keep serving stale files from the service worker.
 
 **Current versions:** `app.js?v=74`, `style.css?v=56`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v59'`.
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v60'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,11 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **Check the tag balance after editing `index.html` by slicing.** Rebuilding the
+  home block left one extra `</div>`, which closed `#app` early — every screen
+  after home ended up *outside* it, lost its layout and had to be scrolled to
+  read. A depth walk over `<div>`/`<section>` catches it instantly: every screen
+  should open at depth 1 and the file should end at 0.
 - **The home screen is six equal rows, one per mode**, each with its own colour
   and icon: Mains Libres (blue), Mes Acquis (teal), Apprentissage (gold),
   ⚑ Écouter (amber), ⚑ Réviser (sage), Chercher (slate). Progrès moved to a
