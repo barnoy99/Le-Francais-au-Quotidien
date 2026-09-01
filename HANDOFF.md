@@ -309,7 +309,7 @@ implementation, the `fq*` helpers, parameterised by a prefix:
 
 They are **independent** — listening never consumes your reviewing. Shared rules:
 
-- **Écouter reads every sentence 2×** (`ECOUTER_READS`), ×6 or not. Tapping ×6
+- **Écouter reads every sentence 3×** (`ECOUTER_READS`), ×6 or not. Tapping ×6
   during an Écouter session records the flag for the main rotation but never
   changes the current sentence's reading count.
 - **Main and alt are independent items**, shuffled apart from each other — not
