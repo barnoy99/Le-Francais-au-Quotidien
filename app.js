@@ -5,7 +5,7 @@
   var VERSION = 1;
   var SUMMARY_INTERVAL = 10;
   // ⚑ Écouter reads every sentence this many times, ×6 flag or not
-  var ECOUTER_READS = 2;
+  var ECOUTER_READS = 3;
   var ECOUTER_DONE_SPEECH = 'Félicitations ! Vous avez écouté toutes vos expressions difficiles.';
 
   var state;
