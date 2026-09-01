@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=72`, `style.css?v=54`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v57'`.
+**Current versions:** `app.js?v=73`, `style.css?v=55`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v58'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -156,6 +156,14 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   back, so quitting mid-card cannot silently skip a phrase — but only when you
   are on the newest card, since a card you browsed back to was never yours to
   hand back.
+- **French display text goes through `frDisplay()`.** French sets a space before
+  `? ! ; :` and before/after guillemets; with a breakable space the mark drops
+  onto its own line, which the enlarged Chercher type made obvious — 196 of 922
+  sentences carry one. `frDisplay()` swaps in a no-break space at **display**
+  sites only (`phrase-french`, `acquis-french`/`acquis-alt`, `handsfree-french`,
+  `chercher-fr`/`chercher-alt-fr`, `progress-phrase`). Every `speak*` call still
+  takes its text straight from `data.js`, so the TTS input is unchanged — keep it
+  that way.
 - **Mes Acquis auto-play reads the main sentence only.** It used to chain into
   the alt via `speakFrenchCb`; the alt is there to be read, not recited. Both
   callers of `playRevealed()` are the auto-play path (reveal, and switching the

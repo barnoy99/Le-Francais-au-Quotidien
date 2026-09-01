@@ -307,6 +307,16 @@
     return getMasteredPhrases().filter(function (p) { return isHard(p.id); });
   }
 
+  // French puts a space before ? ! ; : — but a breakable one lets the mark drop
+  // onto a line of its own, which the larger Chercher type made obvious (196 of
+  // 922 sentences carry one). Swap in a no-break space for DISPLAY only; every
+  // speak* call still takes its text straight from data.js.
+  function frDisplay(s) {
+    return String(s == null ? '' : s)
+      .replace(/ ([?!;:»])/g, ' $1')
+      .replace(/(«) /g, '$1 ');
+  }
+
   function findPhraseById(id) {
     for (var i = 0; i < PHRASES.length; i++) {
       if (PHRASES[i].id === id) return PHRASES[i];
@@ -348,7 +358,7 @@
   function renderPhrase(phrase) {
     currentPhrase = phrase;
     $('phrase-context').textContent = phrase.context;
-    $('phrase-french').textContent = phrase.fr;
+    $('phrase-french').textContent = frDisplay(phrase.fr);
     $('phrase-english').textContent = phrase.en;
 
     // Position through the current set, counted in sentences: one card is one
@@ -520,7 +530,7 @@
 
         var text = document.createElement('span');
         text.className = 'progress-phrase';
-        text.textContent = entry.phrase.fr;
+        text.textContent = frDisplay(entry.phrase.fr);
 
         var seen = document.createElement('span');
         seen.className = 'progress-seen';
@@ -1162,13 +1172,13 @@
       // so the "Autre exemple" block would give the answer away.
       var t = fqTexts(p, acquisExercises[acquisIndex]);
       $('acquis-english').textContent = t.en;
-      $('acquis-french').textContent = t.fr;
+      $('acquis-french').textContent = frDisplay(t.fr);
       $('acquis-alt').textContent = '';
       hide($('acquis-alt-block'));
     } else {
       $('acquis-english').textContent = p.en;
-      $('acquis-french').textContent = p.fr;
-      $('acquis-alt').textContent = p.alt_usage || '';
+      $('acquis-french').textContent = frDisplay(p.fr);
+      $('acquis-alt').textContent = frDisplay(p.alt_usage || '');
       show($('acquis-alt-block'));
     }
     // Shows progress through the current pass over your whole collection —
@@ -1711,7 +1721,7 @@
 
     // Phase 1: show both English and French immediately, EN beep, speak English
     $('handsfree-english').textContent = englishText;
-    $('handsfree-french').textContent = frenchText;
+    $('handsfree-french').textContent = frDisplay(frenchText);
     show($('handsfree-english-card'));
     show($('handsfree-french-area'));
     incrementHfSeen(p.id);
@@ -1779,7 +1789,7 @@
         // Main phrase
         var fr = document.createElement('p');
         fr.className = 'chercher-fr';
-        fr.textContent = p.fr;
+        fr.textContent = frDisplay(p.fr);
 
         var en = document.createElement('p');
         en.className = 'chercher-en';
@@ -1795,7 +1805,7 @@
 
           var altFr = document.createElement('p');
           altFr.className = 'chercher-alt-fr';
-          altFr.textContent = p.alt_usage;
+          altFr.textContent = frDisplay(p.alt_usage);
 
           var altEn = document.createElement('p');
           altEn.className = 'chercher-alt-en';

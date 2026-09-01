@@ -1452,12 +1452,13 @@ ul {
 .chercher-fr {
   font-family: var(--font-heading);
   font-style: italic;
-  font-size: 1.35rem;
+  font-size: 1.6rem;
+  line-height: 1.35;
   color: var(--text-primary);
 }
 
 .chercher-en {
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   color: var(--text-secondary);
   margin-top: 0.2rem;
 }
@@ -1471,12 +1472,13 @@ ul {
 .chercher-alt-fr {
   font-family: var(--font-heading);
   font-style: italic;
-  font-size: 1.2rem;
+  font-size: 1.45rem;
+  line-height: 1.35;
   color: var(--text-primary);
 }
 
 .chercher-alt-en {
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: var(--text-secondary);
   margin-top: 0.15rem;
 }
@@ -1490,7 +1492,7 @@ ul {
 }
 
 .chercher-stats {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--text-secondary);
 }
 
