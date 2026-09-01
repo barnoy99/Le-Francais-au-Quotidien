@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=77`, `style.css?v=57`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v63'`.
+**Current versions:** `app.js?v=78`, `style.css?v=58`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v64'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -192,6 +192,23 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   the alt via `speakFrenchCb`; the alt is there to be read, not recited. Both
   callers of `playRevealed()` are the auto-play path (reveal, and switching the
   toggle on mid-card) — the manual `#btn-tts` button is separate and untouched.
+- **Getting out of Progrès.** The list runs to hundreds of wrapped rows and the
+  header scrolled away with it, leaving no way back without scrolling to the top.
+  `.overlay-header` is now `position: sticky` inside the scrolling
+  `.overlay-content`, the close control is labelled `× Fermer` with a 44px hit
+  area, tapping the dark surround closes it, and opening resets `scrollTop` so
+  you land on the summary rather than wherever you left the list.
+- **The Progrès summary is a part-to-whole bar plus stat tiles.** The three
+  states are an ordered progression (never seen → seen → mastered), so the bar is
+  ONE hue stepped light→dark (#E0CFA8 / #C2A051 / #8A6A1C, OKLab L 0.859 → 0.720
+  → 0.542) rather than three unrelated colours — the app's own gold/sage/slate
+  failed a categorical check (normal-vision ΔE 12.4, below the 15 floor). The
+  lightest step is only 1.4:1 against the cream surface, so identity never rests
+  on colour: every segment is named with its count and percentage in the legend.
+  Segments are separated by a 2px surface gap, not a border.
+  **The headline and the legend must agree** — `mastered` excludes flagged
+  phrases (they are listed separately) so the headline now adds `difficult.length`
+  back; without that it read 133 while the legend read 150.
 - **The Progrès list is the one that truncates, not Chercher.** `.progress-phrase`
   carried `nowrap` + `text-overflow: ellipsis`, cutting **122 of 461** phrases
   off mid-sentence — and expanding a row only reveals the English, so the French

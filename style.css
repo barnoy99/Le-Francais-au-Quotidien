@@ -1633,3 +1633,108 @@ ul {
 
 #screen-phrase .phrase-divider,
 #screen-phrase #rating-buttons { flex-shrink: 0; }
+
+/* ============================================================
+   PROGRÈS — getting out, and the shape of the collection
+   ============================================================ */
+
+/* The list runs to hundreds of rows and the header scrolled away with it, so
+   there was no way back without scrolling to the top. Pin it. */
+.overlay-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-primary);
+  margin: -1.5rem -1.5rem 1rem;
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: var(--border-subtle);
+}
+
+.btn-close-labelled {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--color-accent);
+  border: 1px solid rgba(139, 45, 58, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 0 0.85rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.btn-close-labelled:active { background: var(--color-accent-light); }
+
+/* One part-to-whole bar. Segments are separated by a 2px surface gap rather
+   than a border, so the fills never touch and each end stays square-cut. */
+.progress-split {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  margin-top: 0.9rem;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.progress-split-seg { min-width: 3px; }
+
+.progress-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  margin-top: 0.6rem;
+  list-style: none;
+  padding: 0;
+}
+
+.progress-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);   /* values wear text ink, not the series colour */
+}
+
+.progress-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.progress-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.progress-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.35rem;
+  background: var(--bg-card);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.progress-tile-value {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  line-height: 1.1;
+}
+
+.progress-tile-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

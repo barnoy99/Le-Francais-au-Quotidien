@@ -494,6 +494,86 @@
 
   // ── Progress overlay ──────────────────────────────────
 
+  // Where the collection stands, as one part-to-whole bar plus the headline
+  // numbers. The three states are an ordered progression (never seen → seen →
+  // mastered), so the fill is a single hue stepped light→dark rather than three
+  // unrelated colours — and every segment carries its own label, because the
+  // lightest step sits at 1.4:1 against the cream surface and must not rely on
+  // colour alone.
+  var SPLIT_STEPS = [
+    { key: 'mastered', label: 'Maîtrisées',   color: '#8A6A1C' },
+    { key: 'seen',     label: 'Vues',         color: '#C2A051' },
+    { key: 'unseen',   label: 'Jamais vues',  color: '#E0CFA8' }
+  ];
+
+  function renderProgressSplit(active, masteredCount, phrasesSeen) {
+    var total = active.length;
+    var seenNotMastered = Math.max(0, phrasesSeen - masteredCount);
+    var unseen = Math.max(0, total - masteredCount - seenNotMastered);
+    var counts = { mastered: masteredCount, seen: seenNotMastered, unseen: unseen };
+
+    var bar = $('progress-split');
+    var legend = $('progress-legend');
+    bar.innerHTML = '';
+    legend.innerHTML = '';
+    bar.setAttribute('aria-label',
+      'Répartition : ' + SPLIT_STEPS.map(function (st) {
+        return counts[st.key] + ' ' + st.label.toLowerCase();
+      }).join(', '));
+
+    SPLIT_STEPS.forEach(function (st) {
+      var n = counts[st.key];
+      if (n > 0) {
+        var seg = document.createElement('div');
+        seg.className = 'progress-split-seg';
+        seg.style.flexGrow = n;
+        seg.style.background = st.color;
+        seg.title = st.label + ' : ' + n;   // a hover read on desktop
+        bar.appendChild(seg);
+      }
+      // The legend is the direct label, so identity never rests on colour.
+      var li = document.createElement('li');
+      var dot = document.createElement('span');
+      dot.className = 'progress-legend-dot';
+      dot.style.background = st.color;
+      var txt = document.createElement('span');
+      var pctOf = total ? Math.round((n / total) * 100) : 0;
+      txt.textContent = st.label + ' ' + n + ' (' + pctOf + ' %)';
+      li.appendChild(dot);
+      li.appendChild(txt);
+      legend.appendChild(li);
+    });
+
+    // Headline numbers that are not part of the whole, so not in the bar.
+    var boosted = 0, flagged = getHardPhrases().length;
+    for (var i = 0; i < active.length; i++) if (isBoosted(active[i].id)) boosted++;
+    var tiles = [
+      ['Expressions',        total],
+      ['Phrases',            sentenceCount(active)],
+      // in phrases (= sentences); 300 + 622 = the 922 tile, so the unit reads
+      // itself and the labels stay short enough not to wrap
+      ['Acquis',       sentenceCount(getMasteredPhrases())],
+      ['À apprendre',  sentenceCount(getLearningPhrases())],
+      ['×6',                 boosted],
+      ['⚑ Difficiles',       flagged]
+    ];
+    var box = $('progress-tiles');
+    box.innerHTML = '';
+    tiles.forEach(function (t) {
+      var tile = document.createElement('div');
+      tile.className = 'progress-tile';
+      var v = document.createElement('span');
+      v.className = 'progress-tile-value';
+      v.textContent = t[1];
+      var l = document.createElement('span');
+      l.className = 'progress-tile-label';
+      l.textContent = t[0];
+      tile.appendChild(v);
+      tile.appendChild(l);
+      box.appendChild(tile);
+    });
+  }
+
   function renderProgress() {
     var mastered = [];
     var familiar = [];
@@ -517,10 +597,12 @@
       }
     }
 
-    var masteredCount = mastered.length;
+    // A flagged phrase is still mastered — it is only listed separately below.
+    // Counting it in one place and not the other made the headline disagree
+    // with the legend.
+    var masteredCount = mastered.length + difficult.length;
     var pct = Math.round((masteredCount / active.length) * 100);
     $('progress-overview-text').textContent = masteredCount + ' / ' + active.length + ' maîtrisées (' + pct + ' %)';
-    $('progress-bar-fill').style.width = pct + '%';
 
     var totalReviews = 0;
     var totalHf = 0;
@@ -534,6 +616,8 @@
     $('progress-stats-text').textContent =
       totalReviews + ' révisions · ' + phrasesSeen + ' / ' + active.length + ' expressions vues' +
       (totalHf > 0 ? ' · ◆' + totalHf + ' Mains Libres' : '');
+
+    renderProgressSplit(active, masteredCount, phrasesSeen);
 
     var list = $('progress-list');
     list.innerHTML = '';
@@ -2329,6 +2413,15 @@
       expandedProgressId = null;
       renderProgress();
       show($('overlay-progress'));
+      // Open on the summary, not wherever the list was left last time.
+      var content = document.querySelector('#overlay-progress .overlay-content');
+      if (content) content.scrollTop = 0;
+    });
+
+    // Tapping the dark surround closes it as well, which is the gesture people
+    // reach for before hunting the button.
+    $('overlay-progress').addEventListener('click', function (e) {
+      if (e.target === this) { hide($('overlay-progress')); updateHomeScreen(); }
     });
 
     $('btn-close-progress').addEventListener('click', function () {
