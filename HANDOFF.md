@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=76`, `style.css?v=56`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v62'`.
+**Current versions:** `app.js?v=77`, `style.css?v=57`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v63'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -220,6 +220,20 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   ⚑ passes but would make this counter fall as phrases are mastered. Without
   this hook a new `data.js` is invisible until the current set runs out — weeks,
   at a few cards a day.
+- **The Apprentissage card shows both sentences**, main above and the alt below
+  a rule, with both translations behind the same tap. **×6 also sets ⚑** now
+  (`data-hard="true"` → `handleRating(..., hard)`): the flag is per phrase, so
+  one tap carries the main sentence *and* its alt into both ⚑ passes as separate
+  items. `invalidateCycles()` runs with it so the queues absorb it immediately
+  instead of waiting for the next pass.
+- **`#screen-phrase` is height-bounded and only `.phrase-scroll` scrolls.**
+  With two sentences and two translations, the longest entry in the corpus
+  pushed Supprimer 141px below the fold. The screen is now `height: 100dvh` with
+  the text area `flex: 1; overflow-y: auto` and the divider/buttons
+  `flex-shrink: 0`, so the three choices are always reachable. Scoped to this
+  screen — Chercher is a long list and must keep scrolling the page itself
+  (verified: it still does, while home / Apprentissage / Mes Acquis /
+  Mains Libres do not).
 - **Every section can look back into your last visit.** All of them resume
   mid-cycle, and their ⏮ used to walk a list rebuilt on entry, so just after
   opening a section there was nothing behind you. `fqLookback(prefix)` (ec/rv)

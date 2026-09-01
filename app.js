@@ -394,7 +394,9 @@
     currentPhrase = phrase;
     $('phrase-context').textContent = phrase.context;
     $('phrase-french').textContent = frDisplay(phrase.fr);
+    $('phrase-alt-french').textContent = frDisplay(phrase.alt_usage || '');
     $('phrase-english').textContent = phrase.en;
+    $('phrase-alt-english').textContent = phrase.alt_usage_en || '';
 
     // Position through the current set, counted in sentences: one card is one
     // phrase, and a phrase is two sentences, so this climbs 2 at a time to the
@@ -2296,7 +2298,7 @@
         var level = parseInt(this.getAttribute('data-level'), 10);
         var boostAttr = this.getAttribute('data-boost');
         var boost = boostAttr === null ? undefined : (boostAttr === 'true');
-        handleRating(level, boost, this);
+        handleRating(level, boost, this, this.getAttribute('data-hard') === 'true');
       });
     }
 
@@ -2371,7 +2373,7 @@
     });
   }
 
-  function handleRating(level, boost, chosenBtn) {
+  function handleRating(level, boost, chosenBtn, hard) {
     if (!currentPhrase) return;
 
     // disable buttons; dim all except the one chosen
@@ -2385,6 +2387,14 @@
 
     var wasNew = setPhraseData(currentPhrase.id, level);
     if (typeof boost === 'boolean') setBoost(currentPhrase.id, boost);
+    if (hard) {
+      // ⚑ is per phrase, so this carries the main sentence AND its alt into
+      // both flagged passes. It only bites once mastered, which this same tap
+      // does — so invalidateCycles lets the ⚑ queues pick it up right away
+      // rather than waiting for the next pass.
+      setHardManual(currentPhrase.id, true);
+      invalidateCycles();
+    }
     sessionSeen++;
     if (wasNew) sessionNew++;
 
