@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=84`, `style.css?v=60`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v71'`.
+**Current versions:** `app.js?v=85`, `style.css?v=60`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v72'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -257,6 +257,14 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   earlier markers are set, only the new row applies and a hand-unflagged phrase
   stays unflagged; on a fresh state all rows apply and a pre-deleted id is
   skipped.
+- **The two ⚑ passes order their sentences differently, on purpose.** ⚑ Écouter
+  builds with `fqSpread`, which forces a gap between a phrase's main and its alt
+  — hearing two near-identical sentences back to back is dull. ⚑ Réviser builds
+  with `fqPair`, which puts them side by side, main first, because recalling the
+  alt straight after the main reinforces the same expression while it is still in
+  mind. `syncFlagQueue` matches: a phrase flagged mid-pass is spliced in as a
+  pair for `'rv'`, at one insertion point. `test/queue-test.js` asserts both
+  rules per prefix — never "fix" one to match the other.
 - **⚑ difficile only bites once a phrase is mastered.** `getHardPhrases()` is
   *mastered ∩ flagged* and `fqPlayable('ec'/'rv')` requires `level === 4`, so
   flagging something still in Apprentissage changes nothing until it reaches Mes

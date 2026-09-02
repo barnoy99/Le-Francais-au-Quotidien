@@ -1019,12 +1019,30 @@
   }
 
   // `prefix` is 'ec' or 'rv' — the two passes are stored separately.
+  // ⚑ Réviser keeps a phrase's two sentences together — its main, then its alt,
+  // then on to the next phrase. Recalling the alt straight after the main
+  // reinforces the same expression while it is still in mind, instead of
+  // testing it cold twenty cards later. ⚑ Écouter keeps fqSpread: hearing two
+  // near-identical sentences back to back is dull rather than useful.
+  function fqPair(keys) {
+    var byId = {}, order = [], i;
+    for (i = 0; i < keys.length; i++) {
+      var id = fqParse(keys[i]).id;
+      if (!byId[id]) { byId[id] = []; order.push(id); }
+      byId[id].push(keys[i]);                 // fqEligibleKeys emits main then alt
+    }
+    order = shuffleIds(order);                // the phrase order is what varies
+    var out = [];
+    for (i = 0; i < order.length; i++) out = out.concat(byId[order[i]]);
+    return out;
+  }
+
   function fqCycleKey(prefix) { return prefix + 'Cycle'; }
   function fqCursorKey(prefix) { return prefix + 'Cursor'; }
 
   function fqBuildPass(prefix) {
     startCycleClock(prefix);   // a fresh pass starts its clock
-    state[fqCycleKey(prefix)] = fqSpread(fqEligibleKeys(prefix));
+    state[fqCycleKey(prefix)] = (prefix === 'rv' ? fqPair : fqSpread)(fqEligibleKeys(prefix));
     state[fqCursorKey(prefix)] = 0;
   }
 
@@ -1049,10 +1067,20 @@
       seen[k] = true;
       (i < cursor ? head : tail).push(k);
     }
-    for (var i = 0; i < order.length; i++) {       // newly flagged → still to come
+    // Newly flagged → still to come. In Réviser a phrase's sentences go in
+    // together at one insertion point, so a mid-pass flag keeps the pairing.
+    var pending = {}, pendingOrder = [];
+    for (var i = 0; i < order.length; i++) {
       if (seen[order[i]]) continue;
       seen[order[i]] = true;
-      tail.splice(Math.floor(Math.random() * (tail.length + 1)), 0, order[i]);
+      var pid = prefix === 'rv' ? fqParse(order[i]).id : order[i];
+      if (!pending[pid]) { pending[pid] = []; pendingOrder.push(pid); }
+      pending[pid].push(order[i]);
+    }
+    for (var g = 0; g < pendingOrder.length; g++) {
+      var group = pending[pendingOrder[g]];
+      var at = Math.floor(Math.random() * (tail.length + 1));
+      for (var h = 0; h < group.length; h++) tail.splice(at + h, 0, group[h]);
     }
 
     state[cycleKey] = head.concat(tail);

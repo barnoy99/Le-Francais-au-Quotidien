@@ -23,7 +23,7 @@ function extract(name) {
 }
 
 var NAMES = ['shuffleIds', 'fqKey', 'fqParse', 'fqEligibleKeys', 'fqPlayable',
-             'fqTooClose', 'fqSpread', 'fqCycleKey', 'fqCursorKey', 'fqBuildPass',
+             'fqTooClose', 'fqSpread', 'fqPair', 'fqCycleKey', 'fqCursorKey', 'fqBuildPass',
              'syncFlagQueue', 'fqTakeNext', 'fqResetPass', 'fqTexts',
              'startCycleClock', 'cycleDay'];
 var code = NAMES.map(extract).join('\n\n');
@@ -83,23 +83,38 @@ check('covers eligible', new Set(seen).size === api.ecEligibleKeys().length);
 check('completes → null', item === null);
 
 // ── 2. main/alt spacing over 300 builds ──
-var minGapSeen = Infinity, adjacent = 0;
+// Écouter spreads a phrase's two sentences apart; Réviser deliberately puts
+// them next to each other (main first), so the rule differs by pass.
+var minGapSeen = Infinity, adjacent = 0, pairs = 0, mainFirst = 0, wrongOrder = 0;
 for (var t = 0; t < 300; t++) {
   reset(ids(16));
   api.ecBuildPass();
-  var pos = {};
+  var pos = {}, prevKey = {};
   state[PREFIX+'Cycle'].forEach(function (k, idx) {
     var it = api.ecParse(k);
     if (pos[it.id] !== undefined) {
       var gap = idx - pos[it.id];
       if (gap < minGapSeen) minGapSeen = gap;
       if (gap === 1) adjacent++;
+      if (gap === 1) {
+        pairs++;
+        if (api.ecParse(prevKey[it.id]).exercise === 'main' && it.exercise === 'alt') mainFirst++;
+        else wrongOrder++;
+      }
     }
-    pos[it.id] = idx;
+    pos[it.id] = idx; prevKey[it.id] = k;
   });
 }
-check('main/alt never adjacent', adjacent === 0, adjacent + ' adjacent pairs in 300 builds');
-console.log('   smallest main→alt gap over 300 builds: ' + minGapSeen + ' slots');
+if (PREFIX === 'rv') {
+  check('Réviser puts both sentences of a phrase side by side',
+        pairs === 300 * 15, pairs + ' adjacent pairs (expected 4500: 15 phrases with an alt × 300 builds)');
+  check('and the main comes first', wrongOrder === 0, wrongOrder + ' pairs in the wrong order');
+  console.log('   Réviser: ' + mainFirst + ' main→alt pairs, none reversed');
+} else {
+  check('Écouter never puts main/alt adjacent', adjacent === 0,
+        adjacent + ' adjacent pairs in 300 builds');
+  console.log('   Écouter: smallest main→alt gap over 300 builds: ' + minGapSeen + ' slots');
+}
 
 // ── 3. resume across sessions (with the hand-back on exit) ──
 reset(ids(16));
