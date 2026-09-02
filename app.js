@@ -550,13 +550,16 @@
     // Top row is in sentences and reads as a sum: à apprendre + acquis = phrases.
     // Bottom row counts entries, not sentences — a different unit, so it is
     // tinted differently and spells the unit out.
+    // Every label is one line, so the numbers sit at the same height across all
+    // six. The two totals share the right-hand column, one being twice the
+    // other — an entry is two sentences.
     var tiles = [
-      ['À apprendre',  sentenceCount(getLearningPhrases()),  'phrases'],
+      ['Apprendre',    sentenceCount(getLearningPhrases()),  'phrases'],
       ['Acquis',       sentenceCount(getMasteredPhrases()),  'phrases'],
       ['Total',        sentenceCount(active),                'phrases'],
-      ['Expressions',  total,                                'expr.'],
       ['×6',           boosted,                              'expr.'],
-      ['⚑ Difficiles', flagged,                              'expr.']
+      ['⚑ Difficiles', flagged,                              'expr.'],
+      ['Total',        total,                                'expr.']
     ];
     var box = $('progress-tiles');
     box.innerHTML = '';
