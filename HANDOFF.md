@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=82`, `style.css?v=60`, `data.js?v=34`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v68'`.
+**Current versions:** `app.js?v=82`, `style.css?v=60`, `data.js?v=35`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v69'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -180,6 +180,13 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   calendar days, so "Jour 2" arrives the next morning, not 24h later.
   `backfillCycleClocks()` stamps already-running cycles once, so counters start
   immediately instead of waiting for each cycle to end.
+- **Never leave a concrete noun directly before a lone "I" in the English.**
+  Speech engines read that as a regnal number — *"the guy I told you about"* came
+  out as *"the guy the first told you about"*, the same rule that says *Charles I*
+  → *Charles the First*. Insert the relativizer: "the guy **that** I told you
+  about". Function words before "I" (but, if, what, because…) are safe; nine
+  sentences with `book|movie|time|thing|guy|girl|series|project + I` were fixed.
+  This is a TTS quirk, not a grammar one — the written English was correct.
 - **French display text goes through `frDisplay()`.** French sets a space before
   `? ! ; :` and before/after guillemets; with a breakable space the mark drops
   onto its own line, which the enlarged Chercher type made obvious — 196 of 922
