@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=78`, `style.css?v=58`, `data.js?v=32`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v64'`.
+**Current versions:** `app.js?v=79`, `style.css?v=59`, `data.js?v=32`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v65'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -192,6 +192,21 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   the alt via `speakFrenchCb`; the alt is there to be read, not recited. Both
   callers of `playRevealed()` are the auto-play path (reveal, and switching the
   toggle on mid-card) — the manual `#btn-tts` button is separate and untouched.
+- **The app is portrait-only.** `manifest.json` sets `"orientation": "portrait"`
+  and `lockPortrait()` calls `screen.orientation.lock` — both hold once the app
+  is installed to the home screen, but **no web API can lock a plain iOS Safari
+  tab**. So a CSS rule hides `#app` and shows `#rotate-notice` under
+  `(orientation: landscape) and (max-height: 500px)`; the height bound keeps
+  tablets and desktop untouched. Without it, landscape showed **one of six**
+  home rows.
+- **Never give the sticky Progrès header a negative top margin.** It pulls the
+  block below it up by the same amount, so the header sat 27px over the first
+  line and clipped the headline. `#overlay-progress .overlay-content` now has
+  `padding-top: 0` and the header supplies that padding itself.
+- **The Progrès tiles carry two different units** — the top row counts sentences
+  (`à apprendre + acquis = total`), the bottom row counts entries. They are
+  tinted differently and each spells its unit out, because the numbers are
+  otherwise easy to misread as the same thing. Tiles are `aspect-ratio: 1`.
 - **Getting out of Progrès.** The list runs to hundreds of wrapped rows and the
   header scrolled away with it, leaving no way back without scrolling to the top.
   `.overlay-header` is now `position: sticky` inside the scrolling

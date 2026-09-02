@@ -547,28 +547,34 @@
     // Headline numbers that are not part of the whole, so not in the bar.
     var boosted = 0, flagged = getHardPhrases().length;
     for (var i = 0; i < active.length; i++) if (isBoosted(active[i].id)) boosted++;
+    // Top row is in sentences and reads as a sum: à apprendre + acquis = phrases.
+    // Bottom row counts entries, not sentences — a different unit, so it is
+    // tinted differently and spells the unit out.
     var tiles = [
-      ['Expressions',        total],
-      ['Phrases',            sentenceCount(active)],
-      // in phrases (= sentences); 300 + 622 = the 922 tile, so the unit reads
-      // itself and the labels stay short enough not to wrap
-      ['Acquis',       sentenceCount(getMasteredPhrases())],
-      ['À apprendre',  sentenceCount(getLearningPhrases())],
-      ['×6',                 boosted],
-      ['⚑ Difficiles',       flagged]
+      ['À apprendre',  sentenceCount(getLearningPhrases()),  'phrases'],
+      ['Acquis',       sentenceCount(getMasteredPhrases()),  'phrases'],
+      ['Total',        sentenceCount(active),                'phrases'],
+      ['Expressions',  total,                                'expr.'],
+      ['×6',           boosted,                              'expr.'],
+      ['⚑ Difficiles', flagged,                              'expr.']
     ];
     var box = $('progress-tiles');
     box.innerHTML = '';
     tiles.forEach(function (t) {
       var tile = document.createElement('div');
-      tile.className = 'progress-tile';
+      tile.className = 'progress-tile progress-tile--' +
+                       (t[2] === 'phrases' ? 'phrases' : 'entries');
       var v = document.createElement('span');
       v.className = 'progress-tile-value';
       v.textContent = t[1];
+      var u = document.createElement('span');
+      u.className = 'progress-tile-unit';
+      u.textContent = t[2];
       var l = document.createElement('span');
       l.className = 'progress-tile-label';
       l.textContent = t[0];
       tile.appendChild(v);
+      tile.appendChild(u);
       tile.appendChild(l);
       box.appendChild(tile);
     });
@@ -2113,7 +2119,22 @@
 
   // ── Event binding ─────────────────────────────────────
 
+  // Keep the app upright. The manifest's "orientation": "portrait" is what
+  // actually holds once the app is installed to the home screen; this call adds
+  // the runtime lock where the browser allows it. Neither works in a plain iOS
+  // Safari tab — no web API can force orientation there — so it is wrapped and
+  // its failure ignored rather than logged.
+  function lockPortrait() {
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        var r = screen.orientation.lock('portrait');
+        if (r && r.catch) r.catch(function () {});
+      }
+    } catch (e) {}
+  }
+
   function setup() {
+    lockPortrait();
     initFirebase();
 
     // Preload voices
