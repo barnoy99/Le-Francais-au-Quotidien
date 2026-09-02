@@ -58,7 +58,7 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-469 entries / 938 sentences. Each entry is a main sentence plus an alt.
+473 entries / 946 sentences. Each entry is a main sentence plus an alt.
 
 **Argument-building entries (480–499) break the alt rule on purpose.** Everywhere
 else `alt_usage` is an independent second use of the phrase. In these twenty the
@@ -80,6 +80,14 @@ script checks this.
   subjonctif, `pourvu que`, concordance des temps, `il faut` in four tenses,
   participial absolutes, `à peine`, `s'y prendre`, `là-dedans`, `tout à fait`,
   `carrément`, `n'empêche`, `quand même`.
+- **Positive anticipation (510–513)** — added because the corpus could not make
+  the move at all: `hâte` appeared 0 times in 469 entries and `vivement` only
+  once, incidentally, inside an alt. By `context` label the split was ~20
+  friction labels to **1** positive-affect one. `j'ai hâte de` + infinitif and
+  `j'ai hâte que` + subjonctif are separate entries on purpose — the `de` form
+  only works when the subject is the same, so one without the other leaves the
+  more useful half unsayable. `j'ai pas hâte` (dread) is the same construction
+  doing the corpus's stronger job.
 - **Idioms in good health** — *ça sent le roussi*, *retourner sa veste*, *mettre
   les pieds dans le plat*, *d'autres chats à fouetter*, *anguille sous roche*.
 

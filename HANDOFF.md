@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=85`, `style.css?v=60`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v72'`.
+**Current versions:** `app.js?v=86`, `style.css?v=60`, `data.js?v=38`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v73'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -256,7 +256,9 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   marker** — a new batch gets a new row. Verified both ways: on a state where the
   earlier markers are set, only the new row applies and a hand-unflagged phrase
   stays unflagged; on a fresh state all rows apply and a pre-deleted id is
-  skipped.
+  skipped. Rows so far: `flaggedArgBatch480` (480–499, ⚑ only),
+  `promotedQuitteBatch500` (500–502), `promotedAutantBatch503` (503–509) and
+  `promotedHateBatch510` (510–513), the last three promoted.
 - **The two ⚑ passes order their sentences differently, on purpose.** ⚑ Écouter
   builds with `fqSpread`, which forces a gap between a phrase's main and its alt
   — hearing two near-identical sentences back to back is dull. ⚑ Réviser builds
@@ -524,7 +526,7 @@ mobile preset (375×812).
 
 ## 8. Current numbers (verified at handoff)
 
-- **437** entries in `data.js` = **874** sentences (every entry has an alt).
+- **473** entries in `data.js` = **946** sentences (every entry has an alt).
   After the user's in-app deletions: **~379 active** = ~758 sentences.
 - One round in Mains Libres is ~390 weighted slots ≈ 780 sentence-plays, about
   three weeks at the user's ~40/day pace.
@@ -559,7 +561,8 @@ mobile preset (375×812).
   `tout à fait`, `carrément`, `n'empêche`, `il faut` in four tenses, concordance
   des temps, participial absolutes, conversation-driving questions, home & family
   life, hosting & rapport, `dont`/`lequel`/`se faire`/`si` + plus-que-parfait/
-  reported speech, spoken connectors, travel `vous`, and a B2 domestic/parenting
+  reported speech, spoken connectors, travel `vous`, positive anticipation
+  (`j'ai hâte de` / `hâte que` + subjonctif / `vivement`), and a B2 domestic/parenting
   set (laundry, splitting the chores, the children's behaviour, bedtime, agreeing
   as a couple). Check `data.js` before adding — duplicates are easy.
 - **The user speaks French to his wife, not to his children.** Sentences aimed at
