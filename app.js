@@ -1112,7 +1112,8 @@
   var ONE_OFF_BATCHES = [
     { marker: 'flaggedArgBatch480',     from: 480, to: 499, promote: false },
     { marker: 'promotedQuitteBatch500', from: 500, to: 502, promote: true },
-    { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true }
+    { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true },
+    { marker: 'promotedAutantPlus510',   from: 510, to: 510, promote: true }
   ];
 
   function applyOneOffBatches() {
