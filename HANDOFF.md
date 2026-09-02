@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=81`, `style.css?v=60`, `data.js?v=33`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v67'`.
+**Current versions:** `app.js?v=82`, `style.css?v=60`, `data.js?v=34`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v68'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -240,12 +240,16 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   `Exercises`/`Positions` arrays aligned. It also removed the `index = 0` reset
   that ran on deleting the last card of a batch, which replayed the whole
   session from the top. Covered by `test/delete-test.js`.
-- **One-off batch promotions live in `load()`.** `flagArgumentBatch()` flags
-  480–499 ⚑; `promoteQuitteBatch()` puts 500–502 straight into Mes Acquis with
-  level 4 + ×6 + ⚑, mirroring the three writes the "×6 ⚑" button makes. Each is
-  guarded by its own marker in state (`flaggedArgBatch480`,
-  `promotedQuitteBatch500`) so it runs once and a later change sticks. Add a new
-  marker for any future batch — never reuse one.
+- **One-off batch changes live in the `ONE_OFF_BATCHES` table**, applied by
+  `applyOneOffBatches()` in `load()`. Each row is `{marker, from, to, promote}`:
+  `promote: false` sets ⚑ only (a pre-flag), `true` writes level 4 + boost + ⚑ —
+  the same three fields the "×6 ⚑" button writes, landing the batch in Mes Acquis
+  and both ⚑ passes and skipping Apprentissage. Each row runs once, guarded by
+  its own marker in state, so anything changed afterwards sticks. **Never reuse a
+  marker** — a new batch gets a new row. Verified both ways: on a state where the
+  earlier markers are set, only the new row applies and a hand-unflagged phrase
+  stays unflagged; on a fresh state all rows apply and a pre-deleted id is
+  skipped.
 - **⚑ difficile only bites once a phrase is mastered.** `getHardPhrases()` is
   *mastered ∩ flagged* and `fqPlayable('ec'/'rv')` requires `level === 4`, so
   flagging something still in Apprentissage changes nothing until it reaches Mes
@@ -319,7 +323,7 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   Each falls back to a preview of the next rotation when its cycle is empty
   (`plannedRoundSentences()` for Mains Libres, the flagged pool for the ⚑ links).
 - **The app-wide sentence total lives on the splash subtitle**, `#home-total`,
-  as `· 928 phrases` — *phrase* is French for sentence, so it reads naturally.
+  as `· 942 phrases` — *phrase* is French for sentence, so it reads naturally.
   It moved there when the buttons stopped carrying it; the home screen has no
   vertical room for a line of its own.
 - **The ⚑ links must not break mid-fraction.** `.home-links .btn-text` is

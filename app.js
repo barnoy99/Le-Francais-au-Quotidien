@@ -1104,44 +1104,37 @@
     if (added) { state.apCycle = cycle; save(); }
   }
 
-  // One-off, by request: the « quitte à » trio goes straight into Mes Acquis
-  // already ×6 and ⚑ — the same three writes the "×6 ⚑" button makes on a card.
-  // Note this skips Apprentissage, where the translation is a tap away; they
-  // arrive in recall mode instead. Runs once, so demoting one later sticks.
-  var QUITTE_BATCH_MARKER = 'promotedQuitteBatch500';
-  function promoteQuitteBatch() {
-    if (state[QUITTE_BATCH_MARKER]) return;
-    var deleted = state.deletedIds || [], n = 0;
-    for (var id = 500; id <= 502; id++) {
-      if (deleted.indexOf(id) !== -1) continue;       // already thrown out
-      if (!findPhraseById(id)) continue;              // not in this data.js yet
-      var d = getPhraseData(id);
-      writePhrase(id, { level: 4, boost: true, hardManual: true,
-                        lastSeen: Date.now(), timesSeen: (d.timesSeen || 0) + 1 });
-      n++;
-    }
-    state[QUITTE_BATCH_MARKER] = true;
-    if (n) invalidateCycles();                        // let the ⚑ queues take them
-    save();
-  }
+  // One-off batch changes, each applied once and guarded by its own marker in
+  // state, so anything you change afterwards sticks. `promote` writes the same
+  // three fields the "×6 ⚑" button does — level 4, boost, flag — which lands the
+  // batch straight in Mes Acquis and both ⚑ passes, skipping Apprentissage.
+  // Never reuse a marker: a new batch gets a new row.
+  var ONE_OFF_BATCHES = [
+    { marker: 'flaggedArgBatch480',     from: 480, to: 499, promote: false },
+    { marker: 'promotedQuitteBatch500', from: 500, to: 502, promote: true },
+    { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true }
+  ];
 
-  // One-off, by request: flag the argument-building batch (480-499) ⚑ difficile.
-  // Note this has no effect until each one is mastered — getHardPhrases() is
-  // mastered ∩ flagged and fqPlayable('ec'/'rv') needs level 4 — so it acts as a
-  // pre-flag: the moment one reaches Mes Acquis it joins the ⚑ passes. The
-  // marker makes it run once, so unflagging one later sticks.
-  var ARG_BATCH_MARKER = 'flaggedArgBatch480';
-  function flagArgumentBatch() {
-    if (state[ARG_BATCH_MARKER]) return;
-    var deleted = state.deletedIds || [], n = 0;
-    for (var id = 480; id <= 499; id++) {
-      if (deleted.indexOf(id) !== -1) continue;      // he threw it out already
-      if (!findPhraseById(id)) continue;             // not in this data.js yet
-      writePhrase(id, { hardManual: true });
-      n++;
+  function applyOneOffBatches() {
+    var deleted = state.deletedIds || [], touched = 0;
+    for (var b = 0; b < ONE_OFF_BATCHES.length; b++) {
+      var batch = ONE_OFF_BATCHES[b];
+      if (state[batch.marker]) continue;              // already run on this state
+      for (var id = batch.from; id <= batch.to; id++) {
+        if (deleted.indexOf(id) !== -1) continue;     // already thrown out
+        if (!findPhraseById(id)) continue;            // not in this data.js yet
+        if (batch.promote) {
+          var d = getPhraseData(id);
+          writePhrase(id, { level: 4, boost: true, hardManual: true,
+                            lastSeen: Date.now(), timesSeen: (d.timesSeen || 0) + 1 });
+        } else {
+          writePhrase(id, { hardManual: true });      // ⚑ only: a pre-flag
+        }
+        touched++;
+      }
+      state[batch.marker] = true;
     }
-    state[ARG_BATCH_MARKER] = true;
-    if (n) invalidateCycles();                       // let the ⚑ queues reconcile
+    if (touched) invalidateCycles();                  // let the ⚑ queues take them
     save();
   }
 
@@ -2169,8 +2162,7 @@
     load(function () {
       state.sessionCount++;
       absorbNewPhrases();
-      flagArgumentBatch();
-      promoteQuitteBatch();
+      applyOneOffBatches();
       backfillCycleClocks();
       save();
       updateHomeScreen();
