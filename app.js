@@ -1104,6 +1104,27 @@
     if (added) { state.apCycle = cycle; save(); }
   }
 
+  // One-off, by request: the « quitte à » trio goes straight into Mes Acquis
+  // already ×6 and ⚑ — the same three writes the "×6 ⚑" button makes on a card.
+  // Note this skips Apprentissage, where the translation is a tap away; they
+  // arrive in recall mode instead. Runs once, so demoting one later sticks.
+  var QUITTE_BATCH_MARKER = 'promotedQuitteBatch500';
+  function promoteQuitteBatch() {
+    if (state[QUITTE_BATCH_MARKER]) return;
+    var deleted = state.deletedIds || [], n = 0;
+    for (var id = 500; id <= 502; id++) {
+      if (deleted.indexOf(id) !== -1) continue;       // already thrown out
+      if (!findPhraseById(id)) continue;              // not in this data.js yet
+      var d = getPhraseData(id);
+      writePhrase(id, { level: 4, boost: true, hardManual: true,
+                        lastSeen: Date.now(), timesSeen: (d.timesSeen || 0) + 1 });
+      n++;
+    }
+    state[QUITTE_BATCH_MARKER] = true;
+    if (n) invalidateCycles();                        // let the ⚑ queues take them
+    save();
+  }
+
   // One-off, by request: flag the argument-building batch (480-499) ⚑ difficile.
   // Note this has no effect until each one is mastered — getHardPhrases() is
   // mastered ∩ flagged and fqPlayable('ec'/'rv') needs level 4 — so it acts as a
@@ -2149,6 +2170,7 @@
       state.sessionCount++;
       absorbNewPhrases();
       flagArgumentBatch();
+      promoteQuitteBatch();
       backfillCycleClocks();
       save();
       updateHomeScreen();

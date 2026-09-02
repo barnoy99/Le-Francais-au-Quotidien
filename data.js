@@ -520,5 +520,10 @@ var PHRASES = [
   { id: 496, fr: "Au final, ça revient au même.", en: "In the end, it comes to the same thing.", context: "Wrapping up an argument — casual", alt_usage: "On aurait mieux fait de rien changer.", alt_usage_en: "We'd have done better to change nothing." },
   { id: 497, fr: "Le truc, c'est qu'on a pas vraiment le choix.", en: "The thing is, we haven't really got a choice.", context: "Getting to the crux — casual", alt_usage: "Sinon on serait pas là à en discuter.", alt_usage_en: "Otherwise we wouldn't be here discussing it." },
   { id: 498, fr: "C'est d'autant plus embêtant qu'on avait prévenu.", en: "It's all the more annoying given that we'd warned them.", context: "d'autant plus que — casual", alt_usage: "Et personne n'a bougé, évidemment.", alt_usage_en: "And nobody lifted a finger, of course." },
-  { id: 499, fr: "En attendant, c'est nous qui payons.", en: "In the meantime, we're the ones paying.", context: "En attendant — be that as it may", alt_usage: "Ça, personne ne le dit.", alt_usage_en: "Nobody says that part out loud." }
+  { id: 499, fr: "En attendant, c'est nous qui payons.", en: "In the meantime, we're the ones paying.", context: "En attendant — be that as it may", alt_usage: "Ça, personne ne le dit.", alt_usage_en: "Nobody says that part out loud." },
+
+  // ── « quitte à » — committing while conceding the cost ────
+  { id: 500, fr: "Quitte à ce qu'il soit fâché, autant lui dire la vérité.", en: "Even if it means him being cross, we may as well tell him the truth.", context: "quitte à ce que + subjonctif", alt_usage: "Quitte à ce que ça prenne du temps, autant bien le faire.", alt_usage_en: "Even if it takes a while, we may as well do it properly." },
+  { id: 501, fr: "Je vais lui dire, quitte à le vexer.", en: "I'm going to tell him, even if it offends him.", context: "quitte à — even if it means (casual)", alt_usage: "Je préfère être clair, quitte à passer pour un rabat-joie.", alt_usage_en: "I'd rather be straight about it, even if I come across as a killjoy." },
+  { id: 502, fr: "On part maintenant, quitte à arriver en avance.", en: "We're leaving now, even if it means getting there early.", context: "quitte à — even if it means (casual)", alt_usage: "Je finis ce soir, quitte à me coucher tard.", alt_usage_en: "I'm finishing tonight, even if it means going to bed late." }
 ];

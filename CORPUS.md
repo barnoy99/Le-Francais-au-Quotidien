@@ -58,7 +58,7 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-461 entries / 922 sentences. Each entry is a main sentence plus an alt.
+464 entries / 928 sentences. Each entry is a main sentence plus an alt.
 
 **Argument-building entries (480–499) break the alt rule on purpose.** Everywhere
 else `alt_usage` is an independent second use of the phrase. In these twenty the
