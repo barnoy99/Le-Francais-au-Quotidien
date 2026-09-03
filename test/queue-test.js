@@ -23,7 +23,7 @@ function extract(name) {
 }
 
 var NAMES = ['shuffleIds', 'fqKey', 'fqParse', 'fqEligibleKeys', 'fqPlayable',
-             'fqTooClose', 'fqSpread', 'fqPair', 'fqCycleKey', 'fqCursorKey', 'fqBuildPass',
+             'fqTooClose', 'fqSpread', 'fqPair', 'fqIsPaired', 'fqCycleKey', 'fqCursorKey', 'fqBuildPass',
              'syncFlagQueue', 'fqTakeNext', 'fqResetPass', 'fqTexts',
              'startCycleClock', 'cycleDay'];
 var code = NAMES.map(extract).join('\n\n');
@@ -47,7 +47,7 @@ function save() { saves++; }
 
 var raw = eval('(function () {' + code + '\nreturn {fqTakeNext:fqTakeNext, syncFlagQueue:syncFlagQueue,' +
                ' fqResetPass:fqResetPass, fqParse:fqParse, fqEligibleKeys:fqEligibleKeys,' +
-               ' fqBuildPass:fqBuildPass, fqTexts:fqTexts, cycleDay:cycleDay};})()');
+               ' fqBuildPass:fqBuildPass, fqTexts:fqTexts, cycleDay:cycleDay, fqIsPaired:fqIsPaired};})()');
 // the suite below runs once per pass prefix ('ec' = Écouter, 'rv' = Réviser)
 var PREFIX = 'ec';
 var api = {
@@ -260,6 +260,32 @@ check('nine calendar days back reads Jour 10', raw.cycleDay('ec') === 10,
 
 state.ecStartedAt = 0;
 check('no clock yet reads 0, so the row shows nothing', raw.cycleDay('ec') === 0);
+
+// ── an old scattered Réviser pass is repaired in place ──
+if (PREFIX === 'rv') {
+  reset(ids(10));
+  raw.fqBuildPass('rv');
+  var cyc = state.rvCycle;
+  // scramble it the way fqSpread would have, and pretend 4 are already done
+  state.rvCycle = cyc.slice().sort(function () { return Math.random() - 0.5; });
+  state.rvCursor = 4;
+  var servedBefore = state.rvCycle.slice(0, 4).join(',');
+  raw.syncFlagQueue('rv');
+  var served = state.rvCycle.slice(0, state.rvCursor).join(',');
+  var tail = state.rvCycle.slice(state.rvCursor);
+  check('the part already served is untouched', served === servedBefore,
+        'served head changed: ' + served);
+  check('what is still to come gets paired', raw.fqIsPaired(tail),
+        'tail still scattered: ' + tail.join(' '));
+  check('nothing is lost or duplicated in the repair',
+        state.rvCycle.length === cyc.length &&
+        state.rvCycle.slice().sort().join() === cyc.slice().sort().join());
+  // and an already-paired pass is left exactly as it was
+  raw.fqBuildPass('rv');
+  var before = state.rvCycle.join(',');
+  raw.syncFlagQueue('rv');
+  check('an already-paired pass is not reshuffled', state.rvCycle.join(',') === before);
+}
 
 console.log('');
 if (failures.length === 0) console.log('ALL CHECKS PASSED (' + saves + ' saves)');

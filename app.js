@@ -1029,12 +1029,36 @@
     for (i = 0; i < keys.length; i++) {
       var id = fqParse(keys[i]).id;
       if (!byId[id]) { byId[id] = []; order.push(id); }
-      byId[id].push(keys[i]);                 // fqEligibleKeys emits main then alt
+      byId[id].push(keys[i]);
     }
     order = shuffleIds(order);                // the phrase order is what varies
     var out = [];
-    for (i = 0; i < order.length; i++) out = out.concat(byId[order[i]]);
+    for (i = 0; i < order.length; i++) {
+      // Main before alt, explicitly: this also runs over an already-scattered
+      // pass being repaired, where the input order cannot be relied on.
+      var group = byId[order[i]].slice().sort(function (a, b) {
+        return (fqParse(a).exercise === 'main' ? 0 : 1) -
+               (fqParse(b).exercise === 'main' ? 0 : 1);
+      });
+      out = out.concat(group);
+    }
     return out;
+  }
+
+  // Is every main immediately followed by its own alt? Used to spot a Réviser
+  // pass laid out before pairing existed, so it can be corrected in place.
+  function fqIsPaired(list) {
+    var hasAlt = {}, i;
+    for (i = 0; i < list.length; i++) {
+      if (fqParse(list[i]).exercise === 'alt') hasAlt[fqParse(list[i]).id] = true;
+    }
+    for (i = 0; i < list.length; i++) {
+      var a = fqParse(list[i]);
+      if (a.exercise !== 'main' || !hasAlt[a.id]) continue;
+      var b = i + 1 < list.length ? fqParse(list[i + 1]) : null;
+      if (!b || b.id !== a.id || b.exercise !== 'alt') return false;
+    }
+    return true;
   }
 
   function fqCycleKey(prefix) { return prefix + 'Cycle'; }
@@ -1082,6 +1106,11 @@
       var at = Math.floor(Math.random() * (tail.length + 1));
       for (var h = 0; h < group.length; h++) tail.splice(at + h, 0, group[h]);
     }
+
+    // A Réviser pass built before pairing existed has its sentences scattered.
+    // Re-pair only what is still to come, so the correction lands immediately
+    // without throwing away the position you had reached.
+    if (prefix === 'rv' && !fqIsPaired(tail)) tail = fqPair(tail);
 
     state[cycleKey] = head.concat(tail);
     state[cursorKey] = head.length;
