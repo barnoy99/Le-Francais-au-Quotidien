@@ -297,12 +297,17 @@
     return nowHard;
   }
 
-  // How many copies of a phrase go into one rotation cycle.
+  // How many times a phrase appears in one Mains Libres round. ×6 and ⚑ solve
+  // different problems and are not multiplied together: ×6 is a production
+  // problem (saying it comfortably), already answered by more READS per
+  // appearance (6 vs 3, in handsfreeStep) — it does not need more appearances.
+  // ⚑ is a retrieval problem (finding it cold), which more reads cannot fix;
+  // only meeting it again, separately, does — so it needs more appearances.
+  // Flagged therefore wins outright when both apply: 3 appearances, not 4.
   function cycleCopies(id) {
-    var n = 1;
-    if (isBoosted(id)) n *= 2;
-    if (isHard(id)) n *= 2;
-    return n;
+    if (isHard(id)) return 3;
+    if (isBoosted(id)) return 2;
+    return 1;
   }
 
   function getHardPhrases() {

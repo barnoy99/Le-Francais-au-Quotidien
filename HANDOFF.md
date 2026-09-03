@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=86`, `style.css?v=60`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v73'`.
+**Current versions:** `app.js?v=87`, `style.css?v=60`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v74'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -171,6 +171,16 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   buttons, so the title and row padding were tightened to buy the space back.
 - **⚑ rows dim in place rather than disappearing.** They are `disabled` when
   nothing is flagged *and mastered*, so the list never changes shape.
+- **`cycleCopies(id)` no longer multiplies ×6 and ⚑ — it picks one.** Flagged
+  wins outright: `hard ? 3 : (boosted ? 2 : 1)`. Reasoning, by his own model: ×6
+  is a *production* problem (saying it comfortably), already answered by more
+  READS per appearance (6 vs 3, in `handsfreeStep`) — it does not need more
+  appearances. ⚑ is a *retrieval* problem (finding it cold), which more reads
+  cannot fix; only meeting it again, separately, does. So a phrase that is both
+  gets **3** appearances, not 4 — the old `n *= 2; n *= 2` formula. Verified in
+  the browser against a clean 4-phrase pool (one of each combination, batch
+  markers pre-set so the one-off promotions do not contaminate it): the built
+  `hfCycle` held exactly 1/2/3/3 copies.
 - **Every rotation has a cycle clock.** `startCycleClock(key)` /
   `cycleDay(key)` back the "Jour N" line, stamped in `fqBuildPass` (ec/rv/ap)
   and in `takeFromCycle` (hf/acq). In `takeFromCycle` the stamp is guarded by
