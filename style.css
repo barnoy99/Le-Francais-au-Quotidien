@@ -147,13 +147,34 @@ ul {
   margin: 0;
 }
 
+/* Four figures in two clusters. Each cluster is nowrap with its own gold
+   interpunct inside, so a wrap can only happen between the clusters — never
+   mid-cluster, and never leaving a dangling dot at a line end. */
 .splash-subtitle {
-  font-size: 1.05rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.1rem 1.1rem;
+  font-size: 0.98rem;
   color: var(--text-secondary);
   font-style: italic;
   font-family: var(--font-heading);
   font-weight: 400;
 }
+
+.splash-group { white-space: nowrap; }
+
+.splash-stat + .splash-stat::before {
+  content: '·';
+  color: var(--color-gold);
+  margin: 0 0.35rem;
+  font-style: normal;
+}
+
+/* The day figures are a different kind of fact from the collection totals —
+   they move, the totals barely do — so they wear the accent ink. */
+.splash-group--day { color: var(--color-accent); }
 
 .splash-tap {
   font-size: 0.85rem;
@@ -1759,6 +1780,63 @@ ul {
 }
 
 .progress-tile--phrases .progress-tile-unit { color: var(--color-gold); opacity: 1; }
+
+/* Sentences met per day. One series, so one colour, stepped from the same gold
+   family as the split bar; the day still in progress takes the lighter step and
+   is also named in the summary, so the distinction never rests on shade alone.
+   Bars carry no value labels, so the summary line below supplies the numbers. */
+.progress-days { margin-top: 1.3rem; }
+
+.progress-days-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.progress-days-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  height: 78px;
+  margin-top: 0.5rem;
+}
+
+.progress-day {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.progress-day-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.progress-day-bar {
+  width: 100%;
+  min-height: 2px;
+  background: #8A6A1C;
+  border-radius: 2px 2px 0 0;
+}
+
+.progress-day--today .progress-day-bar { background: #C2A051; }
+
+.progress-day-label {
+  font-size: 0.55rem;
+  text-align: center;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 3px;
+}
+
+.progress-days-summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.45rem;
+}
 
 .progress-tile-label {
   font-size: 0.68rem;

@@ -102,6 +102,7 @@
              ecCycle: [], ecCursor: 0,
              rvCycle: [], rvCursor: 0,
              apCycle: [], apCursor: 0,
+             dayDate: '', dayFirst: '', daySeen: {}, dayHistory: {},
              acquisAutoPlay: false };
   }
 
@@ -262,6 +263,97 @@
     writePhrase(id, { hfSeen: (getPhraseData(id).hfSeen || 0) + 1 });
   }
 
+  // ── Daily exposure ─────────────────────────────────────
+  //
+  // How many *different* sentences crossed your eyes on a given day — distinct,
+  // not appearances. ⏮ replays a card, entering a session preloads the five you
+  // last saw, and a ×6/⚑ phrase holds two or three slots in one Mains Libres
+  // round; none of that is fresh exposure. Chercher does not count at all, since
+  // one scroll to the bottom of the results would add hundreds in ten seconds.
+  //
+  // The rollover is lazy on purpose: the phone is asleep at local midnight and
+  // the app is not running, so a day is closed on the first look after the date
+  // has turned rather than by a timer that would never fire.
+
+  var DAY_HISTORY = 14;   // days kept behind today, for the Progrès chart
+
+  function dayStamp(t) {
+    var d = new Date(t), m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m +
+                             '-' + (day < 10 ? '0' : '') + day;
+  }
+
+  // n days from today, read at midday so a daylight-saving shift can never
+  // land the arithmetic on the wrong date.
+  function dayStampShift(n) {
+    var d = new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() + n);
+    return dayStamp(d.getTime());
+  }
+
+  function countKeys(map) {
+    var n = 0;
+    for (var k in map) { if (map[k]) n++; }
+    return n;
+  }
+
+  // Closes the previous day into the history if the date has turned. Returns
+  // true when it changed something, so the caller knows to save.
+  function rollDay() {
+    var today = dayStamp(Date.now());
+    if (state.dayDate === today) return false;
+    if (!state.dayHistory) state.dayHistory = {};
+    if (state.dayDate) state.dayHistory[state.dayDate] = countKeys(state.daySeen);
+    else state.dayFirst = today;          // the day the counter started running
+    var stamps = Object.keys(state.dayHistory).sort();   // ISO dates sort by date
+    while (stamps.length > DAY_HISTORY) delete state.dayHistory[stamps.shift()];
+    state.dayDate = today;
+    state.daySeen = {};
+    return true;
+  }
+
+  // One sentence packed into a single number, so the day's set stays small in
+  // the synced blob: the main sentence is even, its alt is odd.
+  function dayKey(id, exercise) { return id * 2 + (exercise === 'alt' ? 1 : 0); }
+
+  function markDaySeen(id, exercise) {
+    var changed = rollDay();
+    if (!state.daySeen) state.daySeen = {};
+    var key = dayKey(id, exercise);
+    if (!state.daySeen[key]) { state.daySeen[key] = 1; changed = true; }
+    if (changed) save();
+  }
+
+  // Today, yesterday, and the run of days behind them. Everything that displays
+  // a day figure reads it through here, so the rollover always happens first.
+  // `yesterday` is null only for a day before the counter existed — a day you
+  // simply did not practise is a real zero and says so.
+  function daySnapshot() {
+    if (rollDay()) save();
+    var history = state.dayHistory || {};
+    var today = state.dayDate;
+    var first = state.dayFirst || today;
+    var edge = dayStampShift(-(DAY_HISTORY - 1));
+    if (first < edge) first = edge;
+    var days = [], stamp, n;
+    for (n = -(DAY_HISTORY - 1); n <= 0; n++) {
+      stamp = dayStampShift(n);
+      if (stamp < first) continue;
+      days.push({
+        stamp: stamp,
+        today: stamp === today,
+        count: stamp === today ? countKeys(state.daySeen) : (history[stamp] || 0)
+      });
+    }
+    var y = dayStampShift(-1);
+    return {
+      today: countKeys(state.daySeen),
+      yesterday: (state.dayFirst && y >= state.dayFirst) ? (history[y] || 0) : null,
+      days: days
+    };
+  }
+
   // ── ×6 boost flag (persistent per phrase, covers main + alt) ──
 
   function isBoosted(id) {
@@ -397,6 +489,9 @@
 
   function renderPhrase(phrase) {
     currentPhrase = phrase;
+    // Both sentences are on the card at once, so both count for the day.
+    markDaySeen(phrase.id, 'main');
+    markDaySeen(phrase.id, 'alt');
     $('phrase-context').textContent = phrase.context;
     $('phrase-french').textContent = frDisplay(phrase.fr);
     $('phrase-alt-french').textContent = frDisplay(phrase.alt_usage || '');
@@ -588,6 +683,71 @@
     });
   }
 
+  // Sentences met per day, over the days the counter has actually been running.
+  // One series, so one colour — and the day still in progress is the lighter
+  // step of that same hue *and* is named in the summary line, so the difference
+  // never rests on the shade alone. The bars are unlabelled, so the summary
+  // carries the numbers you would otherwise have to read off them.
+  function renderProgressDays() {
+    var snap = daySnapshot();
+    var days = snap.days;
+    var box = $('progress-days');
+    var any = false, peak = 0, i;
+    for (i = 0; i < days.length; i++) {
+      if (days[i].count > 0) any = true;
+      if (days[i].count > peak) peak = days[i].count;
+    }
+    // Nothing recorded yet — an axis of empty bars would say less than nothing.
+    if (!any) { hide(box); return; }
+    show(box);
+
+    var chart = $('progress-days-chart');
+    chart.innerHTML = '';
+    chart.setAttribute('aria-label', 'Exposition quotidienne : ' +
+      days.map(function (d) {
+        return parseInt(d.stamp.slice(8), 10) + '/' + parseInt(d.stamp.slice(5, 7), 10) +
+               ' ' + d.count;
+      }).join(', '));
+
+    days.forEach(function (d) {
+      var col = document.createElement('div');
+      col.className = 'progress-day' + (d.today ? ' progress-day--today' : '');
+      col.title = d.stamp + ' : ' + d.count;
+      var track = document.createElement('div');
+      track.className = 'progress-day-track';
+      var bar = document.createElement('div');
+      bar.className = 'progress-day-bar';
+      bar.style.height = (peak ? Math.max(2, Math.round((d.count / peak) * 100)) : 2) + '%';
+      var lab = document.createElement('span');
+      lab.className = 'progress-day-label';
+      lab.textContent = parseInt(d.stamp.slice(8), 10);
+      track.appendChild(bar);
+      col.appendChild(track);
+      col.appendChild(lab);
+      chart.appendChild(col);
+    });
+
+    // The streak counts back from the end, but a day still in progress can only
+    // extend it — never break it, since the day is not over yet.
+    var streak = 0;
+    for (i = days.length - 1; i >= 0; i--) {
+      if (days[i].count > 0) streak++;
+      else if (!days[i].today) break;
+    }
+
+    // The average is over finished days only; today is partial and would drag
+    // it down all morning.
+    var settled = days.filter(function (d) { return !d.today; });
+    var basis = settled.length ? settled : days;
+    var sum = 0;
+    for (i = 0; i < basis.length; i++) sum += basis[i].count;
+
+    var parts = ['Moyenne ' + Math.round(sum / basis.length) + ' / jour'];
+    if (streak > 1) parts.push('série de ' + streak + ' jours');
+    parts.push("aujourd'hui " + snap.today);
+    $('progress-days-summary').textContent = parts.join(' · ');
+  }
+
   function renderProgress() {
     var mastered = [];
     var familiar = [];
@@ -632,6 +792,7 @@
       (totalHf > 0 ? ' · ◆' + totalHf + ' Mains Libres' : '');
 
     renderProgressSplit(active, masteredCount, phrasesSeen);
+    renderProgressDays();
 
     var list = $('progress-list');
     list.innerHTML = '';
@@ -1230,15 +1391,38 @@
     return activePhrases().filter(function (p) { return !mastered[p.id]; });
   }
 
+  // The subtitle carries four figures in two clusters: what the collection is,
+  // and what the last two days looked like. They are separate elements so the
+  // line can only wrap *between* them — and the seam it breaks on is the
+  // meaningful one, collection above, day below. "Phrase" is French for
+  // sentence, so counting alts as phrases is honest.
+  function renderHomeStats(masteredSentences) {
+    var snap = daySnapshot();
+    var clusters = [
+      [sentenceCount(activePhrases()) + ' phrases', masteredSentences + ' acquises'],
+      [(snap.yesterday === null ? '—' : snap.yesterday) + ' hier',
+       snap.today + " aujourd'hui"]
+    ];
+    var box = $('home-stats');
+    box.innerHTML = '';
+    clusters.forEach(function (stats, ci) {
+      var group = document.createElement('span');
+      group.className = 'splash-group' + (ci ? ' splash-group--day' : '');
+      stats.forEach(function (text) {
+        var el = document.createElement('span');
+        el.className = 'splash-stat';
+        el.textContent = text;
+        group.appendChild(el);
+      });
+      box.appendChild(group);
+    });
+  }
+
   function updateHomeScreen() {
     var mastered = getMasteredPhrases();
     var count = mastered.length;
-    // Every button now counts progress through its own rotation, so none of
-    // them carries the app-wide total. It rides on the subtitle instead —
-    // "phrase" is French for sentence, so the wording is honest.
-    var total = sentenceCount(activePhrases());
-    $('home-total').textContent = ' · ' + total + ' phrases';
     var masteredSentences = sentenceCount(mastered);
+    renderHomeStats(masteredSentences);
     var learningSentences = sentenceCount(getLearningPhrases());
 
     // Each row shows the figure its own screen shows, so the number continues
@@ -1446,11 +1630,14 @@
       // One sentence per card — main and alt are separate items in the pass,
       // so the "Autre exemple" block would give the answer away.
       var t = fqTexts(p, acquisExercises[acquisIndex]);
+      markDaySeen(p.id, acquisExercises[acquisIndex]);
       $('acquis-english').textContent = t.en;
       $('acquis-french').textContent = frDisplay(t.fr);
       $('acquis-alt').textContent = '';
       hide($('acquis-alt-block'));
     } else {
+      markDaySeen(p.id, 'main');
+      markDaySeen(p.id, 'alt');   // the alt block is on the card too
       $('acquis-english').textContent = p.en;
       $('acquis-french').textContent = frDisplay(p.fr);
       $('acquis-alt').textContent = frDisplay(p.alt_usage || '');
@@ -2010,6 +2197,7 @@
     }
 
     // Phase 1: show both English and French immediately, EN beep, speak English
+    markDaySeen(p.id, handsfreeExercise);
     $('handsfree-english').textContent = englishText;
     $('handsfree-french').textContent = frDisplay(frenchText);
     show($('handsfree-english-card'));

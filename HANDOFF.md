@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=87`, `style.css?v=60`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v74'`.
+**Current versions:** `app.js?v=88`, `style.css?v=61`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v75'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -44,6 +44,8 @@ new `?v=N` — pushed is not deployed.
 ```
 node test/queue-test.js     # the ⚑ flagged passes
 node test/sync-test.js      # which device's state wins a cross-device merge
+node test/delete-test.js    # a deleted phrase leaves an in-flight batch
+node test/day-test.js       # the per-day exposure counter (§3, §6)
 ```
 
 Covers the ⚑ flagged-pass queue (`fq*` in `app.js`) for both prefixes: a pass
@@ -108,6 +110,9 @@ state = {
   ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
   rvCycle: ["id:main"|"id:alt"], rvCursor,       // ⚑ Réviser pass, §5a
   apCycle: ["id:main"], apCursor,                // Apprentissage set, §4
+  dayDate: "YYYY-MM-DD", daySeen: {key:1},       // today's distinct sentences
+  dayFirst: "YYYY-MM-DD",                        // when the counter started
+  dayHistory: { "YYYY-MM-DD": n },               // last 14 closed days
   acquisAutoPlay: bool,                          // "auto" toggle, §5b
   updatedAt, settingsAt                          // merge stamps, §7.4
 }
@@ -120,6 +125,20 @@ state = {
   vestigial (an auto-scoring experiment that was removed).
 - **All phrase writes must go through `writePhrase(id, changes)`** — it merges,
   so no field gets silently dropped. Don't rebuild the record inline.
+- **Daily exposure** (`daySeen` / `dayHistory`): how many *different* sentences
+  were shown on a day. The key packs one sentence into a number — `id*2` for the
+  main, `id*2+1` for the alt — so a full day costs ~3 KB in the synced blob.
+  Distinct, never appearances: ⏮ replays a card, entering a session preloads the
+  five you last saw, and a ×6/⚑ phrase holds two or three slots in one Mains
+  Libres round. Three call sites cover every mode — `renderPhrase`
+  (Apprentissage, marks main **and** alt, both are on the card), `renderAcquis`
+  (Mes Acquis marks both, ⚑ Réviser marks the one sentence on the card) and
+  `handsfreeStep` (Mains Libres / ⚑ Écouter, the one sentence on screen).
+  **Chercher deliberately does not count** — one scroll of the results would add
+  hundreds. The midnight rollover is lazy (`rollDay`, called from every read and
+  write): the phone is asleep at midnight, so the day is closed on the next look.
+  `yesterday === null` means *before the counter existed* and prints `—`; a day
+  you simply skipped is a real `0`. Guarded by `test/day-test.js`.
 
 ---
 
@@ -242,6 +261,17 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   **The headline and the legend must agree** — `mastered` excludes flagged
   phrases (they are listed separately) so the headline now adds `difficult.length`
   back; without that it read 133 while the legend read 150.
+- **The Progrès daily chart** (`renderProgressDays`, §3) draws sentences met per
+  day over however many days the counter has actually run — never a fixed
+  fourteen, so a young counter shows three bars rather than eleven empty ones,
+  and the whole block hides itself until something has been recorded. One series
+  → one colour, from the same gold family as the split bar: settled days #8A6A1C,
+  the day still in progress #C2A051. That lighter step is *also* named in the
+  summary line (`aujourd'hui 88`), so the distinction never rests on shade alone,
+  and since the bars carry no value labels the summary supplies the numbers.
+  The average is over **finished days only** — today is partial and would drag it
+  down all morning — and the streak counts back from the end, where a day still
+  in progress can extend it but never break it.
 - **The Progrès list is the one that truncates, not Chercher.** `.progress-phrase`
   carried `nowrap` + `text-overflow: ellipsis`, cutting **122 of 461** phrases
   off mid-sentence — and expanding a row only reveals the English, so the French
@@ -353,10 +383,16 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   un-rated card back — the others' cursors already sit on what has been served.
   Each falls back to a preview of the next rotation when its cycle is empty
   (`plannedRoundSentences()` for Mains Libres, the flagged pool for the ⚑ links).
-- **The app-wide sentence total lives on the splash subtitle**, `#home-total`,
-  as `· 938 phrases` — *phrase* is French for sentence, so it reads naturally.
-  It moved there when the buttons stopped carrying it; the home screen has no
-  vertical room for a line of its own.
+- **The splash subtitle is the app's stat line**, `#home-stats`, built by
+  `renderHomeStats()` as four figures in two clusters: `864 phrases · 542
+  acquises` then `330 hier · 88 aujourd'hui`. *Phrase* is French for sentence,
+  so counting alts as phrases reads naturally. The tagline it replaced said
+  nothing the app didn't already show. Each cluster is a `.splash-group` with
+  `white-space: nowrap` and its interpuncts *inside* it, and the `<p>` is a
+  wrapping flexbox — so at 375px the line can only break between the collection
+  figures and the day figures (the meaningful seam), and a wrap can never strand
+  a dot at a line end. The day pair wears `--color-accent` because it is a
+  different kind of fact: it moves, the totals barely do.
 - **The ⚑ links must not break mid-fraction.** `.home-links .btn-text` is
   `white-space: nowrap` and `.home-links` is `flex-wrap: wrap`, so Progrès drops
   to a second line at 375px instead of splitting a label.
