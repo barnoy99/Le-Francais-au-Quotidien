@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=89`, `style.css?v=63`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v77'`.
+**Current versions:** `app.js?v=90`, `style.css?v=64`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v78'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -66,7 +66,7 @@ collisions have happened; check the max id after pulling.
 | Mode | What it is |
 |---|---|
 | **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. Three inline choices: **Plus tard** (pure navigation — writes nothing), **×6 — Mes Acquis** (the only rating left; there is no ×3 and no *Pas encore*) and **Supprimer**. Only buttons carrying `data-level` reach `handleRating` — the other two share `.rating-btn` for styling only. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. **⏮ / ⏭ walk the set itself**, so ⏮ reaches cards served on an earlier visit or another device. No sticky bottom bar on this screen. |
-| **Mes Acquis** | Recall practice over mastered phrases. English prompt → **Révéler** → French + alt + TTS. Keyboard: ← prev, → next, space reveals. |
+| **Mes Acquis** | Recall practice over mastered phrases. English prompt → **tap the screen** → French + alt + TTS; the next tap advances. Swipe left/right = next/previous. Keyboard: ← prev, → next, space reveals. |
 | **Mains Libres** | Hands-free audio drill of the mastered pool. Wake-lock, TTS. |
 | **Chercher** | Search all phrases; move between pools (→ Acquis ×3 / ×6 / Apprentissage), toggle **Difficile**, delete. |
 
@@ -261,6 +261,25 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   **The headline and the legend must agree** — `mastered` excludes flagged
   phrases (they are listed separately) so the headline now adds `difficult.length`
   back; without that it read 133 while the legend read 150.
+- **Gestures are the only touch handling in the app** (`bindSwipe`, `inControl`,
+  `swallowNextClick` in §Event binding). Taps go through `click`, never
+  `touchend`, so a mouse and a finger take one path and a tap can never fire
+  twice; the touch handlers exist only to *suppress* the click the browser
+  synthesises after a swipe — without that, a swipe would also reveal the card
+  or flip Apprentissage's translation. A swipe must be one finger, ≥ 50px
+  across, and more across than down: Apprentissage's `.phrase-scroll` scrolls
+  vertically and a scroll that drifts sideways must not move a card.
+  `touchstart` is passive (it must not block scrolling); `touchend` is not,
+  because it calls `preventDefault`.
+  **Mes Acquis / ⚑ Réviser have no Révéler button** — a tap on the body of the
+  screen reveals, and the next tap advances, so a run of cards is a run of taps.
+  `Suivant` stays in the bar as the unambiguous version and as the right-hand
+  anchor of the bar's `auto auto 1fr` grid. `inControl` walks up to `<body>`
+  looking for a button, so the ×6 pill, ⚑, the speaker and `auto` keep their own
+  jobs. The tap is bound to `.phrase-content`, which already excludes the header
+  and the bottom bar.
+  Apprentissage gets the swipes only — both its sentences are on the card, so
+  there is nothing to reveal.
 - **The Progrès daily chart** (`renderProgressDays`, §3) draws sentences met per
   day over however many days the counter has actually run — never a fixed
   fourteen, so a young counter shows three bars rather than eleven empty ones,
@@ -506,7 +525,7 @@ default. When armed, `revealAcquis` speaks the sentence: in ⚑ Réviser the sin
 sentence on the card; in the normal rotation the main sentence and then its alt,
 chained off the first one's `onend` and abandoned if you advance or leave.
 Tapping it while a card is already revealed plays immediately, so the toggle
-proves itself without waiting for the next Révéler.
+proves itself without waiting for the next card.
 
 Placement was forced by measurement, not taste — see §6.
 

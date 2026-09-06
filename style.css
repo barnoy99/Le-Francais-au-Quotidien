@@ -949,6 +949,17 @@ ul {
   width: 100%;
 }
 
+/* Stands where the Révéler button did. It keeps roughly that block's height so
+   the revealed card does not jump up the screen when you tap. */
+.acquis-reveal-hint {
+  padding: 0.85rem 0;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  text-align: center;
+}
+
 .acquis-revealed {
   width: 100%;
   animation: slide-up 0.3s ease;

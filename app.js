@@ -2406,8 +2406,65 @@
     } catch (e) {}
   }
 
+  // ── Gestures ────────────────────────────────────────────
+  //
+  // The only touch gestures in the app, so there was nothing to conflict with.
+  // A swipe has to be unmistakable before it moves a card: one finger, at least
+  // SWIPE_MIN across, and more across than down — Apprentissage's card scrolls
+  // vertically and a scroll that drifts sideways must not flip the card.
+  //
+  // Taps are handled by `click`, not by touchend, so a mouse and a finger take
+  // the same path and a tap can never fire twice. The touch handlers only
+  // *suppress* the click the browser synthesises after a swipe — without that,
+  // swiping would also reveal or advance whatever sat under the finger.
+
+  var SWIPE_MIN = 50;    // px across before a drag counts as a swipe
+  var eatClick = false;  // one click to swallow, set by a completed swipe
+
+  function swallowNextClick() {
+    eatClick = true;
+    setTimeout(function () { eatClick = false; }, 400);
+  }
+
+  // Anything inside a control keeps its own behaviour — the ×6 pill, the
+  // speaker, Suivant — so a screen-wide tap never steals a real button press.
+  function inControl(node) {
+    while (node && node !== document.body) {
+      if (node.tagName === 'BUTTON' || node.tagName === 'A') return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
+
+  function bindSwipe(el, onLeft, onRight) {
+    var x0 = 0, y0 = 0, live = false;
+    el.addEventListener('touchstart', function (e) {
+      live = e.touches.length === 1;
+      if (!live) return;
+      x0 = e.touches[0].clientX;
+      y0 = e.touches[0].clientY;
+    }, { passive: true });
+    el.addEventListener('touchend', function (e) {
+      if (!live) return;
+      live = false;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) <= Math.abs(dy)) return;
+      e.preventDefault();
+      swallowNextClick();
+      if (dx < 0) onLeft(); else onRight();
+    }, { passive: false });
+  }
+
   function setup() {
     lockPortrait();
+    // Capture phase, so the swallowed click never reaches the element under it.
+    document.addEventListener('click', function (e) {
+      if (!eatClick) return;
+      eatClick = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }, true);
     initFirebase();
 
     // Preload voices
@@ -2584,8 +2641,26 @@
       updateSixButton();
     });
 
-    // Acquis mode buttons
-    $('btn-reveler').addEventListener('click', revealAcquis);
+    // Acquis: the card itself is the control. A tap on the body of the screen
+    // reveals, and once revealed the next tap advances — so a run of cards is a
+    // run of taps. Suivant stays in the bar as the unambiguous version, and
+    // anything inside a button keeps its own job.
+    $('screen-acquis').querySelector('.phrase-content')
+      .addEventListener('click', function (e) {
+        if (inControl(e.target)) return;
+        if ($('acquis-revealed').classList.contains('hidden')) revealAcquis();
+        else { acquisIndex++; showAcquisPhrase(); }
+      });
+
+    // Swipe left for the next card, right for the previous one — the same two
+    // moves the ⏮ / ⏭ header buttons make.
+    bindSwipe($('screen-acquis'),
+      function () { acquisIndex++; showAcquisPhrase(); },
+      function () { if (acquisIndex > 0) { acquisIndex--; showAcquisPhrase(); } });
+
+    // Apprentissage shows both sentences at once, so there is nothing to
+    // reveal — only the same two moves as its ⏮ / ⏭.
+    bindSwipe($('screen-phrase'), advance, phrasePrev);
 
     $('btn-tts').addEventListener('click', function () {
       var p = acquisPhrases[acquisIndex];
@@ -2602,7 +2677,7 @@
       var on = toggleAutoPlay();
       updateAutoButton();
       // turning it on mid-card plays what's already revealed, so the toggle
-      // proves itself straight away instead of waiting for the next Révéler
+      // proves itself straight away instead of waiting for the next card
       if (on && !$('acquis-revealed').classList.contains('hidden')) playRevealed();
       else if (!on && 'speechSynthesis' in window) speechSynthesis.cancel();
     });

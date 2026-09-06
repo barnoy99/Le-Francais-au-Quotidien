@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=63">
+  <link rel="stylesheet" href="style.css?v=64">
 </head>
 <body>
   <div id="app">
@@ -181,14 +181,14 @@
       <div class="phrase-content">
         <div class="acquis-context-row">
           <p id="acquis-context" class="phrase-context"></p>
-          <button id="btn-acquis-auto" class="btn-auto" aria-label="Lecture automatique" title="Lecture automatique après Révéler">auto</button>
+          <button id="btn-acquis-auto" class="btn-auto" aria-label="Lecture automatique" title="Lecture automatique à la révélation">auto</button>
         </div>
         <div class="acquis-prompt-card">
           <p id="acquis-english" class="acquis-english"></p>
         </div>
         <div class="phrase-divider">✦</div>
         <div id="acquis-reveal-area" class="acquis-reveal-area">
-          <button id="btn-reveler" class="btn-primary">Révéler</button>
+          <p class="acquis-reveal-hint">Touchez l'écran pour révéler</p>
         </div>
         <div id="acquis-revealed" class="acquis-revealed hidden">
           <div class="acquis-french-card">
@@ -325,6 +325,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=37"></script>
-  <script src="app.js?v=89"></script>
+  <script src="app.js?v=90"></script>
 </body>
 </html>
