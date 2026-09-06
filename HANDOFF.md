@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=89`, `style.css?v=62`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v76'`.
+**Current versions:** `app.js?v=89`, `style.css?v=63`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v77'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -393,9 +393,11 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   figures and the day figures (the meaningful seam), and a wrap can never strand
   a dot at a line end. The day pair wears `--color-accent` because it is a
   different kind of fact: it moves, the totals barely do. Each figure is its own
-  `.splash-num` at `1.22em` / weight 600 in `--text-primary` — the number is the
-  content, the word after it only says what it counts, so the two are sized
-  apart rather than the whole line being scaled up.
+  `.splash-num` at `1.45em` / weight 600 in `--text-primary` (27px against the
+  labels' 19px) — the number is the content, the word after it only says what it
+  counts, so the two are sized apart rather than the whole line being scaled up.
+  At 375×812 that still leaves 41px of clearance below Chercher, so the home
+  screen does not scroll.
 - **The ⚑ links must not break mid-fraction.** `.home-links .btn-text` is
   `white-space: nowrap` and `.home-links` is `flex-wrap: wrap`, so Progrès drops
   to a second line at 375px instead of splitting a label.
