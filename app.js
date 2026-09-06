@@ -1399,19 +1399,25 @@
   function renderHomeStats(masteredSentences) {
     var snap = daySnapshot();
     var clusters = [
-      [sentenceCount(activePhrases()) + ' phrases', masteredSentences + ' acquises'],
-      [(snap.yesterday === null ? '—' : snap.yesterday) + ' hier',
-       snap.today + " aujourd'hui"]
+      [[sentenceCount(activePhrases()), 'phrases'], [masteredSentences, 'acquises']],
+      [[snap.yesterday === null ? '—' : snap.yesterday, 'hier'],
+       [snap.today, "aujourd'hui"]]
     ];
     var box = $('home-stats');
     box.innerHTML = '';
     clusters.forEach(function (stats, ci) {
       var group = document.createElement('span');
       group.className = 'splash-group' + (ci ? ' splash-group--day' : '');
-      stats.forEach(function (text) {
+      stats.forEach(function (stat) {
         var el = document.createElement('span');
         el.className = 'splash-stat';
-        el.textContent = text;
+        // The figure is the point of the line, so it carries its own size and
+        // weight; the word after it is only there to say what it counts.
+        var num = document.createElement('span');
+        num.className = 'splash-num';
+        num.textContent = stat[0];
+        el.appendChild(num);
+        el.appendChild(document.createTextNode(' ' + stat[1]));
         group.appendChild(el);
       });
       box.appendChild(group);

@@ -155,8 +155,8 @@ ul {
   flex-wrap: wrap;
   justify-content: center;
   align-items: baseline;
-  gap: 0.1rem 1.1rem;
-  font-size: 0.98rem;
+  gap: 0.15rem 1.1rem;
+  font-size: 1.05rem;
   color: var(--text-secondary);
   font-style: italic;
   font-family: var(--font-heading);
@@ -164,6 +164,14 @@ ul {
 }
 
 .splash-group { white-space: nowrap; }
+
+.splash-num {
+  font-size: 1.22em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.splash-group--day .splash-num { color: var(--color-accent); }
 
 .splash-stat + .splash-stat::before {
   content: '·';
