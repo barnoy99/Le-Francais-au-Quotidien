@@ -14,6 +14,10 @@
   var lastShownId = null;
   var currentPhrase = null;
   var expandedProgressId = null;
+  // Which cards have been turned over in the session on screen. Per session and
+  // never saved: reopening a mode should put every card face down again.
+  var apRevealed = {};    // Apprentissage, keyed by phrase id
+  var acqRevealed = {};   // Mes Acquis / ⚑ Réviser, keyed by id:exercise
   var acquisPhrases = [];
   // ⚑ Réviser only: like Écouter, each card is a single sentence pulled from
   // the persistent queue, so every index carries its own exercise and position.
@@ -505,9 +509,18 @@
     $('session-counter').textContent = (currentPassPos * 2) + ' / ' + (setLength * 2);
     setCounterSize('session-counter', true);   // same large red counter as Mains Libres
 
-    hide($('translation-reveal'));
+    // A card you have already turned over stays turned over when you come back
+    // to it, so ⏮ / ⏭ and a swipe move through the set without wiping what you
+    // have already read. The memory is per session, not saved — the next time
+    // you open Apprentissage every card is face down again.
+    if (apRevealed[phrase.id]) {
+      hide($('translation-hint'));
+      show($('translation-reveal'));
+    } else {
+      hide($('translation-reveal'));
+      show($('translation-hint'));
+    }
     hide($('summary-card'));
-    show($('translation-hint'));
     show($('rating-buttons'));
 
     // re-enable rating buttons
@@ -521,6 +534,7 @@
   // Tapping the French card shows the English. It commits nothing: the three
   // choices stay live, so you can read the translation and then decide.
   function revealTranslation() {
+    if (currentPhrase) apRevealed[currentPhrase.id] = true;
     hide($('translation-hint'));
     show($('translation-reveal'));
   }
@@ -1555,7 +1569,14 @@
 
   // pool omitted → the full mastered rotation; pool given → the ⚑ Réviser
   // session, which walks its own persistent queue one sentence at a time.
+  // One card. ⚑ Réviser puts a phrase's main and alt on separate cards, so the
+  // exercise is part of what is being remembered.
+  function acquisCardKey(p) {
+    return p.id + ':' + (acquisCustomPool ? acquisExercises[acquisIndex] : 'main');
+  }
+
   function startAcquis(pool) {
+    acqRevealed = {};       // a fresh session, all face down
     acquisCustomPool = !!pool;
     var source = pool || getMasteredPhrases();
     if (source.length === 0) return;
@@ -1657,9 +1678,15 @@
     setCounterSize('acquis-counter', true);   // large in both Mes Acquis modes
     updateAcquisSixButton();
     updateAutoButton();
-    show($('acquis-reveal-area'));
-    hide($('acquis-revealed'));
-    hide($('btn-suivant'));
+    // Already turned over? Put it back the way you left it — but restoring a
+    // card must not speak: only revealing one does, or ⏮/⏭ would talk over you.
+    if (acqRevealed[acquisCardKey(p)]) {
+      showAcquisRevealed();
+    } else {
+      show($('acquis-reveal-area'));
+      hide($('acquis-revealed'));
+      hide($('btn-suivant'));
+    }
   }
 
   // Sentences in the round now under way. Taken from the round itself — slots
@@ -1750,10 +1777,16 @@
     btn.classList.toggle('activated', phrase ? isHard(phrase.id) : false);
   }
 
-  function revealAcquis() {
+  function showAcquisRevealed() {
     hide($('acquis-reveal-area'));
     show($('acquis-revealed'));
     show($('btn-suivant'));
+  }
+
+  function revealAcquis() {
+    var p = acquisPhrases[acquisIndex];
+    if (p) acqRevealed[acquisCardKey(p)] = true;
+    showAcquisRevealed();
     if (isAutoPlay()) playRevealed();
   }
 
@@ -2421,9 +2454,14 @@
   var SWIPE_MIN = 50;    // px across before a drag counts as a swipe
   var eatClick = false;  // one click to swallow, set by a completed swipe
 
+  // `preventDefault()` on the touchend already suppresses the compatibility
+  // click, so this is only a second line of defence — and it has to be a SHORT
+  // one. The synthesised click, when it comes at all, arrives immediately; a
+  // deliberate tap right after a swipe needs the best part of a second to lift,
+  // move and press again. Hold the guard open too long and it eats that tap.
   function swallowNextClick() {
     eatClick = true;
-    setTimeout(function () { eatClick = false; }, 400);
+    setTimeout(function () { eatClick = false; }, 120);
   }
 
   // Anything inside a control keeps its own behaviour — the ×6 pill, the
@@ -2482,6 +2520,7 @@
     });
 
     $('btn-apprentissage').addEventListener('click', function () {
+      apRevealed = {};                        // a fresh session, all face down
       currentPassPos = state.apCursor || 0;   // resume at the set's cursor
       advance();
     });

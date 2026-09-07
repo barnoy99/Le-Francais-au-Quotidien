@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=90`, `style.css?v=64`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v78'`.
+**Current versions:** `app.js?v=91`, `style.css?v=64`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v79'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -280,6 +280,20 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   and the bottom bar.
   Apprentissage gets the swipes only — both its sentences are on the card, so
   there is nothing to reveal.
+- **A card you have turned over stays turned over** while you move around the
+  session: `apRevealed` (keyed by phrase id) and `acqRevealed` (keyed by
+  `id:exercise`, because ⚑ Réviser puts a phrase's main and alt on separate
+  cards). Both are plain in-memory objects, reset in the Apprentissage entry
+  handler and in `startAcquis` — **never persisted**, or reopening a mode would
+  hand you a deck already face up and there would be no recall left to practise.
+  `revealAcquis` is split from `showAcquisRevealed` for one reason: revealing
+  speaks when `auto` is on, **restoring must not**, or ⏮/⏭ would talk over you.
+- **`swallowNextClick` must stay short (120ms).** `preventDefault()` on the
+  touchend already suppresses the compatibility click, so the timer is only a
+  second line of defence; the synthesised click arrives immediately, while a
+  deliberate tap right after a swipe takes the best part of a second. It was
+  400ms at first and ate exactly that tap — swipe to a new card, tap to reveal,
+  nothing happened.
 - **The Progrès daily chart** (`renderProgressDays`, §3) draws sentences met per
   day over however many days the counter has actually run — never a fixed
   fourteen, so a young counter shows three bars rather than eleven empty ones,
