@@ -1,13 +1,13 @@
 /* Service worker — offline support.
    IMPORTANT: bump CACHE_VERSION on every deploy that changes assets,
    together with the ?v=N cache-busters in index.html. */
-var CACHE_VERSION = 'v79';
+var CACHE_VERSION = 'v80';
 var CACHE_NAME = 'quotidien-' + CACHE_VERSION;
 
 var SHELL = [
   './',
   'index.html',
-  'style.css?v=64',
+  'style.css?v=65',
   'app.js?v=91',
   'data.js?v=37',
   'firebase-config.js?v=3',

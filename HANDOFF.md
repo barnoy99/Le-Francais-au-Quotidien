@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=91`, `style.css?v=64`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v79'`.
+**Current versions:** `app.js?v=91`, `style.css?v=65`, `data.js?v=37`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v80'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -431,6 +431,12 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   counts, so the two are sized apart rather than the whole line being scaled up.
   At 375×812 that still leaves 41px of clearance below Chercher, so the home
   screen does not scroll.
+- **The home row fractions are `.btn-home-count` at 1.12rem** (sage) against the
+  label's 1.4rem — big enough to read at a glance, still clearly subordinate to
+  the mode's name. Measured at 375px with the worst case on the longest row,
+  `Apprentissage (1024 / 1290)`: the label ends at 289px and the row's icon
+  starts at 306px, so 17px of clearance and no wrap. That is the budget — any
+  further and the fraction collides with the icon.
 - **The ⚑ links must not break mid-fraction.** `.home-links .btn-text` is
   `white-space: nowrap` and `.home-links` is `flex-wrap: wrap`, so Progrès drops
   to a second line at 375px instead of splitting a label.
