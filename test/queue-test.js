@@ -25,7 +25,7 @@ function extract(name) {
 var NAMES = ['shuffleIds', 'fqKey', 'fqParse', 'fqEligibleKeys', 'fqPlayable',
              'fqTooClose', 'fqSpread', 'fqPair', 'fqIsPaired', 'fqCycleKey', 'fqCursorKey', 'fqBuildPass',
              'syncFlagQueue', 'fqTakeNext', 'fqResetPass', 'fqTexts',
-             'startCycleClock', 'cycleDay'];
+             'startCycleClock', 'rollCycleClock', 'lastCycleDays', 'cycleDay'];
 var code = NAMES.map(extract).join('\n\n');
 
 // ── simulated world ────────────────────────────────────
@@ -47,7 +47,9 @@ function save() { saves++; }
 
 var raw = eval('(function () {' + code + '\nreturn {fqTakeNext:fqTakeNext, syncFlagQueue:syncFlagQueue,' +
                ' fqResetPass:fqResetPass, fqParse:fqParse, fqEligibleKeys:fqEligibleKeys,' +
-               ' fqBuildPass:fqBuildPass, fqTexts:fqTexts, cycleDay:cycleDay, fqIsPaired:fqIsPaired};})()');
+               ' fqBuildPass:fqBuildPass, fqTexts:fqTexts, cycleDay:cycleDay, fqIsPaired:fqIsPaired,' +
+               ' startCycleClock:startCycleClock, rollCycleClock:rollCycleClock,' +
+               ' lastCycleDays:lastCycleDays};})()');
 // the suite below runs once per pass prefix ('ec' = Écouter, 'rv' = Réviser)
 var PREFIX = 'ec';
 var api = {
@@ -260,6 +262,32 @@ check('nine calendar days back reads Jour 10', raw.cycleDay('ec') === 10,
 
 state.ecStartedAt = 0;
 check('no clock yet reads 0, so the row shows nothing', raw.cycleDay('ec') === 0);
+
+// ── what the last loop cost ──────────────────
+// A finished loop is banked when the next one is laid out, so the row can say
+// what the previous one took.
+state = { ecCycle: [], ecCursor: 0 };
+check('nothing to report before a loop has ever finished',
+      raw.lastCycleDays('ec') === 0);
+raw.fqBuildPass('ec');
+state.ecStartedAt = new Date().setHours(0, 0, 0, 0) - 16 * 86400000;   // 17 days in
+raw.fqBuildPass('ec');
+check('finishing a loop banks its length', raw.lastCycleDays('ec') === 17,
+      'got ' + raw.lastCycleDays('ec'));
+check('and the new loop is back to Jour 1', raw.cycleDay('ec') === 1);
+
+// The bug this guards: a rebuild part-way through a round keeps its clock, and
+// must NOT overwrite a real 17 with the 1 day the current round has run.
+raw.startCycleClock('ec');
+check('a mid-round rebuild leaves the banked figure alone',
+      raw.lastCycleDays('ec') === 17, 'got ' + raw.lastCycleDays('ec'));
+
+// A loop that starts and ends the same day is 1 day, not 0 — 0 means "no data"
+// and would hide the line entirely.
+state.ecStartedAt = Date.now();
+raw.rollCycleClock('ec');
+check('a same-day loop banks 1, never 0', raw.lastCycleDays('ec') === 1,
+      'got ' + raw.lastCycleDays('ec'));
 
 // ── an old scattered Réviser pass is repaired in place ──
 if (PREFIX === 'rv') {

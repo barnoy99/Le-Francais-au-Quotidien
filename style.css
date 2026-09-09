@@ -64,8 +64,10 @@ ul {
   --color-slate-light: rgba(90, 104, 114, 0.10);
   --color-blue: #3B5BDB;
   --color-blue-light: rgba(59, 91, 219, 0.10);
+  --color-blue-soft: #6C86E3;
   --color-teal: #0C8599;
   --color-teal-light: rgba(12, 133, 153, 0.10);
+  --color-teal-soft: #3FA0B2;
 
   --font-heading: 'Cormorant Garamond', Georgia, serif;
 
@@ -870,24 +872,38 @@ ul {
   opacity: 0.65;
 }
 
-/* One colour per mode, so the six rows are told apart at a glance. */
+/* Hue says what the mode DOES to you, so you can see before you tap whether you
+   are about to listen or to read: blue = you listen, teal = you read and recall,
+   gold = you meet phrases you don't know yet, slate = you look something up.
+   The two ⚑ rows are the filtered twins of the two above them, so each takes a
+   lighter step of its family's hue rather than a colour of its own — the
+   pairing IS the information. Six unrelated colours used to say only "these are
+   six different buttons", which the labels already said.
+   The wash is faint on purpose (10% over the card): identity rests on the label
+   and the icon, colour only groups. */
+.btn-home--mains,
+.btn-home--ecouter  { background: var(--color-blue-light); }
+.btn-home--acquis,
+.btn-home--reviser  { background: var(--color-teal-light); }
+.btn-home--appr     { background: var(--color-gold-light); }
+
 .btn-home--mains    { border-left-color: var(--color-blue); }
+.btn-home--ecouter  { border-left-color: var(--color-blue-soft); }
 .btn-home--acquis   { border-left-color: var(--color-teal); }
+.btn-home--reviser  { border-left-color: var(--color-teal-soft); }
 .btn-home--appr     { border-left-color: var(--color-gold); }
-.btn-home--ecouter  { border-left-color: var(--color-amber); }
-.btn-home--reviser  { border-left-color: var(--color-sage); }
 
 .btn-home--mains    .btn-home-icon { color: var(--color-blue); }
+.btn-home--ecouter  .btn-home-icon { color: var(--color-blue-soft); }
 .btn-home--acquis   .btn-home-icon { color: var(--color-teal); }
+.btn-home--reviser  .btn-home-icon { color: var(--color-teal-soft); }
 .btn-home--appr     .btn-home-icon { color: var(--color-gold); }
-.btn-home--ecouter  .btn-home-icon { color: var(--color-amber); }
-.btn-home--reviser  .btn-home-icon { color: var(--color-sage); }
 
 /* Chercher isn't a practice mode — quieter, and it keeps its subtitle. */
 .btn-home--chercher {
   border-left-color: var(--color-slate);
   border-left-width: 2px;
-  background: var(--bg-secondary);
+  background: var(--color-slate-light);
   box-shadow: none;
 }
 .btn-home--chercher .btn-home-icon { color: var(--color-slate); opacity: 0.45; }
@@ -1643,7 +1659,13 @@ ul {
 .btn-home-progress svg { width: 22px; height: 22px; }
 .btn-home-progress:active { opacity: 1; }
 
-#screen-home { position: relative; }
+/* Every row now carries a second line ("Jour 3 · dernier cycle : 17 jours"), and
+   at 375x812 that pushed the screen 6px past the viewport — enough to make the
+   home screen scroll, which it must never do. The generic 2rem bottom padding
+   is decorative here (nothing sits at the bottom edge), so the home screen
+   keeps half of it. That leaves ~12px of headroom: a third line anywhere in
+   this list would overflow again. */
+#screen-home { position: relative; padding-bottom: 1rem; }
 
 /* Apprentissage now carries two French sentences and both translations, which
    can run past one screen. Bound this screen and scroll only the text, so the

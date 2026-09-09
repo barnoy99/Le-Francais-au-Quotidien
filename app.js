@@ -437,6 +437,19 @@
     return Math.round((b - a) / 86400000) + 1;   // the day you start is Jour 1
   }
 
+  // A loop has genuinely finished: bank how long it took before the next one
+  // starts, so the home row can also say what the last one cost. Only ever
+  // called where a round really completes — `startCycleClock` stays the plain
+  // one for a mid-round rebuild, which keeps its own clock. Recording there
+  // would overwrite a true "17 days" with a 1 the moment you toggled ×6.
+  function rollCycleClock(key) {
+    var days = cycleDay(key);
+    if (days > 0) state[key + 'LastDays'] = days;
+    startCycleClock(key);
+  }
+
+  function lastCycleDays(key) { return state[key + 'LastDays'] || 0; }
+
   // Cycles already in progress predate the clock, so start them today rather
   // than leaving them blank until they happen to end. Runs once per key.
   function backfillCycleClocks() {
@@ -1025,7 +1038,7 @@
         state[passKey] = {};
         state[baseKey] = 0;
         state[cycleKey] = buildCycle(pool, weighted);
-        startCycleClock(key);
+        rollCycleClock(key);
       }
     }
 
@@ -1042,7 +1055,7 @@
         state[cursorKey] = 0;
         state[passKey] = {};                  // a full new round starts here
         state[baseKey] = 0;
-        startCycleClock(key);
+        rollCycleClock(key);
         if (!state[cycleKey].length) break;
       }
       var abs = passBase(key) + state[cursorKey];
@@ -1245,7 +1258,7 @@
   function fqCursorKey(prefix) { return prefix + 'Cursor'; }
 
   function fqBuildPass(prefix) {
-    startCycleClock(prefix);   // a fresh pass starts its clock
+    rollCycleClock(prefix);    // the pass that just ended is banked, this one starts
     state[fqCycleKey(prefix)] = (prefix === 'rv' ? fqPair : fqSpread)(fqEligibleKeys(prefix));
     state[fqCursorKey(prefix)] = 0;
   }
@@ -1450,10 +1463,15 @@
     // loop you are on. They disagree with each other by design: Mes Acquis
     // counts coverage of your collection, Mains Libres a position through a
     // round in which a ×6 or ⚑ phrase holds several slots.
+    // The row's second line: where you are in this loop, and what the last one
+    // cost you — so a long stretch reads as a pace, not just a big number.
+    // Neither half appears before there is something true to say.
     function setRow(countId, dayId, text, key, disabled, btnId) {
       $(countId).textContent = '(' + text + ')';
-      var day = cycleDay(key);
-      $(dayId).textContent = day ? ('Jour ' + day) : '';
+      var day = cycleDay(key), last = lastCycleDays(key), parts = [];
+      if (day) parts.push('Jour ' + day);
+      if (last) parts.push('dernier cycle : ' + last + (last > 1 ? ' jours' : ' jour'));
+      $(dayId).textContent = parts.join(' · ');
       $(btnId).disabled = !!disabled;
     }
 

@@ -58,7 +58,7 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-469 entries / 938 sentences. Each entry is a main sentence plus an alt.
+472 entries / 944 sentences. Each entry is a main sentence plus an alt.
 
 **Argument-building entries (480–499) break the alt rule on purpose.** Everywhere
 else `alt_usage` is an independent second use of the phrase. In these twenty the
@@ -82,6 +82,14 @@ script checks this.
   `carrément`, `n'empêche`, `quand même`.
 - **Idioms in good health** — *ça sent le roussi*, *retourner sa veste*, *mettre
   les pieds dans le plat*, *d'autres chats à fouetter*, *anguille sous roche*.
+- **L'ennui (511–513)** was a total blank until asked for: `s'ennuyer`,
+  `ennuyeux` and `l'ennui` appeared **0 times** in 938 sentences. The nearest
+  thing was 463 (*sinon ils vont tourner en rond*), which talks around the word.
+  A reminder that a gap this size can sit unnoticed in a corpus that looks full:
+  the entries cover a function-first vocabulary well and everyday *states*
+  poorly. One entry per form — the reflexive verb, the argument he actually
+  makes about it to his wife (boredom is good for the children), and the
+  adjective plus *mourir d'ennui*.
 
 ### Three registers coexist deliberately
 

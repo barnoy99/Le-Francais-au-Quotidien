@@ -532,5 +532,15 @@ var PHRASES = [
   { id: 505, fr: "Ça me dérange pas autant que ça.", en: "It doesn't bother me that much.", context: "pas autant que ça — not that much", alt_usage: "J'y tiens pas autant que ça, on peut changer.", alt_usage_en: "I'm not that attached to it, we can change." },
   { id: 506, fr: "Autant j'aime cuisiner, autant je déteste ranger après.", en: "As much as I love cooking, I hate clearing up afterwards.", context: "autant... autant... — weighing two sides", alt_usage: "Autant elle est calme, autant lui tient pas en place.", alt_usage_en: "She's as calm as he is unable to sit still." },
   { id: 508, fr: "Autant dire que c'est mort.", en: "Which is to say it's a lost cause.", context: "autant dire que — in other words", alt_usage: "Il a même pas répondu, autant dire que c'est non.", alt_usage_en: "He didn't even reply — so that's a no, then." },
-  { id: 509, fr: "Tu devrais en faire autant.", en: "You should do the same.", context: "en faire autant — do likewise", alt_usage: "Si tout le monde en faisait autant, ça irait mieux.", alt_usage_en: "If everyone did the same, things would be better." }
+  { id: 509, fr: "Tu devrais en faire autant.", en: "You should do the same.", context: "en faire autant — do likewise", alt_usage: "Si tout le monde en faisait autant, ça irait mieux.", alt_usage_en: "If everyone did the same, things would be better." },
+
+  // ── L'ennui ─────────────────────────────────────────────
+  // The corpus had no way of saying "bored" at all — `s'ennuyer`, `ennuyeux` and
+  // `l'ennui` were absent from all 938 sentences; the nearest thing was 463
+  // ("sinon ils vont tourner en rond"), which sidesteps the word. One entry per
+  // form: the reflexive verb, the argument you actually make about it, and the
+  // adjective plus the idiom.
+  { id: 511, fr: "Il s'ennuie, il sait pas quoi faire de sa journée.", en: "He's bored, he doesn't know what to do with himself.", context: "s'ennuyer — casual", alt_usage: "Elle s'est ennuyée tout l'après-midi chez ta mère.", alt_usage_en: "She was bored all afternoon at your mother's." },
+  { id: 512, fr: "Ça leur fait pas de mal de s'ennuyer un peu.", en: "It doesn't do them any harm to be a bit bored.", context: "Boredom is good for them — casual", alt_usage: "C'est en s'ennuyant qu'ils apprennent à s'occuper tout seuls.", alt_usage_en: "It's by being bored that they learn to keep themselves busy." },
+  { id: 513, fr: "C'était moins ennuyeux que je pensais, franchement.", en: "It was less boring than I thought, honestly.", context: "ennuyeux / mourir d'ennui — casual", alt_usage: "Je m'attendais à mourir d'ennui, et en fait ça allait.", alt_usage_en: "I was expecting to die of boredom, and actually it was fine." }
 ];

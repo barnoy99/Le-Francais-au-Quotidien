@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=91`, `style.css?v=65`, `data.js?v=37`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v80'`.
+**Current versions:** `app.js?v=92`, `style.css?v=66`, `data.js?v=38`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v81'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -209,6 +209,17 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   calendar days, so "Jour 2" arrives the next morning, not 24h later.
   `backfillCycleClocks()` stamps already-running cycles once, so counters start
   immediately instead of waiting for each cycle to end.
+- **A finished loop is banked, so the row can also say what the last one cost:**
+  `rollCycleClock(key)` records `cycleDay()` into `state[key + 'LastDays']` and
+  then restarts the clock. **It is not a drop-in replacement for
+  `startCycleClock`** — use it ONLY where a round genuinely completes (the two
+  round-completion branches in `takeFromCycle`, and `fqBuildPass`). The
+  `!state[baseKey]` rebuild branch keeps plain `startCycleClock`: a mid-round
+  rebuild is not a completion, and banking there would overwrite a true
+  "17 jours" with a 1 the moment you toggled ×6 at the start of a round.
+  `cycleDay` never returns 0 for a live clock, so a loop that starts and ends
+  the same day banks 1 — 0 means "nothing to report" and hides the text.
+  Guarded by `test/queue-test.js`, including the overwrite bug.
 - **Never leave a concrete noun directly before a lone "I" in the English.**
   Speech engines read that as a regnal number — *"the guy I told you about"* came
   out as *"the guy the first told you about"*, the same rule that says *Charles I*
@@ -431,6 +442,27 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   counts, so the two are sized apart rather than the whole line being scaled up.
   At 375×812 that still leaves 41px of clearance below Chercher, so the home
   screen does not scroll.
+- **Home row colour is grouped by modality, not one hue per row.** Blue = you
+  listen (Mains Libres, ⚑ Écouter), teal = you read and recall (Mes Acquis,
+  ⚑ Réviser), gold = Apprentissage, slate = Chercher. The ⚑ row in each pair
+  takes a lighter step of its family's hue (`--color-blue-soft` /
+  `--color-teal-soft`), so the pairing itself is the information: you can see
+  before you tap whether you are about to listen or to read. Each row carries a
+  10% wash of its family colour so the grouping reads across the card, not just
+  off the 4px edge. Identity still rests on the label and the icon — colour only
+  groups. The six unrelated hues it replaced said only "these are six different
+  buttons", which the labels already said.
+- **The home screen has ~12px of vertical headroom at 375×812** and must never
+  scroll. Adding the "dernier cycle" half of the second line pushed it 6px past
+  the viewport; `#screen-home` now halves the generic 2rem bottom padding to buy
+  that back (nothing sits at the bottom edge there, so the padding is
+  decorative). **A third line anywhere in the row list would overflow again** —
+  measure before adding one.
+- **The row's second line is `Jour N · dernier cycle : N jours`.** Each half is
+  omitted when there is nothing true to say, so a fresh install shows neither and
+  a first loop shows only `Jour N`. Worst realistic case measured at 375px:
+  `Jour 128 · dernier cycle : 365 jours` ends at 299px against the row icon at
+  306px — 7px clear, and that case cannot actually occur.
 - **The home row fractions are `.btn-home-count` at 1.12rem** (sage) against the
   label's 1.4rem — big enough to read at a glance, still clearly subordinate to
   the mode's name. Measured at 375px with the worst case on the longest row,
@@ -620,8 +652,8 @@ mobile preset (375×812).
 
 ## 8. Current numbers (verified at handoff)
 
-- **437** entries in `data.js` = **874** sentences (every entry has an alt).
-  After the user's in-app deletions: **~379 active** = ~758 sentences.
+- **472** entries in `data.js` = **944** sentences (every entry has an alt).
+  After the user's in-app deletions: **~435 active** = ~870 sentences.
 - One round in Mains Libres is ~390 weighted slots ≈ 780 sentence-plays, about
   three weeks at the user's ~40/day pace.
 - ~221 mastered, ~17 flagged ⚑, ~150 of the mastered ones ×6. These drift daily —
