@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=92`, `style.css?v=66`, `data.js?v=38`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v81'`.
+**Current versions:** `app.js?v=93`, `style.css?v=67`, `data.js?v=38`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v82'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -442,27 +442,34 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   counts, so the two are sized apart rather than the whole line being scaled up.
   At 375×812 that still leaves 41px of clearance below Chercher, so the home
   screen does not scroll.
-- **Home row colour is grouped by modality, not one hue per row.** Blue = you
-  listen (Mains Libres, ⚑ Écouter), teal = you read and recall (Mes Acquis,
-  ⚑ Réviser), gold = Apprentissage, slate = Chercher. The ⚑ row in each pair
-  takes a lighter step of its family's hue (`--color-blue-soft` /
-  `--color-teal-soft`), so the pairing itself is the information: you can see
+- **Home row colour is grouped by modality, not one hue per row.** Bordeaux =
+  you listen (Mains Libres, ⚑ Écouter), gilt = you read and recall (Mes Acquis,
+  ⚑ Réviser), ardoise = Apprentissage, no hue at all = Chercher. The ⚑ row in
+  each pair takes a lighter step of its family's hue (`--home-listen-soft` /
+  `--home-read-soft`), so the pairing itself is the information: you can see
   before you tap whether you are about to listen or to read. Each row carries a
-  10% wash of its family colour so the grouping reads across the card, not just
+  ~10% wash of its family colour so the grouping reads across the card, not just
   off the 4px edge. Identity still rests on the label and the icon — colour only
   groups. The six unrelated hues it replaced said only "these are six different
   buttons", which the labels already said.
+  **Take the hues from the app's own palette** (`--home-*` tokens: wine, gilt,
+  zinc). The first attempt grouped the rows correctly using the generic
+  `--color-blue` / `--color-teal` and the user rejected it on sight: against the
+  cream it read aquatic, "not French chic". The grouping was right, the palette
+  was borrowed from a different application. The gilt wash runs at 12% and the
+  bordeaux at 9% — yellow reads weaker than red at the same alpha.
 - **The home screen has ~12px of vertical headroom at 375×812** and must never
   scroll. Adding the "dernier cycle" half of the second line pushed it 6px past
   the viewport; `#screen-home` now halves the generic 2rem bottom padding to buy
   that back (nothing sits at the bottom edge there, so the padding is
   decorative). **A third line anywhere in the row list would overflow again** —
   measure before adding one.
-- **The row's second line is `Jour N · dernier cycle : N jours`.** Each half is
-  omitted when there is nothing true to say, so a fresh install shows neither and
-  a first loop shows only `Jour N`. Worst realistic case measured at 375px:
-  `Jour 128 · dernier cycle : 365 jours` ends at 299px against the row icon at
-  306px — 7px clear, and that case cannot actually occur.
+- **The row's second line is `Jour N · dernier : N jours`.** Each half is omitted
+  when there is nothing true to say, so a fresh install shows neither and a first
+  loop shows only `Jour N`. The user cut "dernier cycle" to "dernier" — the row
+  is already the cycle, so the word was doing no work. Measured at 375px, the
+  tightest real row (`Jour 1 · dernier : 1 jour` under Apprentissage, the longest
+  label) leaves 49px before the row icon.
 - **The home row fractions are `.btn-home-count` at 1.12rem** (sage) against the
   label's 1.4rem — big enough to read at a glance, still clearly subordinate to
   the mode's name. Measured at 375px with the worst case on the longest row,

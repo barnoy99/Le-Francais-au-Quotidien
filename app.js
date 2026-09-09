@@ -1470,7 +1470,7 @@
       $(countId).textContent = '(' + text + ')';
       var day = cycleDay(key), last = lastCycleDays(key), parts = [];
       if (day) parts.push('Jour ' + day);
-      if (last) parts.push('dernier cycle : ' + last + (last > 1 ? ' jours' : ' jour'));
+      if (last) parts.push('dernier : ' + last + (last > 1 ? ' jours' : ' jour'));
       $(dayId).textContent = parts.join(' · ');
       $(btnId).disabled = !!disabled;
     }

@@ -64,10 +64,19 @@ ul {
   --color-slate-light: rgba(90, 104, 114, 0.10);
   --color-blue: #3B5BDB;
   --color-blue-light: rgba(59, 91, 219, 0.10);
-  --color-blue-soft: #6C86E3;
   --color-teal: #0C8599;
   --color-teal-light: rgba(12, 133, 153, 0.10);
-  --color-teal-soft: #3FA0B2;
+
+  /* Home-row families. Drawn from the app's own palette — wine and gilt — not
+     from the generic web blue/teal, which read as aquarium next to the cream. */
+  --home-listen:       #8B2D3A;              /* bordeaux */
+  --home-listen-soft:  #B5666F;
+  --home-listen-wash:  rgba(139, 45, 58, 0.09);
+  --home-read:         #A8802C;              /* or bruni */
+  --home-read-soft:    #C7A55E;
+  --home-read-wash:    rgba(168, 128, 44, 0.12);
+  --home-learn:        #5A6872;              /* ardoise */
+  --home-learn-wash:   rgba(90, 104, 114, 0.10);
 
   --font-heading: 'Cormorant Garamond', Georgia, serif;
 
@@ -873,37 +882,39 @@ ul {
 }
 
 /* Hue says what the mode DOES to you, so you can see before you tap whether you
-   are about to listen or to read: blue = you listen, teal = you read and recall,
-   gold = you meet phrases you don't know yet, slate = you look something up.
-   The two ⚑ rows are the filtered twins of the two above them, so each takes a
-   lighter step of its family's hue rather than a colour of its own — the
-   pairing IS the information. Six unrelated colours used to say only "these are
-   six different buttons", which the labels already said.
-   The wash is faint on purpose (10% over the card): identity rests on the label
-   and the icon, colour only groups. */
+   are about to listen or to read: bordeaux = you listen, gilt = you read and
+   recall, ardoise = you meet phrases you don't know yet. The two ⚑ rows are the
+   filtered twins of the two above them, so each takes a lighter step of its
+   family's hue rather than a colour of its own — the pairing IS the information.
+   Six unrelated colours used to say only "these are six different buttons",
+   which the labels already said.
+   The hues are the app's own — wine, gilt, zinc, over cream. A generic blue and
+   teal grouped the rows correctly but looked like a different application had
+   been pasted in. The wash stays faint: identity rests on the label and the
+   icon, colour only groups. */
 .btn-home--mains,
-.btn-home--ecouter  { background: var(--color-blue-light); }
+.btn-home--ecouter  { background: var(--home-listen-wash); }
 .btn-home--acquis,
-.btn-home--reviser  { background: var(--color-teal-light); }
-.btn-home--appr     { background: var(--color-gold-light); }
+.btn-home--reviser  { background: var(--home-read-wash); }
+.btn-home--appr     { background: var(--home-learn-wash); }
 
-.btn-home--mains    { border-left-color: var(--color-blue); }
-.btn-home--ecouter  { border-left-color: var(--color-blue-soft); }
-.btn-home--acquis   { border-left-color: var(--color-teal); }
-.btn-home--reviser  { border-left-color: var(--color-teal-soft); }
-.btn-home--appr     { border-left-color: var(--color-gold); }
+.btn-home--mains    { border-left-color: var(--home-listen); }
+.btn-home--ecouter  { border-left-color: var(--home-listen-soft); }
+.btn-home--acquis   { border-left-color: var(--home-read); }
+.btn-home--reviser  { border-left-color: var(--home-read-soft); }
+.btn-home--appr     { border-left-color: var(--home-learn); }
 
-.btn-home--mains    .btn-home-icon { color: var(--color-blue); }
-.btn-home--ecouter  .btn-home-icon { color: var(--color-blue-soft); }
-.btn-home--acquis   .btn-home-icon { color: var(--color-teal); }
-.btn-home--reviser  .btn-home-icon { color: var(--color-teal-soft); }
-.btn-home--appr     .btn-home-icon { color: var(--color-gold); }
+.btn-home--mains    .btn-home-icon { color: var(--home-listen); }
+.btn-home--ecouter  .btn-home-icon { color: var(--home-listen-soft); }
+.btn-home--acquis   .btn-home-icon { color: var(--home-read); }
+.btn-home--reviser  .btn-home-icon { color: var(--home-read-soft); }
+.btn-home--appr     .btn-home-icon { color: var(--home-learn); }
 
-/* Chercher isn't a practice mode — quieter, and it keeps its subtitle. */
+/* Chercher isn't a practice mode — no hue at all, and it keeps its subtitle. */
 .btn-home--chercher {
   border-left-color: var(--color-slate);
   border-left-width: 2px;
-  background: var(--color-slate-light);
+  background: var(--bg-secondary);
   box-shadow: none;
 }
 .btn-home--chercher .btn-home-icon { color: var(--color-slate); opacity: 0.45; }
