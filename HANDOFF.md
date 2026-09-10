@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=93`, `style.css?v=67`, `data.js?v=38`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v82'`.
+**Current versions:** `app.js?v=94`, `style.css?v=68`, `data.js?v=38`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v83'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -66,7 +66,7 @@ collisions have happened; check the max id after pulling.
 | Mode | What it is |
 |---|---|
 | **Apprentissage** | Walks a persistent shuffled **set** of every unmastered phrase — each exactly once, order fixed until the set is finished, then a fresh shuffle. No longer spaced repetition. Three inline choices: **Plus tard** (pure navigation — writes nothing), **×6 — Mes Acquis** (the only rating left; there is no ×3 and no *Pas encore*) and **Supprimer**. Only buttons carrying `data-level` reach `handleRating` — the other two share `.rating-btn` for styling only. Tapping the French card reveals the English and commits nothing, so you can read it and then choose; choosing goes straight to the next phrase. **⏮ / ⏭ walk the set itself**, so ⏮ reaches cards served on an earlier visit or another device. No sticky bottom bar on this screen. |
-| **Mes Acquis** | Recall practice over mastered phrases. English prompt → **tap the screen** → French + alt + TTS; the next tap advances. Swipe left/right = next/previous. Keyboard: ← prev, → next, space reveals. |
+| **Mes Acquis** | Recall practice over mastered phrases, **one sentence per card** — a phrase's main, then its alt, then the next phrase. English prompt → **tap the screen** → French + TTS; the next tap advances. Swipe left/right = next/previous. Keyboard: ← prev, → next, space reveals. |
 | **Mains Libres** | Hands-free audio drill of the mastered pool. Wake-lock, TTS. |
 | **Chercher** | Search all phrases; move between pools (→ Acquis ×3 / ×6 / Apprentissage), toggle **Difficile**, delete. |
 
@@ -110,6 +110,7 @@ state = {
   ecCycle: ["id:main"|"id:alt"], ecCursor,       // ⚑ Écouter pass, §5a
   rvCycle: ["id:main"|"id:alt"], rvCursor,       // ⚑ Réviser pass, §5a
   apCycle: ["id:main"], apCursor,                // Apprentissage set, §4
+  acqHalf: "main" | "alt",                       // which half Mes Acquis is on
   dayDate: "YYYY-MM-DD", daySeen: {key:1},       // today's distinct sentences
   dayFirst: "YYYY-MM-DD",                        // when the counter started
   dayHistory: { "YYYY-MM-DD": n },               // last 14 closed days
@@ -419,10 +420,26 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   | Button | Home shows | Denominator |
   |---|---|---|
   | Mains Libres | `(passBase('hf') + hfCursor) * 2` | `roundSentenceTotal()` — weighted, a ×6/⚑ phrase holds several slots |
-  | Mes Acquis | `passProgress('acq') * 2` | mastered sentences |
+  | Mes Acquis | `acquisSentencesDone()` | mastered sentences |
   | Apprentissage | `min(apCursor + 1, apCycle.length) * 2` | `apCycle.length * 2` |
   | ⚑ Écouter / ⚑ Réviser | `ecCursor` / `rvCursor` | `ecCycle.length` / `rvCycle.length` |
 
+  **Mes Acquis shows one sentence per card** — main, then that phrase's alt, then
+  the next phrase, the way ⚑ Réviser pairs them. The rotation underneath is
+  unchanged and still walks *phrases*: `acquisIndex` is a phrase index and
+  `acquisExercise` says which half is on screen, so the cycle, the pass map, the
+  batch release and the delete path all keep their existing units. Consequences
+  worth knowing:
+  — `acquisSentencesDone()` is `passProgress('acq') * 2` minus one while you sit
+    on a main. It is a **coverage** count, not a position, so it must not fall
+    when you step back: only the furthest card reached
+    (`acquisIndex + 1 === acquisMaxSeen`) writes `state.acqHalf`. Without that
+    guard it flickered down a sentence on every old main you landed on.
+  — `state.acqHalf` is persisted so the home row shows the identical figure, and
+    so `startAcquis` can **resume on a main you left mid-phrase** (it steps back
+    to `acquisLookback - 1`, which the look-back has already loaded). Without
+    that, the alt of the last phrase of every session was skipped for the whole
+    pass.
   Apprentissage is the one that shows `cursor + 1`, because leaving hands the
   un-rated card back — the others' cursors already sit on what has been served.
   Each falls back to a preview of the next rotation when its cycle is empty
@@ -442,22 +459,14 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   counts, so the two are sized apart rather than the whole line being scaled up.
   At 375×812 that still leaves 41px of clearance below Chercher, so the home
   screen does not scroll.
-- **Home row colour is grouped by modality, not one hue per row.** Bordeaux =
-  you listen (Mains Libres, ⚑ Écouter), gilt = you read and recall (Mes Acquis,
-  ⚑ Réviser), ardoise = Apprentissage, no hue at all = Chercher. The ⚑ row in
-  each pair takes a lighter step of its family's hue (`--home-listen-soft` /
-  `--home-read-soft`), so the pairing itself is the information: you can see
-  before you tap whether you are about to listen or to read. Each row carries a
-  ~10% wash of its family colour so the grouping reads across the card, not just
-  off the 4px edge. Identity still rests on the label and the icon — colour only
-  groups. The six unrelated hues it replaced said only "these are six different
-  buttons", which the labels already said.
-  **Take the hues from the app's own palette** (`--home-*` tokens: wine, gilt,
-  zinc). The first attempt grouped the rows correctly using the generic
-  `--color-blue` / `--color-teal` and the user rejected it on sight: against the
-  cream it read aquatic, "not French chic". The grouping was right, the palette
-  was borrowed from a different application. The gilt wash runs at 12% and the
-  bordeaux at 9% — yellow reads weaker than red at the same alpha.
+- **Home rows are one colour per mode** (blue / teal / gold / amber / sage /
+  slate), each on the plain card background. **Grouping them by modality was
+  tried and reverted twice** — one hue for the two listening modes, another for
+  the two reading ones, with a soft wash across each card. Rejected first in
+  generic blue/teal ("aquatic, not French chic") and again in the app's own
+  bordeaux-and-gilt, so the objection is not only to the palette: the washed
+  pairs read as tinted cards rather than as a pairing, and the home screen loses
+  its calm. Don't propose it a third time without a genuinely new idea.
 - **The home screen has ~12px of vertical headroom at 375×812** and must never
   scroll. Adding the "dernier cycle" half of the second line pushed it 6px past
   the viewport; `#screen-home` now halves the generic 2rem bottom padding to buy
@@ -491,7 +500,7 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   without this the counter would restart mid-round. Set to `passPlayed(key)` on
   a rebuild, 0 when a round is laid out in full.
 - **Pass progress** (`*Pass` map) = copies played this round. Mes Acquis' counter
-  is still distinct-coverage (`passProgress / masteredCount`) and passes
+  is distinct-coverage in sentences (`acquisSentencesDone()`) and passes
   `poolSize` to `markPassSeen` so it wraps at full coverage; Mains Libres does
   not pass it, because clearing mid-round would let a rebuild re-queue copies
   already heard. A fresh pass avoids opening with the phrase just shown

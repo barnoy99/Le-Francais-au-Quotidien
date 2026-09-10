@@ -25,6 +25,11 @@
   var acquisPositions = [];
   var acquisLookback = 0;    // preloaded items sitting behind the resume point
   var acquisIndex = 0;
+  // Mes Acquis walks phrases, but shows one sentence per card, so the position
+  // is a phrase plus which half of it you are looking at. Reviser keeps its own
+  // per-item list (`acquisExercises`) because its queue is already a list of
+  // sentences.
+  var acquisExercise = 'main';
   var acquisBatchLen = 0;
   var acquisMaxSeen = 0;
   var handsfreeBatchLen = 0;
@@ -1483,7 +1488,7 @@
       'hf', count === 0, 'btn-handsfree');
 
     setRow('acquis-count', 'acquis-day',
-      (passProgress('acq') * 2) + ' / ' + masteredSentences,
+      acquisSentencesDone() + ' / ' + masteredSentences,
       'acq', count === 0, 'btn-acquis');
 
     // Apprentissage: leaving hands the un-rated card back, so the cursor sits
@@ -1589,8 +1594,49 @@
   // session, which walks its own persistent queue one sentence at a time.
   // One card. ⚑ Réviser puts a phrase's main and alt on separate cards, so the
   // exercise is part of what is being remembered.
+  function currentExercise() {
+    return acquisCustomPool ? acquisExercises[acquisIndex] : acquisExercise;
+  }
+
   function acquisCardKey(p) {
-    return p.id + ':' + (acquisCustomPool ? acquisExercises[acquisIndex] : 'main');
+    return p.id + ':' + currentExercise();
+  }
+
+  // Both modes now move one sentence at a time. In ⚑ Réviser the queue is
+  // already per sentence, so the index alone does the work; in Mes Acquis a step
+  // runs main → alt → next phrase's main, which keeps a phrase's two sentences
+  // together the way Réviser pairs them.
+  function acquisNext() {
+    if (!acquisCustomPool) {
+      var p = acquisPhrases[acquisIndex];
+      if (acquisExercise === 'main' && p && p.alt_usage) {
+        acquisExercise = 'alt';
+        showAcquisPhrase();
+        return;
+      }
+      acquisExercise = 'main';
+    }
+    acquisIndex++;
+    showAcquisPhrase();
+  }
+
+  function acquisPrev() {
+    if (!acquisCustomPool) {
+      if (acquisExercise === 'alt') {
+        acquisExercise = 'main';
+        showAcquisPhrase();
+        return;
+      }
+      if (acquisIndex <= 0) return;
+      acquisIndex--;
+      var back = acquisPhrases[acquisIndex];
+      acquisExercise = (back && back.alt_usage) ? 'alt' : 'main';
+      showAcquisPhrase();
+      return;
+    }
+    if (acquisIndex <= 0) return;
+    acquisIndex--;
+    showAcquisPhrase();
   }
 
   function startAcquis(pool) {
@@ -1618,7 +1664,14 @@
     }
     acquisLookback = back.length;
     acquisMaxSeen = 0;
+    acquisExercise = 'main';
     acquisIndex = acquisLookback;   // resume where you were, with the past behind you
+    // Left in the middle of a phrase, on its main? Resume on that main rather
+    // than past it, or the alt would be skipped for the whole pass. The phrase
+    // is already loaded — it is the last item of the look-back.
+    if (!acquisCustomPool && state.acqHalf === 'main' && acquisLookback > 0) {
+      acquisIndex = acquisLookback - 1;
+    }
     showAcquisPhrase();
   }
 
@@ -1632,6 +1685,14 @@
     }
     releaseBatch('acq', acquisBatchLen, Math.max(0, acquisMaxSeen - acquisLookback));
     acquisBatchLen = 0;
+  }
+
+  // Sentences covered in the current Mes Acquis pass: a phrase counts 2 once
+  // both halves have been served, 1 while you are still on its main.
+  function acquisSentencesDone() {
+    var n = passProgress('acq') * 2;
+    if (n > 0 && state.acqHalf === 'main') n -= 1;
+    return n;
   }
 
   function showAcquisPhrase() {
@@ -1671,28 +1732,37 @@
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     showScreen('screen-acquis');
     $('acquis-context').textContent = p.context;
-    if (acquisCustomPool) {
-      // One sentence per card — main and alt are separate items in the pass,
-      // so the "Autre exemple" block would give the answer away.
-      var t = fqTexts(p, acquisExercises[acquisIndex]);
-      markDaySeen(p.id, acquisExercises[acquisIndex]);
-      $('acquis-english').textContent = t.en;
-      $('acquis-french').textContent = frDisplay(t.fr);
-      $('acquis-alt').textContent = '';
-      hide($('acquis-alt-block'));
-    } else {
-      markDaySeen(p.id, 'main');
-      markDaySeen(p.id, 'alt');   // the alt block is on the card too
-      $('acquis-english').textContent = p.en;
-      $('acquis-french').textContent = frDisplay(p.fr);
-      $('acquis-alt').textContent = frDisplay(p.alt_usage || '');
-      show($('acquis-alt-block'));
+    // One sentence per card in both modes. An alt is a sentence in its own
+    // right and deserves its own recall attempt — showing it beside the main
+    // handed you the answer for free.
+    if (!acquisCustomPool && acquisExercise === 'alt' && !p.alt_usage) {
+      acquisExercise = 'main';    // an entry without an alt has only one card
     }
-    // Shows progress through the current pass over your whole collection —
-    // it carries across sessions, so "45 / 221" means 45 covered so far.
+    var half = currentExercise();
+    var t = fqTexts(p, half);
+    markDaySeen(p.id, half);
+    $('acquis-english').textContent = t.en;
+    $('acquis-french').textContent = frDisplay(t.fr);
+    $('acquis-alt').textContent = '';
+    hide($('acquis-alt-block'));
+
+    // Progress through the current pass over your whole collection, counted in
+    // sentences and carried across sessions. A phrase counts 1 while you are on
+    // its main and 2 once you turn to its alt. `acqHalf` is stored so the home
+    // row can show the very same figure.
+    //
+    // Only the furthest card written so far moves it. This is a coverage count,
+    // not a position: stepping back through cards you have already served must
+    // leave it alone, and without this guard it flickered down a sentence every
+    // time you landed on an old main.
+    if (!acquisCustomPool && acquisIndex + 1 === acquisMaxSeen &&
+        state.acqHalf !== half) {
+      state.acqHalf = half;
+      save();
+    }
     $('acquis-counter').textContent = acquisCustomPool
       ? acquisPositions[acquisIndex] + ' / ' + (state.rvCycle || []).length
-      : (passProgress('acq') * 2) + ' / ' + sentenceCount(getMasteredPhrases());
+      : acquisSentencesDone() + ' / ' + sentenceCount(getMasteredPhrases());
     setCounterSize('acquis-counter', true);   // large in both Mes Acquis modes
     updateAcquisSixButton();
     updateAutoButton();
@@ -1763,11 +1833,7 @@
     var p = acquisPhrases[acquisIndex];
     if (!p) return;
     if ('speechSynthesis' in window) speechSynthesis.cancel();
-    if (acquisCustomPool) {
-      speakFrench(fqTexts(p, acquisExercises[acquisIndex]).fr);
-      return;
-    }
-    speakFrench(p.fr);
+    speakFrench(fqTexts(p, currentExercise()).fr);
   }
 
   // Whole ⚑ Réviser pass done — clear it so the next session shuffles a new one.
@@ -2603,6 +2669,7 @@
                                   [acquisExercises, acquisPositions]);
       acquisBatchLen = acquisPhrases.length;
       acquisMaxSeen = Math.min(acquisMaxSeen, acquisPhrases.length);
+      acquisExercise = 'main';    // the deleted phrase took both its halves
       if (acquisPhrases.length === 0) { showScreen('screen-acquis-done'); return; }
       // No index reset: showAcquisPhrase pulls the next slice when the batch is
       // spent. Sending it back to 0 replayed the whole session from the top.
@@ -2656,13 +2723,8 @@
     });
 
     // Acquis prev/next (header)
-    $('btn-acquis-prev').addEventListener('click', function () {
-      if (acquisIndex > 0) { acquisIndex--; showAcquisPhrase(); }
-    });
-    $('btn-acquis-next').addEventListener('click', function () {
-      acquisIndex++;
-      showAcquisPhrase();
-    });
+    $('btn-acquis-prev').addEventListener('click', acquisPrev);
+    $('btn-acquis-next').addEventListener('click', acquisNext);
 
     // Acquis ×6 boost toggle
     $('btn-acquis-six').addEventListener('click', function () {
@@ -2706,14 +2768,12 @@
       .addEventListener('click', function (e) {
         if (inControl(e.target)) return;
         if ($('acquis-revealed').classList.contains('hidden')) revealAcquis();
-        else { acquisIndex++; showAcquisPhrase(); }
+        else acquisNext();
       });
 
     // Swipe left for the next card, right for the previous one — the same two
     // moves the ⏮ / ⏭ header buttons make.
-    bindSwipe($('screen-acquis'),
-      function () { acquisIndex++; showAcquisPhrase(); },
-      function () { if (acquisIndex > 0) { acquisIndex--; showAcquisPhrase(); } });
+    bindSwipe($('screen-acquis'), acquisNext, acquisPrev);
 
     // Apprentissage shows both sentences at once, so there is nothing to
     // reveal — only the same two moves as its ⏮ / ⏭.
@@ -2722,13 +2782,10 @@
     $('btn-tts').addEventListener('click', function () {
       var p = acquisPhrases[acquisIndex];
       if (!p) return;
-      speakFrench(acquisCustomPool ? fqTexts(p, acquisExercises[acquisIndex]).fr : p.fr);
+      speakFrench(fqTexts(p, currentExercise()).fr);
     });
 
-    $('btn-suivant').addEventListener('click', function () {
-      acquisIndex++;
-      showAcquisPhrase();
-    });
+    $('btn-suivant').addEventListener('click', acquisNext);
 
     $('btn-acquis-auto').addEventListener('click', function () {
       var on = toggleAutoPlay();
@@ -2784,11 +2841,10 @@
       if (!$('screen-acquis').classList.contains('screen--active')) return;
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        if (acquisIndex > 0) { acquisIndex--; showAcquisPhrase(); }
+        acquisPrev();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        acquisIndex++;
-        showAcquisPhrase();
+        acquisNext();
       } else if (e.key === ' ') {
         e.preventDefault();
         if ($('acquis-revealed').classList.contains('hidden')) {
