@@ -91,6 +91,47 @@ script checks this.
   makes about it to his wife (boredom is good for the children), and the
   adjective plus *mourir d'ennui*.
 
+### The careful `tu` band was converted to spoken form (Sept 2026)
+
+The three-register split is now **two**. Everything addressed to `tu` reads the
+way it is actually said: the dropped `ne` (*je sais pas*, *c'est pas grave*),
+`t'as` / `t'es` / `t'étais`, *faut que* for *il faut que*, *y a* for *il y a*.
+169 sentences below id 334 were rewritten; everything from 334 up already read
+that way, so it was left untouched — running rules over it could only break it.
+
+**This reverses the earlier "formality is not a defect" decision**, on the
+tutor's own instruction: *"change them by this rationale — how would a French
+person say it in this situation."* Situation, not blanket rule, so **24
+sentences keep the full form** because a French speaker would use it there:
+
+- **proverbs** — *on ne fait pas d'omelette…*, *les chiens ne font pas des
+  chats*, *…vendre la peau de l'ours*;
+- **frozen `n'`** — *n'empêche*, *n'importe quoi*, *n'est-ce pas*. The `n'` is
+  part of the word. My rules stripped it and produced *"Empêche, il aurait pu
+  nous prévenir"* and *"Importe quoi !"* before I caught it;
+- **elevated frames** — *Il est regrettable/étrange/surprenant que…*, *Quoi que
+  tu dises*, *Quelle que soit*, participial absolutes. Nobody drops the `ne`
+  inside a sentence that formal;
+- **subject negation** — *rien ne change*, *personne ne l'avait prévenu*. Dropped
+  in speech, but far more marked than *je sais pas*, and it reads as an error
+  written down. The softest of these calls — easy to revisit;
+- **`ni…ni`** — *ça n'a ni queue ni tête*: the `ne` is obligatory;
+- **`ne…que` after a full noun** — *ces erreurs ne sont que…*; fine to drop
+  after a clitic (*c'est qu'une question de temps*), broken after a noun phrase;
+- **object-pronoun imperatives** — *Ne l'invite pas*, *Ne me parle pas*. Said
+  without the `ne`, but *"L'invite pas"* at the head of a sentence reads like a
+  typo.
+
+The `vous` travel set (414–433) keeps everything: full `ne`, no contractions.
+That register is the whole point of those entries.
+
+**If you ever rewrite French with a script, `\b` is a trap.** JavaScript's `\b`
+is ASCII-only, so it fires *inside* accented words: `\bne\s+` turned
+*"ça traîne depuis hier"* into *"ça traîdepuis hier"* and *"je les emmène au
+parc"* into *"je les emmèau parc"*. Use explicit unicode lookarounds
+(`(?<![A-Za-zÀ-ÖØ-öø-ÿ])`). Neither a syntax check nor a duplicate check catches
+that — only reading the diff does.
+
 ### Three registers coexist deliberately
 
 | ids | register |
