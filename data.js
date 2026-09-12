@@ -542,5 +542,17 @@ var PHRASES = [
   // adjective plus the idiom.
   { id: 511, fr: "Il s'ennuie, il sait pas quoi faire de sa journée.", en: "He's bored, he doesn't know what to do with himself.", context: "s'ennuyer — casual", alt_usage: "Elle s'est ennuyée tout l'après-midi chez ta mère.", alt_usage_en: "She was bored all afternoon at your mother's." },
   { id: 512, fr: "Ça leur fait pas de mal de s'ennuyer un peu.", en: "It doesn't do them any harm to be a bit bored.", context: "Boredom is good for them — casual", alt_usage: "C'est en s'ennuyant qu'ils apprennent à s'occuper tout seuls.", alt_usage_en: "It's by being bored that they learn to keep themselves busy." },
-  { id: 513, fr: "C'était moins ennuyeux que je pensais, franchement.", en: "It was less boring than I thought, honestly.", context: "ennuyeux / mourir d'ennui — casual", alt_usage: "Je m'attendais à mourir d'ennui, et en fait ça allait.", alt_usage_en: "I was expecting to die of boredom, and actually it was fine." }
+  { id: 513, fr: "C'était moins ennuyeux que je pensais, franchement.", en: "It was less boring than I thought, honestly.", context: "ennuyeux / mourir d'ennui — casual", alt_usage: "Je m'attendais à mourir d'ennui, et en fait ça allait.", alt_usage_en: "I was expecting to die of boredom, and actually it was fine." },
+
+  // ── Tant que ────────────────────────────────────────────
+  // The conjunction was missing entirely: the only two hits for "tant qu"
+  // were inside the frozen proverb 118 (battre le fer tant qu'il est chaud),
+  // where it teaches nothing about the construction. It sits in the gap
+  // between 248 (jusqu'à ce que — until X happens) and 289 (en attendant que).
+  // One entry per behaviour: plain duration, the futur rule, and the idiom.
+  // `tant qu'à faire` is deliberately absent — 462 and the autant family
+  // (503–509) already own "we may as well".
+  { id: 514, fr: "Tant qu'ils sont calmes, on les laisse.", en: "As long as they're being quiet, let's leave them be.", context: "tant que — as long as (duration)", alt_usage: "Tant que ça t'arrange, moi ça me va.", alt_usage_en: "As long as it suits you, it's fine by me." },
+  { id: 515, fr: "Tant qu'il aura pas fini ses devoirs, il touche pas à la tablette.", en: "Until he's finished his homework, he's not touching the tablet.", context: "tant que + futur — not until", alt_usage: "Tant qu'on aura pas la réponse, on réserve rien.", alt_usage_en: "Until we get the answer, we're not booking anything." },
+  { id: 516, fr: "Tant que t'y es, prends du pain en rentrant.", en: "While you're at it, grab some bread on your way back.", context: "tant que tu y es — while you're at it", alt_usage: "Tant qu'on y est, on annule aussi pour samedi ?", alt_usage_en: "While we're at it, shall we cancel Saturday as well?" }
 ];

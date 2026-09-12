@@ -1367,7 +1367,9 @@
   var ONE_OFF_BATCHES = [
     { marker: 'flaggedArgBatch480',     from: 480, to: 499, promote: false },
     { marker: 'promotedQuitteBatch500', from: 500, to: 502, promote: true },
-    { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true }
+    { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true },
+    // ⚑ without ×6: he asked for these flagged, not for six readings each.
+    { marker: 'flaggedTantQueBatch514', from: 514, to: 516, promote: true, boost: false }
   ];
 
   function applyOneOffBatches() {
@@ -1380,7 +1382,7 @@
         if (!findPhraseById(id)) continue;            // not in this data.js yet
         if (batch.promote) {
           var d = getPhraseData(id);
-          writePhrase(id, { level: 4, boost: true, hardManual: true,
+          writePhrase(id, { level: 4, boost: batch.boost !== false, hardManual: true,
                             lastSeen: Date.now(), timesSeen: (d.timesSeen || 0) + 1 });
         } else {
           writePhrase(id, { hardManual: true });      // ⚑ only: a pre-flag
