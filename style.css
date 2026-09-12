@@ -847,7 +847,10 @@ ul {
   border: var(--border-subtle);
   border-left: 4px solid transparent;
   border-radius: var(--radius-md);
-  padding: 0.65rem 1.1rem;
+  /* Horizontal padding is a width budget, not decoration: Mains Libres can read
+     "(1024 / 1290)" and now also carries the speaker mark, which together left
+     3px before the row icon at 1.1rem. */
+  padding: 0.65rem 0.85rem;
   width: 100%;
   text-align: left;
   box-shadow: var(--shadow-card);
@@ -869,6 +872,25 @@ ul {
   flex-shrink: 0;
   opacity: 0.65;
 }
+
+/* Marks the two modes you LISTEN to, in the same place and the same ink as the
+   ⚑ that marks the two filtered ones. A mark before the word gets read; the
+   mode icon at the far right of the row does not, which is why Mains Libres and
+   Mes Acquis were easy to mix up. Now exactly one of each confusable pair
+   carries a speaker. */
+.label-audio {
+  display: inline-block;
+  width: 0.66em;
+  height: 0.66em;
+  vertical-align: -0.01em;
+  margin-right: 0.08em;
+  color: var(--text-heading);
+}
+
+/* The two audio rows also carry their mode icon at full strength, so the row
+   reads as "sound" from either end. */
+.btn-home--mains   .btn-home-icon,
+.btn-home--ecouter .btn-home-icon { opacity: 1; }
 
 /* One colour per mode, so the six rows are told apart at a glance. Grouping the
    rows by modality instead (one hue for the two listening modes, another for
