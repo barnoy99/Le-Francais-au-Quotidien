@@ -58,7 +58,25 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-494 entries / 988 sentences. Each entry is a main sentence plus an alt.
+502 entries / 1004 sentences. Each entry is a main sentence plus an alt.
+
+**The construction audit is finished (536–543 closed it).** Two probe waves over
+~160 constructions; everything that survived verification has been written. The
+last three pockets were approximation (`la plupart`, `à peu près`, `de plus en
+plus`, `pas mal de` — a whole family at zero), expectation (`risquer de`,
+`être censé`, `passer son temps à`) and `d'ailleurs`.
+**Don't run a third construction hunt.** What is left probed as covered:
+interrupting (14 hits), asking someone to repeat or slow down (6), compliments
+(8), plus-que-parfait (9). What is genuinely still absent is *vocabulary* rather
+than structure — school admin (cantine, bulletin, sortie scolaire) — and he does
+not use French for it; he speaks French to his wife about the children, not to
+the school. Cut for being more written than spoken: `à mesure que`,
+`quand bien même`, `de sorte que`, `auquel`/`duquel`, `plus ou moins`,
+`cela dit` (the concession pivot is already well served).
+**The next real gain is not more phrases.** The corpus is almost entirely his
+half of a conversation — what he says. There is nearly no practice at
+*understanding a reply at speed*, which is the harder half. That is a feature
+(French first, produce the English), not a batch.
 
 **The 2026 coverage probe (517–535).** Probing ~90 constructions found the
 corpus was rich in the *clever* connectors and nearly empty of the ordinary

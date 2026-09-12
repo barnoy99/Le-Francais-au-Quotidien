@@ -596,5 +596,30 @@ var PHRASES = [
   { id: 532, fr: "J'ai du mal à le faire manger le soir.", en: "I struggle to get him to eat in the evening.", context: "avoir du mal à — to struggle to", alt_usage: "Elle a du mal à se concentrer quand y a du bruit.", alt_usage_en: "She finds it hard to concentrate when there's noise." },
   { id: 533, fr: "Prends un pull, au cas où il ferait froid.", en: "Take a jumper, in case it turns cold.", context: "au cas où + conditionnel — just in case", alt_usage: "Je te laisse les clés, au cas où.", alt_usage_en: "I'll leave you the keys, just in case." },
   { id: 534, fr: "Il arrête pas de demander quand on y va.", en: "He won't stop asking when we're going.", context: "arrêter pas de — to keep on doing", alt_usage: "Elle arrête pas de me couper la parole.", alt_usage_en: "She keeps cutting me off." },
-  { id: 535, fr: "Je me suis rendu compte trop tard qu'on avait rien pour demain.", en: "I realised too late that we had nothing in for tomorrow.", context: "se rendre compte — to realise", alt_usage: "Il se rend même pas compte du bruit qu'il fait.", alt_usage_en: "He doesn't even realise how much noise he's making." }
+  { id: 535, fr: "Je me suis rendu compte trop tard qu'on avait rien pour demain.", en: "I realised too late that we had nothing in for tomorrow.", context: "se rendre compte — to realise", alt_usage: "Il se rend même pas compte du bruit qu'il fait.", alt_usage_en: "He doesn't even realise how much noise he's making." },
+
+  // ── Doser et nuancer ─────────────────────────────────────
+  // The last measured gaps. Approximation was a whole small family at zero:
+  // `la plupart`, `à peu près`, `de plus en plus`, `pas mal de`, `plus ou moins`
+  // — nothing in 988 sentences said "most of the time" or "roughly". (The one
+  // `pas mal` hit, 476, is the other sense: "not bad".) `plus ou moins` is left
+  // out as the weakest of the five and the closest to `à peu près`.
+  { id: 536, fr: "La plupart du temps, c'est moi qui les couche.", en: "Most of the time, I'm the one who puts them to bed.", context: "la plupart (du temps) — most", alt_usage: "La plupart de ses copains ont déjà un portable.", alt_usage_en: "Most of his friends already have a phone." },
+  { id: 537, fr: "Ils étaient à peu près une trentaine à la fête.", en: "There were roughly thirty of them at the party.", context: "à peu près — roughly / about", alt_usage: "J'ai à peu près tout préparé pour demain.", alt_usage_en: "I've got just about everything ready for tomorrow." },
+  { id: 538, fr: "Il fait de plus en plus de crises le soir.", en: "He's having more and more meltdowns in the evening.", context: "de plus en plus / de moins en moins", alt_usage: "On se voit de moins en moins, c'est dommage.", alt_usage_en: "We see each other less and less — it's a shame." },
+  { id: 539, fr: "Y a pas mal de monde qui vient ce week-end.", en: "Quite a few people are coming this weekend.", context: "pas mal de — quite a lot of", alt_usage: "J'ai encore pas mal de trucs à faire avant de partir.", alt_usage_en: "I've still got quite a bit to do before we go." },
+
+  // ── Ce qui est prévu, ce qui menace d'arriver ────────────
+  // `risquer de` is the one that matters: it is a false friend, and almost
+  // never about risk. "On risque d'être en retard" is simply "we're likely to
+  // be late" — a shape you would never reach for from English.
+  { id: 540, fr: "Vas-y doucement, tu risques de le réveiller.", en: "Go gently — you might wake him up.", context: "risquer de — likely to / might", alt_usage: "Ça risque de prendre plus longtemps que prévu.", alt_usage_en: "That's likely to take longer than expected." },
+  { id: 541, fr: "Le colis est censé arriver aujourd'hui.", en: "The parcel is supposed to arrive today.", context: "être censé — supposed to", alt_usage: "On était censés se retrouver devant l'école.", alt_usage_en: "We were supposed to meet in front of the school." },
+  { id: 542, fr: "Il passe son temps à chercher ses affaires.", en: "He spends his whole time looking for his things.", context: "passer son temps à — to spend one's time doing", alt_usage: "On passe notre temps à répéter la même chose.", alt_usage_en: "We spend our whole time repeating the same thing." },
+
+  // ── D'ailleurs ───────────────────────────────────────────
+  // `cela dit` was on the shortlist and cut: the concession pivot is already
+  // well served by n'empêche, quand même, pourtant and the new par contre (519)
+  // and alors que (520). `d'ailleurs` is a different move and had nothing.
+  { id: 543, fr: "D'ailleurs, je voulais te demander un truc.", en: "Which reminds me — I've been meaning to ask you something.", context: "d'ailleurs — which reminds me / in fact", alt_usage: "Elle adore sa maîtresse, d'ailleurs elle en parle tout le temps.", alt_usage_en: "She loves her teacher — she talks about her constantly, in fact." }
 ];

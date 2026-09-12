@@ -1374,7 +1374,8 @@
     // away: highest daily frequency, or hardest to produce from English
     // instinct. The other nine go through Apprentissage like anything new.
     { marker: 'x6ConnectorsBatch517', promote: true,
-      ids: [517, 519, 520, 522, 525, 531, 532, 533, 534, 535] }
+      ids: [517, 519, 520, 522, 525, 531, 532, 533, 534, 535] },
+    { marker: 'x6FinalGapsBatch536', from: 536, to: 543, promote: true }
   ];
 
   function applyOneOffBatches() {
