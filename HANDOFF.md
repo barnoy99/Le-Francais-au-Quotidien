@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=94`, `style.css?v=70`, `data.js?v=39`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v86'`.
+**Current versions:** `app.js?v=94`, `style.css?v=71`, `data.js?v=39`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v87'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -471,6 +471,12 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   the existing right-hand icon doing the work — same icon, same colour, per pair,
   nothing tinted. Bordeaux against sage is the widest split the palette offers,
   and the two icons differ in shape as well as hue, so it never rests on colour.
+  **Weight order on the row matters as much as the colours:** label (25px, near
+  black) → icon (30px, stroke 2.1, full-strength hue) → `⚑` (18px,
+  `--text-secondary`). The ⚑ used to be plain label text — full size, heading
+  black — which made the modifier louder than the thing it modifies and undid the
+  pairing; it is wrapped in `.label-flag` now. If a pair ever stops reading as a
+  pair, check this ordering before touching the hues.
 - **`.btn-home` horizontal padding is a width budget, not decoration.** It sits
   at 0.85rem (was 1.1rem): Mains Libres genuinely reaches `(1024 / 1290)`, since
   a round is ~1150 sentences. That worst case now clears the row icon by 39px.

@@ -866,11 +866,27 @@ ul {
   flex-direction: column;
 }
 
+/* The icon is what tells the pairs apart, so it is the loudest mark on the row:
+   bigger than the body text and drawn with a heavier stroke. It used to be a
+   26px hairline at 0.65 opacity, quieter than the ⚑ sitting in the label — the
+   modifier was shouting over the thing being modified. */
 .btn-home-icon {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
+  stroke-width: 2.1;
   flex-shrink: 0;
   opacity: 0.65;
+}
+
+/* ⚑ marks *which* of a pair you are looking at, so it is a modifier, not a
+   heading: three-quarter size and secondary ink rather than full-size heading
+   black. Same glyph, far less weight. */
+.label-flag {
+  font-size: 0.72em;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-right: 0.05em;
+  vertical-align: 0.06em;
 }
 
 /* The icon carries the pairing: the two rows you LISTEN to share one icon and
