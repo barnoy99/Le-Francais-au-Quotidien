@@ -873,41 +873,30 @@ ul {
   opacity: 0.65;
 }
 
-/* Marks the two modes you LISTEN to, in the same place and the same ink as the
-   ⚑ that marks the two filtered ones. A mark before the word gets read; the
-   mode icon at the far right of the row does not, which is why Mains Libres and
-   Mes Acquis were easy to mix up. Now exactly one of each confusable pair
-   carries a speaker. */
-.label-audio {
-  display: inline-block;
-  width: 0.66em;
-  height: 0.66em;
-  vertical-align: -0.01em;
-  margin-right: 0.08em;
-  color: var(--text-heading);
-}
-
-/* The two audio rows also carry their mode icon at full strength, so the row
-   reads as "sound" from either end. */
-.btn-home--mains   .btn-home-icon,
-.btn-home--ecouter .btn-home-icon { opacity: 1; }
-
-/* One colour per mode, so the six rows are told apart at a glance. Grouping the
-   rows by modality instead (one hue for the two listening modes, another for
-   the two reading ones) was tried and rejected: in the app's own wine-and-gilt
-   palette the pairs read as two washed cards rather than as a pairing, and in a
-   blue/teal one they read as a different application. Left as it was. */
-.btn-home--mains    { border-left-color: var(--color-blue); }
-.btn-home--acquis   { border-left-color: var(--color-teal); }
-.btn-home--appr     { border-left-color: var(--color-gold); }
-.btn-home--ecouter  { border-left-color: var(--color-amber); }
+/* The icon carries the pairing: the two rows you LISTEN to share one icon and
+   one colour, the two you READ and recall share another. That is the whole
+   signal — no tint on the card. Washing the cards to say the same thing was
+   tried twice and rejected both times; confined to a 26px icon and a 4px edge
+   it reads as a pairing instead of as two stained rows.
+   Bordeaux against sage is the widest split the app's palette offers, and the
+   two icons differ in shape as well as hue, so the grouping never rests on
+   colour alone. Apprentissage keeps gold and Chercher slate: neither has a
+   twin, so neither needs to match anything. */
+.btn-home--mains,
+.btn-home--ecouter  { border-left-color: var(--color-accent); }
+.btn-home--acquis,
 .btn-home--reviser  { border-left-color: var(--color-sage); }
+.btn-home--appr     { border-left-color: var(--color-gold); }
 
-.btn-home--mains    .btn-home-icon { color: var(--color-blue); }
-.btn-home--acquis   .btn-home-icon { color: var(--color-teal); }
-.btn-home--appr     .btn-home-icon { color: var(--color-gold); }
-.btn-home--ecouter  .btn-home-icon { color: var(--color-amber); }
+.btn-home--mains    .btn-home-icon,
+.btn-home--ecouter  .btn-home-icon { color: var(--color-accent); }
+.btn-home--acquis   .btn-home-icon,
 .btn-home--reviser  .btn-home-icon { color: var(--color-sage); }
+.btn-home--appr     .btn-home-icon { color: var(--color-gold); }
+
+/* The practice icons are the only thing telling the pairs apart now, so they
+   are not dimmed. Chercher stays faint — it is not a practice mode. */
+.btn-home:not(.btn-home--chercher) .btn-home-icon { opacity: 1; }
 
 /* Chercher isn't a practice mode — quieter, and it keeps its subtitle. */
 .btn-home--chercher {

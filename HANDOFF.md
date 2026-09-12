@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=94`, `style.css?v=69`, `data.js?v=39`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v85'`.
+**Current versions:** `app.js?v=94`, `style.css?v=70`, `data.js?v=39`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v86'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -459,27 +459,22 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   counts, so the two are sized apart rather than the whole line being scaled up.
   At 375×812 that still leaves 41px of clearance below Chercher, so the home
   screen does not scroll.
-- **The two listening modes carry a speaker mark before the label**
-  (`.label-audio`, a 0.66em inline SVG in heading ink), in the same slot and at
-  the same weight as the ⚑ that marks the two filtered ones — so Écouter reads
-  speaker, flag, word, and the speakers line up across both audio rows. The mode
-  icon at the far right does not do this job: it is muted, coloured and sits past
-  the text, so it never gets read, and Mains Libres / Mes Acquis were being
-  confused despite it. Those two rows also take their mode icon at `opacity: 1`.
-  Colour is NOT the grouping mechanism here — see the next note for why.
-- **`.btn-home` horizontal padding is a width budget, not decoration.** It went
-  1.1rem → 0.85rem when the speaker mark landed: Mains Libres genuinely reaches
-  `(1024 / 1290)` (a round is ~1150 sentences), and the mark plus a four-digit
-  fraction left **3px** before the row icon at the old padding. It is 15px at
-  that worst case now. Re-measure that row before adding anything else to it.
-- **Home rows are one colour per mode** (blue / teal / gold / amber / sage /
-  slate), each on the plain card background. **Grouping them by modality was
-  tried and reverted twice** — one hue for the two listening modes, another for
-  the two reading ones, with a soft wash across each card. Rejected first in
-  generic blue/teal ("aquatic, not French chic") and again in the app's own
-  bordeaux-and-gilt, so the objection is not only to the palette: the washed
-  pairs read as tinted cards rather than as a pairing, and the home screen loses
-  its calm. Don't propose it a third time without a genuinely new idea.
+- **The row icon carries the pairing.** The two rows you LISTEN to share one
+  icon and one colour (headphones, bordeaux); the two you READ and recall share
+  another (check, sage); Apprentissage keeps gold and Chercher slate, since
+  neither has a twin. Practice icons run at `opacity: 1` — they are the signal
+  now — while Chercher stays at 0.45.
+  Getting here took three tries, so don't redo the dead ends: **a colour wash
+  across the paired cards was rejected twice**, in generic blue/teal ("aquatic,
+  not French chic") and again in the app's own bordeaux-and-gilt. **A speaker
+  glyph before the label** (`.label-audio`) was rejected too. What was wanted was
+  the existing right-hand icon doing the work — same icon, same colour, per pair,
+  nothing tinted. Bordeaux against sage is the widest split the palette offers,
+  and the two icons differ in shape as well as hue, so it never rests on colour.
+- **`.btn-home` horizontal padding is a width budget, not decoration.** It sits
+  at 0.85rem (was 1.1rem): Mains Libres genuinely reaches `(1024 / 1290)`, since
+  a round is ~1150 sentences. That worst case now clears the row icon by 39px.
+  Re-measure that row before adding anything to it.
 - **The home screen has ~12px of vertical headroom at 375×812** and must never
   scroll. Adding the "dernier cycle" half of the second line pushed it 6px past
   the viewport; `#screen-home` now halves the generic 2rem bottom padding to buy
