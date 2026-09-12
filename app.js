@@ -1369,7 +1369,12 @@
     { marker: 'promotedQuitteBatch500', from: 500, to: 502, promote: true },
     { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true },
     // ⚑ without ×6: he asked for these flagged, not for six readings each.
-    { marker: 'flaggedTantQueBatch514', from: 514, to: 516, promote: true, boost: false }
+    { marker: 'flaggedTantQueBatch514', from: 514, to: 516, promote: true, boost: false },
+    // The ten of the 517–535 batch that earn a place in the rotation straight
+    // away: highest daily frequency, or hardest to produce from English
+    // instinct. The other nine go through Apprentissage like anything new.
+    { marker: 'x6ConnectorsBatch517', promote: true,
+      ids: [517, 519, 520, 522, 525, 531, 532, 533, 534, 535] }
   ];
 
   function applyOneOffBatches() {
@@ -1377,7 +1382,15 @@
     for (var b = 0; b < ONE_OFF_BATCHES.length; b++) {
       var batch = ONE_OFF_BATCHES[b];
       if (state[batch.marker]) continue;              // already run on this state
-      for (var id = batch.from; id <= batch.to; id++) {
+      // A batch names either a contiguous range or an explicit list — the ids
+      // worth promoting are rarely the ids that happen to sit next to each other.
+      var list = batch.ids;
+      if (!list) {
+        list = [];
+        for (var r = batch.from; r <= batch.to; r++) list.push(r);
+      }
+      for (var k = 0; k < list.length; k++) {
+        var id = list[k];
         if (deleted.indexOf(id) !== -1) continue;     // already thrown out
         if (!findPhraseById(id)) continue;            // not in this data.js yet
         if (batch.promote) {

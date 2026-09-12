@@ -554,5 +554,47 @@ var PHRASES = [
   // (503–509) already own "we may as well".
   { id: 514, fr: "Tant qu'ils sont calmes, on les laisse.", en: "As long as they're being quiet, let's leave them be.", context: "tant que — as long as (duration)", alt_usage: "Tant que ça t'arrange, moi ça me va.", alt_usage_en: "As long as it suits you, it's fine by me." },
   { id: 515, fr: "Tant qu'il aura pas fini ses devoirs, il touche pas à la tablette.", en: "Until he's finished his homework, he's not touching the tablet.", context: "tant que + futur — not until", alt_usage: "Tant qu'on aura pas la réponse, on réserve rien.", alt_usage_en: "Until we get the answer, we're not booking anything." },
-  { id: 516, fr: "Tant que t'y es, prends du pain en rentrant.", en: "While you're at it, grab some bread on your way back.", context: "tant que tu y es — while you're at it", alt_usage: "Tant qu'on y est, on annule aussi pour samedi ?", alt_usage_en: "While we're at it, shall we cancel Saturday as well?" }
+  { id: 516, fr: "Tant que t'y es, prends du pain en rentrant.", en: "While you're at it, grab some bread on your way back.", context: "tant que tu y es — while you're at it", alt_usage: "Tant qu'on y est, on annule aussi pour samedi ?", alt_usage_en: "While we're at it, shall we cancel Saturday as well?" },
+
+  // ── Les connecteurs ordinaires ───────────────────────────
+  // The corpus was rich in the clever connectors (n'empêche, quitte à,
+  // d'autant plus que) and nearly empty of the plain ones: `parce que` appeared
+  // once in 950 sentences, `par contre` / `alors que` / `vu que` not at all.
+  // That is what building function-first does — it reaches for the interesting
+  // move and skips the ordinary one. No entry for `parce que` itself: he knows
+  // it, the gap is its alternatives.
+  { id: 517, fr: "Vu qu'il pleut, on va pas au parc.", en: "Seeing as it's raining, we're not going to the park.", context: "vu que / puisque — seeing as", alt_usage: "Puisque t'es debout, tu peux éteindre ?", alt_usage_en: "Since you're up anyway, can you switch it off?" },
+  { id: 518, fr: "Il a mal dormi, c'est pour ça qu'il est ronchon.", en: "He slept badly — that's why he's grumpy.", context: "c'est pour ça que — that's why", alt_usage: "C'est pour ça que je voulais partir tôt.", alt_usage_en: "That's exactly why I wanted to leave early." },
+  { id: 519, fr: "Je peux passer le chercher, par contre faut que je parte maintenant.", en: "I can go and pick him up — but then I'd have to leave right now.", context: "par contre — but / on the other hand", alt_usage: "Elle mange de tout, par contre elle déteste les tomates.", alt_usage_en: "She eats anything — except she can't stand tomatoes." },
+  { id: 520, fr: "Il se plaint alors que c'est lui qui a insisté.", en: "He's complaining, when he's the one who insisted.", context: "alors que — whereas / when in fact", alt_usage: "Elle dort bien, alors que son frère se réveille trois fois.", alt_usage_en: "She sleeps well, whereas her brother wakes up three times." },
+  { id: 521, fr: "Même si ça t'ennuie, faut qu'on en parle.", en: "Even if it bothers you, we need to talk about it.", context: "même si — even if / even though", alt_usage: "Même s'il dit oui, je suis pas sûr qu'il vienne.", alt_usage_en: "Even if he says yes, I'm not sure he'll turn up." },
+
+  // ── Penser tout haut : probabilité, ouï-dire, doute ──────
+  // A whole missing category, not a missing word. `apparemment`, `il paraît
+  // que`, `j'imagine`, `ça m'étonnerait`, and `devoir` in its probability sense
+  // were all at zero: he could state and react, but not speculate aloud.
+  { id: 522, fr: "Il doit être coincé dans les bouchons.", en: "He must be stuck in traffic.", context: "devoir — must be (probability)", alt_usage: "Elle doit avoir dans les quarante ans.", alt_usage_en: "She must be around forty." },
+  { id: 523, fr: "Apparemment, ils déménagent cet été.", en: "Apparently they're moving this summer.", context: "apparemment / il paraît que — apparently", alt_usage: "Il paraît que la nouvelle maîtresse est très bien.", alt_usage_en: "Word is the new teacher is very good." },
+  { id: 524, fr: "Elle est fatiguée, j'imagine qu'elle va pas venir.", en: "She's tired — I'm guessing she won't come.", context: "j'imagine / je suppose — I'd guess", alt_usage: "Je suppose qu'ils ont pas eu le temps.", alt_usage_en: "I suppose they didn't have time." },
+  { id: 525, fr: "Ça m'étonnerait qu'il soit déjà couché.", en: "I'd be surprised if he's already in bed.", context: "ça m'étonnerait que + subjonctif — I doubt it", alt_usage: "Ça m'étonnerait qu'on ait de la place sans réserver.", alt_usage_en: "I doubt we'd get a table without booking." },
+  { id: 526, fr: "A priori je finis tôt, mais je te confirme.", en: "As things stand I finish early, but I'll confirm.", context: "a priori / en principe — as things stand", alt_usage: "En principe, ils rentrent dimanche soir.", alt_usage_en: "They're due back Sunday evening, in principle." },
+
+  // ── Le temps qui passe ───────────────────────────────────
+  // `pendant que`, `depuis que`, `chaque fois que` and `au moment où` were all
+  // at zero, leaving 514 (tant que), 441 (le temps que) and 456 (une fois que)
+  // to carry every shade of "while" on their own.
+  { id: 527, fr: "Pendant que je range la cuisine, tu peux les faire monter ?", en: "While I tidy the kitchen, can you get them upstairs?", context: "pendant que — while (at the same time)", alt_usage: "Il a appelé pendant que j'étais sous la douche.", alt_usage_en: "He rang while I was in the shower." },
+  { id: 528, fr: "Depuis qu'il a changé de classe, il est beaucoup plus calme.", en: "Ever since he changed class, he's been much calmer.", context: "depuis que — ever since", alt_usage: "On dort mieux depuis qu'on a changé de matelas.", alt_usage_en: "We've slept better ever since we changed the mattress." },
+  { id: 529, fr: "Chaque fois qu'on sort, il oublie quelque chose.", en: "Every time we go out, he forgets something.", context: "chaque fois que — every time", alt_usage: "À chaque fois que je le lui dis, il fait comme s'il avait pas entendu.", alt_usage_en: "Every single time I tell him, he acts like he didn't hear." },
+  { id: 530, fr: "Au moment où j'allais partir, elle s'est mise à pleurer.", en: "Just as I was about to leave, she started crying.", context: "au moment où — just as", alt_usage: "Il est arrivé au moment où on partait.", alt_usage_en: "He turned up just as we were leaving." },
+
+  // ── Tournures verbales du quotidien ──────────────────────
+  // `être en train de`, `avoir du mal à`, `au cas où` and `arrêter pas de` were
+  // at zero; `se rendre compte` had one hit, inside a subjunctive. 532 carries
+  // the causative `faire + infinitif` too, which was also absent.
+  { id: 531, fr: "Je suis en train de me garer, je te rappelle.", en: "I'm parking right now — I'll call you back.", context: "être en train de — in the middle of", alt_usage: "Il était en train de manger quand je suis rentré.", alt_usage_en: "He was in the middle of eating when I got in." },
+  { id: 532, fr: "J'ai du mal à le faire manger le soir.", en: "I struggle to get him to eat in the evening.", context: "avoir du mal à — to struggle to", alt_usage: "Elle a du mal à se concentrer quand y a du bruit.", alt_usage_en: "She finds it hard to concentrate when there's noise." },
+  { id: 533, fr: "Prends un pull, au cas où il ferait froid.", en: "Take a jumper, in case it turns cold.", context: "au cas où + conditionnel — just in case", alt_usage: "Je te laisse les clés, au cas où.", alt_usage_en: "I'll leave you the keys, just in case." },
+  { id: 534, fr: "Il arrête pas de demander quand on y va.", en: "He won't stop asking when we're going.", context: "arrêter pas de — to keep on doing", alt_usage: "Elle arrête pas de me couper la parole.", alt_usage_en: "She keeps cutting me off." },
+  { id: 535, fr: "Je me suis rendu compte trop tard qu'on avait rien pour demain.", en: "I realised too late that we had nothing in for tomorrow.", context: "se rendre compte — to realise", alt_usage: "Il se rend même pas compte du bruit qu'il fait.", alt_usage_en: "He doesn't even realise how much noise he's making." }
 ];

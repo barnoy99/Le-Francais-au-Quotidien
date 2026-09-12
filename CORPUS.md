@@ -58,7 +58,25 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-475 entries / 950 sentences. Each entry is a main sentence plus an alt.
+494 entries / 988 sentences. Each entry is a main sentence plus an alt.
+
+**The 2026 coverage probe (517–535).** Probing ~90 constructions found the
+corpus was rich in the *clever* connectors and nearly empty of the ordinary
+ones: `parce que` appeared **once** in 950 sentences, and `par contre`,
+`alors que`, `vu que`, `puisque`, `c'est pour ça que` not at all. A whole
+category was missing rather than a word — speculation aloud: `apparemment`,
+`il paraît que`, `j'imagine`, `ça m'étonnerait que` and `devoir` in its
+probability sense were all zero, so he could state and react but not wonder.
+Also zero: `pendant que`, `depuis que`, `chaque fois que`, `au moment où`,
+`être en train de`, `avoir du mal à`, `au cas où`, `arrêter pas de`, and the
+causative `faire + infinitif`.
+**No entry was written for `parce que` itself** — he knows it; the gap is its
+alternatives, not the word. Deliberately left out as more written than spoken:
+`à mesure que`, `quand bien même`, `de sorte que`, `auquel`/`duquel`.
+**Watch the regexes when probing.** The first pass reported false zeros for
+`se faire + infinitif` (7 hits, at 396–399) and false positives for `vu que`
+(18, all inside other words). Verify every hit by eye before calling something
+a hole.
 
 **Argument-building entries (480–499) break the alt rule on purpose.** Everywhere
 else `alt_usage` is an independent second use of the phrase. In these twenty the
