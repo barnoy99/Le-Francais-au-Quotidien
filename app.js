@@ -1363,6 +1363,7 @@
   // state, so anything you change afterwards sticks. `promote` writes the same
   // three fields the "×6 ⚑" button does — level 4, boost, flag — which lands the
   // batch straight in Mes Acquis and both ⚑ passes, skipping Apprentissage.
+  // `boostOnly` writes the ×6 flag alone, for phrases already in the right pool.
   // Never reuse a marker: a new batch gets a new row.
   var ONE_OFF_BATCHES = [
     { marker: 'flaggedArgBatch480',     from: 480, to: 499, promote: false },
@@ -1370,6 +1371,11 @@
     { marker: 'promotedAutantBatch503', from: 503, to: 509, promote: true },
     // ⚑ without ×6: he asked for these flagged, not for six readings each.
     { marker: 'flaggedTantQueBatch514', from: 514, to: 516, promote: true, boost: false },
+    // …and then asked for them ×6 after all, to match the rest of that day's
+    // intake. The row above has already run on his device, so editing it would
+    // reach nobody; `boostOnly` adds the ×6 without touching level, lastSeen or
+    // timesSeen — they are already in Mes Acquis and their history is real.
+    { marker: 'x6TantQueBatch514', ids: [514, 515, 516], boostOnly: true },
     // The ten of the 517–535 batch that earn a place in the rotation straight
     // away: highest daily frequency, or hardest to produce from English
     // instinct. The other nine go through Apprentissage like anything new.
@@ -1394,7 +1400,9 @@
         var id = list[k];
         if (deleted.indexOf(id) !== -1) continue;     // already thrown out
         if (!findPhraseById(id)) continue;            // not in this data.js yet
-        if (batch.promote) {
+        if (batch.boostOnly) {
+          writePhrase(id, { boost: true });           // ×6 only: everything else stands
+        } else if (batch.promote) {
           var d = getPhraseData(id);
           writePhrase(id, { level: 4, boost: batch.boost !== false, hardManual: true,
                             lastSeen: Date.now(), timesSeen: (d.timesSeen || 0) + 1 });

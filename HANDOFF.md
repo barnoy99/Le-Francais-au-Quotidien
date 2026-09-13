@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=97`, `style.css?v=71`, `data.js?v=42`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v90'`.
+**Current versions:** `app.js?v=98`, `style.css?v=71`, `data.js?v=42`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v91'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -333,10 +333,15 @@ had 21 mastered phrases never played). Replaced with a persistent cycle:
   that ran on deleting the last card of a batch, which replayed the whole
   session from the top. Covered by `test/delete-test.js`.
 - **One-off batch changes live in the `ONE_OFF_BATCHES` table**, applied by
-  `applyOneOffBatches()` in `load()`. Each row is `{marker, from, to, promote}`:
+  `applyOneOffBatches()` in `load()`. Each row is `{marker, from, to, promote}`,
+  or `{marker, ids, …}` when the ids worth promoting are not contiguous:
   `promote: false` sets ⚑ only (a pre-flag), `true` writes level 4 + boost + ⚑ —
   the same three fields the "×6 ⚑" button writes, landing the batch in Mes Acquis
-  and both ⚑ passes and skipping Apprentissage. Each row runs once, guarded by
+  and both ⚑ passes and skipping Apprentissage. `promote: true, boost: false`
+  flags without the ×6; `boostOnly: true` writes the ×6 alone, leaving level,
+  `lastSeen` and `timesSeen` untouched — that is the way to change your mind about
+  a phrase already promoted on the user's device, since editing a row whose
+  marker has already run reaches nobody. Each row runs once, guarded by
   its own marker in state, so anything changed afterwards sticks. **Never reuse a
   marker** — a new batch gets a new row. Verified both ways: on a state where the
   earlier markers are set, only the new row applies and a hand-unflagged phrase
