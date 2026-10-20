@@ -1471,7 +1471,7 @@ ul {
   opacity: 0.85;
 }
 
-/* Lecture courte (×3·×6 → ×2·×4) — same idea as `auto`: the Mains Libres bar is
+/* Mode rapide (×3·×6 → ×2·×4, 5s gaps) — same idea as `auto`: the Mains Libres bar is
    full at four controls, so the switch rides on the phase caption's line. The
    caption stays centred in the middle column; the pill takes the right one. */
 .handsfree-phase-row {

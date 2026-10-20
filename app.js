@@ -47,7 +47,7 @@
   var handsfreeLookback = 0; // preloaded items sitting behind the resume point
   var handsfreeHistory = []; // stack of {index, exercise} for multi-step skip-back
   var handsfreeReadTarget = 3;          // see readsFor(), reset per exercise
-  var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
+  var handsfreeFinalPause = false;      // true during the inter-exercise gap
   var handsfreeCurrentFrench = '';      // frenchText of current exercise
   var handsfreeLastReadNum = 0;         // last completed read number
   var handsfreeCurrentReadsDoneCallback = null; // onDone ref for re-entry from ×6
@@ -2254,7 +2254,7 @@
         if (readNum >= handsfreeReadTarget) {
           onDone();
         } else {
-          startCountdown(8, 'Encore…', function () {
+          startCountdown(gapSeconds(), 'Encore…', function () {
             doFrenchReads(frenchText, readNum + 1, onDone);
           });
         }
@@ -2274,13 +2274,18 @@
     updateShortButton();
   }
 
-  // ── Lecture courte (Mains Libres + ⚑ Écouter) ──────────
-  // One global switch: ×3/×6 becomes ×2/×4 for every phrase. It scales the
-  // reads only — the ×6 flags, the rotation and the counters are untouched, so
-  // switching back restores everything exactly. Synced like `auto`.
+  // ── Mode rapide (Mains Libres + ⚑ Écouter) ─────────────
+  // One global switch: ×3/×6 becomes ×2/×4 for every phrase, and the gaps
+  // after each reading ("Encore…", "Suivant…") drop from 8s to 5s. The 11s
+  // recall countdown is left alone — that is the thinking time. The ×6 flags,
+  // the rotation and the counters are untouched, so switching back restores
+  // everything exactly. Synced like `auto`.
   function isShortReads() { return !!state.hfShortReads; }
 
   function baseReads() { return isShortReads() ? 2 : 3; }
+
+  // Read when each gap starts, so a toggle applies from the next gap on.
+  function gapSeconds() { return isShortReads() ? 5 : 8; }
 
   // ⚑ Écouter gives every sentence the base count, ×6 flag or not.
   function readsFor(p) {
@@ -2303,7 +2308,7 @@
 
   // Applies a new read count to the sentence already playing. Never cuts a
   // reading short: past the new count, it stops after the current one. If the
-  // reads had already finished (the 8s "Suivant…" gap), more are played now.
+  // reads had already finished (the "Suivant…" gap), more are played now.
   function retargetReads(want) {
     if (!handsfreeFinalPause) {
       handsfreeReadTarget = handsfreeLastReadNum < want ? want : handsfreeLastReadNum + 1;
@@ -2405,7 +2410,7 @@
         var advanceFn = function () {
           if (!handsfreeActive) return;
           handsfreeFinalPause = true;
-          startCountdown(8, 'Suivant…', function () {
+          startCountdown(gapSeconds(), 'Suivant…', function () {
             handsfreeFinalPause = false;
             advanceHandsfreeItem(p);
             handsfreeStep();
