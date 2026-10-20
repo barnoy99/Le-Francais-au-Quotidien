@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=71">
+  <link rel="stylesheet" href="style.css?v=72">
 </head>
 <body>
   <div id="app">
@@ -254,7 +254,10 @@
         </div>
       </div>
       <div class="phrase-content handsfree-content">
-        <p id="handsfree-phase" class="handsfree-phase"></p>
+        <div class="handsfree-phase-row">
+          <p id="handsfree-phase" class="handsfree-phase"></p>
+          <button id="btn-handsfree-short" class="btn-auto btn-short" aria-label="Lecture courte" title="Lecture courte : ×2 / ×4 au lieu de ×3 / ×6">×3 · ×6</button>
+        </div>
         <div id="handsfree-english-card" class="acquis-prompt-card">
           <p id="handsfree-english" class="acquis-english"></p>
         </div>
@@ -325,6 +328,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js?v=3"></script>
   <script src="data.js?v=42"></script>
-  <script src="app.js?v=98"></script>
+  <script src="app.js?v=99"></script>
 </body>
 </html>

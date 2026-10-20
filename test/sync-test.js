@@ -81,6 +81,9 @@ check('and the progress still comes from the newer copy',
 check('older settings do not overwrite newer ones',
       api.pickFreshest(dev({ updatedAt: 1000, acquisAutoPlay: false, settingsAt: 10 }),
                        dev({ updatedAt: 9000, acquisAutoPlay: true, settingsAt: 900 })).acquisAutoPlay === true);
+check('lecture courte rides the same settings stamp',
+      api.pickFreshest(dev({ updatedAt: 1000, hfShortReads: true,  settingsAt: 900 }),
+                       dev({ updatedAt: 9000, hfShortReads: false, settingsAt: 100 })).hfShortReads === true);
 
 console.log('');
 if (failures.length === 0) console.log('ALL CHECKS PASSED');

@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=98`, `style.css?v=71`, `data.js?v=42`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v91'`.
+**Current versions:** `app.js?v=99`, `style.css?v=72`, `data.js?v=42`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v92'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -82,6 +82,14 @@ preceded by a beep, with **8s** gaps ("Encore…") → **8s** "Suivant…" → n
 N = **6 if the phrase is ×6, else 3**. Difficulty does *not* change N (user's
 explicit choice). Each phrase plays as two exercises: main sentence, then alt.
 **⚑ Écouter is different on both counts** — see §5a.
+
+**Lecture courte** — the `×3 · ×6` pill on the phase-caption line (right of
+"Écoutez en anglais…") is one global switch: on, it reads `×2 · ×4` and every
+count drops to **2 / 4** (⚑ Écouter: 3 → 2). It scales reads only — ×6 flags,
+rotation and counters are untouched, so switching back restores everything. The
+bar's ×6 pill relabels to ×4 while it's on (the flag is still the ×6 flag).
+State: `state.hfShortReads`, merged on `settingsAt` like `auto`. Toggling
+mid-sentence never cuts a read short (`retargetReads`).
 
 Pause freezes a countdown and resumes it; pausing mid-sentence re-reads that
 sentence from the start on resume (mobile speech engines can't resume reliably).
@@ -638,6 +646,10 @@ mobile preset (375×812).
   4 lines → 6). It lives on the context line, which costs **16px of height and
   nothing horizontally**: with a long phrase plus its alt, normal Mes Acquis
   still clears the bar by 100px, ⚑ Réviser by 282px, and neither scrolls.
+- **The Mains Libres bar is full too**, so the Lecture courte pill sits on the
+  phase-caption line (grid `1fr auto 1fr`, caption centred in the middle). At
+  375px the pill spans 278–353 (the card's right edge) and the longest caption
+  "Écoutez en anglais…" ends at 269 — no overlap, no horizontal scroll.
 - The home screen has **~5px of vertical slack** — a 5th full-size button
   overflows by 91px. That's why Écouter/Réviser/Progrès share one row as small
   text links (span 321px, all exactly 44px tall).

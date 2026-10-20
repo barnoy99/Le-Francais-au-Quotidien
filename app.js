@@ -4,8 +4,6 @@
   var STORAGE_KEY = 'frenchSR_state';
   var VERSION = 1;
   var SUMMARY_INTERVAL = 10;
-  // ⚑ Écouter reads every sentence this many times, ×6 flag or not
-  var ECOUTER_READS = 3;
   var ECOUTER_DONE_SPEECH = 'Félicitations ! Vous avez écouté toutes vos expressions difficiles.';
 
   var state;
@@ -48,7 +46,7 @@
   var handsfreePositions = [];
   var handsfreeLookback = 0; // preloaded items sitting behind the resume point
   var handsfreeHistory = []; // stack of {index, exercise} for multi-step skip-back
-  var handsfreeReadTarget = 3;          // 3 or 6, reset per exercise
+  var handsfreeReadTarget = 3;          // see readsFor(), reset per exercise
   var handsfreeFinalPause = false;      // true during the 8s inter-exercise gap
   var handsfreeCurrentFrench = '';      // frenchText of current exercise
   var handsfreeLastReadNum = 0;         // last completed read number
@@ -112,7 +110,7 @@
              rvCycle: [], rvCursor: 0,
              apCycle: [], apCursor: 0,
              dayDate: '', dayFirst: '', daySeen: {}, dayHistory: {},
-             acquisAutoPlay: false };
+             acquisAutoPlay: false, hfShortReads: false };
   }
 
   function activePhrases() {
@@ -151,6 +149,7 @@
     if (!loser) return winner;
     if ((loser.settingsAt || 0) > (winner.settingsAt || 0)) {
       winner.acquisAutoPlay = loser.acquisAutoPlay;
+      winner.hfShortReads = loser.hfShortReads;
       winner.settingsAt = loser.settingsAt;
     }
     return winner;
@@ -2270,8 +2269,53 @@
     var p = handsfreePhrases[handsfreeIndex];
     var boosted = p ? isBoosted(p.id) : false;
     btn.classList.toggle('activated', boosted);
-    btn.textContent = '×6';
+    btn.textContent = '×' + baseReads() * 2;   // the flag is "×6", but say what it plays
     updateFlagButton('btn-handsfree-hard', p);
+    updateShortButton();
+  }
+
+  // ── Lecture courte (Mains Libres + ⚑ Écouter) ──────────
+  // One global switch: ×3/×6 becomes ×2/×4 for every phrase. It scales the
+  // reads only — the ×6 flags, the rotation and the counters are untouched, so
+  // switching back restores everything exactly. Synced like `auto`.
+  function isShortReads() { return !!state.hfShortReads; }
+
+  function baseReads() { return isShortReads() ? 2 : 3; }
+
+  // ⚑ Écouter gives every sentence the base count, ×6 flag or not.
+  function readsFor(p) {
+    if (handsfreeCustomPool || !isBoosted(p.id)) return baseReads();
+    return baseReads() * 2;
+  }
+
+  function toggleShortReads() {
+    state.hfShortReads = !state.hfShortReads;
+    state.settingsAt = Date.now();
+    save();
+  }
+
+  function updateShortButton() {
+    var btn = $('btn-handsfree-short');
+    if (!btn) return;
+    btn.classList.toggle('activated', isShortReads());
+    btn.textContent = isShortReads() ? '×2 · ×4' : '×3 · ×6';
+  }
+
+  // Applies a new read count to the sentence already playing. Never cuts a
+  // reading short: past the new count, it stops after the current one. If the
+  // reads had already finished (the 8s "Suivant…" gap), more are played now.
+  function retargetReads(want) {
+    if (!handsfreeFinalPause) {
+      handsfreeReadTarget = handsfreeLastReadNum < want ? want : handsfreeLastReadNum + 1;
+      return;
+    }
+    handsfreeReadTarget = Math.max(want, handsfreeLastReadNum);
+    if (handsfreeLastReadNum < want && handsfreeCurrentFrench && handsfreeCurrentReadsDoneCallback) {
+      handsfreeFinalPause = false;
+      if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
+      if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
+      doFrenchReads(handsfreeCurrentFrench, handsfreeLastReadNum + 1, handsfreeCurrentReadsDoneCallback);
+    }
   }
 
   function handsfreeStep() {
@@ -2327,9 +2371,9 @@
           : (slot * 2 + (handsfreeExercise === 'main' ? 1 : 2)) + ' / ' + roundSentenceTotal());
     setCounterSize('handsfree-counter', true);   // large in both Mains Libres modes
 
-    // Reset per-exercise state — boosted phrases start at 6 reads, except in a
-    // ⚑ Écouter session, where every sentence gets ECOUTER_READS regardless.
-    handsfreeReadTarget = handsfreeCustomPool ? ECOUTER_READS : (isBoosted(p.id) ? 6 : 3);
+    // Reset per-exercise state — boosted phrases get double reads, except in a
+    // ⚑ Écouter session, where every sentence gets the base count regardless.
+    handsfreeReadTarget = readsFor(p);
     handsfreeFinalPause = false;
     handsfreeLastReadNum = 0;
     updateSixButton();
@@ -2766,21 +2810,19 @@
       var nowBoosted = toggleBoost(p.id); // persistent — stays until cancelled
       invalidateCycles();
       // In a filtered (⚑ Écouter) session the flag is recorded for the main
-      // rotation but never changes this session's readings — always 3.
+      // rotation but never changes this session's readings — always the base.
       if (handsfreeCustomPool) { updateSixButton(); return; }
-      if (nowBoosted) {
-        handsfreeReadTarget = Math.max(6, handsfreeLastReadNum + 3);
-        // If we're in the 8s final pause, cancel it and do more reads
-        if (handsfreeFinalPause && handsfreeCurrentFrench && handsfreeCurrentReadsDoneCallback) {
-          handsfreeFinalPause = false;
-          if (handsfreeTimerId) { clearTimeout(handsfreeTimerId); handsfreeTimerId = null; }
-          if (handsfreeCountdownId) { clearInterval(handsfreeCountdownId); handsfreeCountdownId = null; }
-          doFrenchReads(handsfreeCurrentFrench, handsfreeLastReadNum + 1, handsfreeCurrentReadsDoneCallback);
-        }
-      } else {
-        // Cancelled — finish the basic 3, or stop after current read if past 3
-        handsfreeReadTarget = handsfreeLastReadNum < 3 ? 3 : handsfreeLastReadNum + 1;
-      }
+      // On: add a full set of reads. Off: finish the base count, or stop after
+      // the current read if already past it.
+      var base = baseReads();
+      retargetReads(nowBoosted ? Math.max(base * 2, handsfreeLastReadNum + base) : base);
+      updateSixButton();
+    });
+
+    $('btn-handsfree-short').addEventListener('click', function () {
+      toggleShortReads();
+      var p = handsfreePhrases[handsfreeIndex];
+      if (handsfreeActive && p) retargetReads(readsFor(p));
       updateSixButton();
     });
 
