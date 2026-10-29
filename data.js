@@ -621,5 +621,17 @@ var PHRASES = [
   // `cela dit` was on the shortlist and cut: the concession pivot is already
   // well served by n'empêche, quand même, pourtant and the new par contre (519)
   // and alors que (520). `d'ailleurs` is a different move and had nothing.
-  { id: 543, fr: "D'ailleurs, je voulais te demander un truc.", en: "Which reminds me — I've been meaning to ask you something.", context: "d'ailleurs — which reminds me / in fact", alt_usage: "Elle adore sa maîtresse, d'ailleurs elle en parle tout le temps.", alt_usage_en: "She loves her teacher — she talks about her constantly, in fact." }
+  { id: 543, fr: "D'ailleurs, je voulais te demander un truc.", en: "Which reminds me — I've been meaning to ask you something.", context: "d'ailleurs — which reminds me / in fact", alt_usage: "Elle adore sa maîtresse, d'ailleurs elle en parle tout le temps.", alt_usage_en: "She loves her teacher — she talks about her constantly, in fact." },
+
+  // ── Six from the user's own list ─────────────────────────
+  // Picked by him from ten. "Baisse d'un cran !" became the alt of 546, said
+  // about the kids rather than to someone; "J'ai trouvé ça nulle part" became
+  // the alt of 547 in its everyday form; 548 restores the missing m' in
+  // "Si c'est arrivé à moi". Two superlative + subjonctif lines were left out.
+  { id: 544, fr: "Faut savoir s'arrêter, ça fait deux heures qu'ils sont sur la tablette.", en: "You have to know when to stop — they've been on the tablet for two hours.", context: "Faut savoir s'arrêter — knowing when to stop", alt_usage: "Je reprendrais bien du gâteau, mais faut savoir s'arrêter.", alt_usage_en: "I'd happily have more cake, but you've got to know when to stop." },
+  { id: 545, fr: "Son histoire, ça tient pas debout.", en: "His story doesn't hold up.", context: "Ça tient pas debout — doesn't hold up", alt_usage: "Je suis tellement crevé que je tiens à peine debout.", alt_usage_en: "I'm so worn out I can barely stand." },
+  { id: 546, fr: "Cette année, on monte d'un cran avec les devoirs.", en: "This year we're stepping it up a notch with the homework.", context: "D'un cran — up a notch / down a notch", alt_usage: "Ils sont surexcités, faut qu'ils redescendent d'un cran avant le dîner.", alt_usage_en: "They're way too wound up — they need to come down a notch before dinner." },
+  { id: 547, fr: "Ça mène nulle part, cette discussion.", en: "This conversation is going nowhere.", context: "Nulle part — nowhere / not anywhere", alt_usage: "J'ai cherché ses chaussures partout, je les trouve nulle part.", alt_usage_en: "I've looked everywhere for his shoes — I can't find them anywhere." },
+  { id: 548, fr: "Si ça m'est arrivé à moi, ça peut arriver à n'importe qui.", en: "If it happened to me, it can happen to anyone.", context: "N'importe qui — anyone at all", alt_usage: "Ça peut arriver à n'importe qui, t'en fais pas.", alt_usage_en: "It could happen to anyone — don't worry about it." },
+  { id: 549, fr: "Faut bien avouer que ça marche pas comme on l'imaginait.", en: "We have to admit it's not working the way we imagined.", context: "Faut bien avouer — conceding a point", alt_usage: "Faut bien avouer qu'il a fait des progrès cette année.", alt_usage_en: "You have to admit he's made progress this year." }
 ];

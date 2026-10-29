@@ -29,8 +29,8 @@ then the user hard-refreshes. On **every** asset change:
 
 Skip any of these and devices keep serving stale files from the service worker.
 
-**Current versions:** `app.js?v=100`, `style.css?v=73`, `data.js?v=42`,
-`firebase-config.js?v=3`, `CACHE_VERSION = 'v93'`.
+**Current versions:** `app.js?v=100`, `style.css?v=73`, `data.js?v=43`,
+`firebase-config.js?v=3`, `CACHE_VERSION = 'v94'`.
 
 **Pages can silently fail.** A deploy once returned a 503 from GitHub's Pages
 API; the build then sat reporting `status: building` forever while the site kept
@@ -701,8 +701,8 @@ mobile preset (375×812).
 
 ## 8. Current numbers (verified at handoff)
 
-- **502** entries in `data.js` = **1004** sentences (every entry has an alt).
-  After the user's in-app deletions: **~435 active** = ~870 sentences.
+- **508** entries in `data.js` = **1016** sentences (every entry has an alt).
+  After the user's in-app deletions: **~441 active** = ~882 sentences.
 - One round in Mains Libres is ~390 weighted slots ≈ 780 sentence-plays, about
   three weeks at the user's ~40/day pace.
 - ~221 mastered, ~17 flagged ⚑, ~150 of the mastered ones ×6. These drift daily —

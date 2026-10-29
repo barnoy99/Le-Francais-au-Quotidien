@@ -58,7 +58,7 @@ including corrections — give it, then defer.
 
 ## What the corpus is
 
-502 entries / 1004 sentences. Each entry is a main sentence plus an alt.
+508 entries / 1016 sentences. Each entry is a main sentence plus an alt.
 
 **The construction audit is finished (536–543 closed it).** Two probe waves over
 ~160 constructions; everything that survived verification has been written. The
